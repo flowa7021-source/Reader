@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace Foliant.Tools.PerfCompare;
@@ -96,5 +97,10 @@ internal static class Program
 
     private sealed record Options(string BaselinePath, string CurrentPath, double ThresholdPct);
     private sealed record Bench(double P50, double P95);
+
+    [SuppressMessage(
+        "Performance",
+        "CA1812:Avoid uninstantiated internal classes",
+        Justification = "Constructed by JsonSerializer.Deserialize via reflection.")]
     private sealed record BenchRaw(double P50_ms, double P95_ms);
 }

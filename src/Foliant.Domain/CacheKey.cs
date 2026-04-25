@@ -20,8 +20,13 @@ public sealed record CacheKey(
         int engineVersion,
         RenderOptions opts)
     {
+        ArgumentNullException.ThrowIfNull(opts);
+
         var flags = 0;
-        if (opts.RenderAnnotations) flags |= 1;
+        if (opts.RenderAnnotations)
+        {
+            flags |= 1;
+        }
         flags |= (int)opts.Theme << 1;
         return new CacheKey(docFingerprint, pageIndex, engineVersion, opts.ZoomBucket(), flags);
     }

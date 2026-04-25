@@ -39,8 +39,13 @@ jobs:
           languages: ${{ matrix.language }}
           queries: security-and-quality
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      # Не используем autobuild: он зовёт VS-MSBuild 17.14, который не
+      # поддерживает .NET 10 (NETSDK1233). Собираем dotnet CLI напрямую.
+      - name: Restore & build
+        shell: pwsh
+        run: |
+          dotnet restore Foliant.sln
+          dotnet build Foliant.sln -c Release --no-restore
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
