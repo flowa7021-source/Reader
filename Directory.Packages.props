@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Logging">
-    <PackageVersion Include="Serilog" Version="4.1.0" />
+    <PackageVersion Include="Serilog" Version="4.2.0" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
@@ -26,15 +26,15 @@
   </ItemGroup>
 
   <ItemGroup Label="DocumentEngines">
-    <PackageVersion Include="PDFiumCore" Version="139.0.7228" />
+    <PackageVersion Include="PDFiumCore" Version="146.0.7678.1" />
     <PackageVersion Include="PdfPig" Version="0.1.10" />
     <PackageVersion Include="Tesseract" Version="5.2.0" />
-    <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.6" />
+    <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.10" />
   </ItemGroup>
 
   <ItemGroup Label="StorageAndSerialization">
+    <!-- System.Text.Json — часть .NET 9+ runtime, явный PackageReference не нужен (NU1510). -->
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Crypto">

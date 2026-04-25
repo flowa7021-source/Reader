@@ -18,7 +18,7 @@
     <PackageReference Include="Serilog.Extensions.Hosting" />
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Serilog.Sinks.Console" />
-    <PackageReference Include="System.Text.Json" />
+    <!-- System.Text.Json — часть .NET 10 runtime, не нужен явно. -->
   </ItemGroup>
 
   <ItemGroup>

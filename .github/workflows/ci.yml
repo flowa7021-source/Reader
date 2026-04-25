@@ -47,7 +47,8 @@ jobs:
         run: ./tools/fetch-natives.ps1 -Quiet
 
       - name: Restore
-        run: dotnet restore Foliant.sln --locked-mode
+        # --locked-mode добавим после генерации lock-файлов (Phase 1 / S1).
+        run: dotnet restore Foliant.sln
 
       - name: Verify formatting
         run: dotnet format Foliant.sln --verify-no-changes --no-restore
