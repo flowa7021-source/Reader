@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Foliant.Engines.Ocr</RootNamespace>
+    <Description>Tesseract LSTM adapter + препроцессинг через ImageSharp.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Tesseract" />
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\Foliant.Plugins.Contracts\Foliant.Plugins.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
