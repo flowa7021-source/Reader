@@ -54,7 +54,10 @@ dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
 dotnet_naming_style.i_prefix_pascal.required_prefix = I
 dotnet_naming_style.i_prefix_pascal.capitalization = pascal_case
 
-dotnet_naming_rule.private_fields_camel_underscore.severity = error
+# Naming для private fields: рекомендация _camelCase, но не error.
+# Primary constructor parameters в C# 13 становятся captured fields с тем же
+# именем — форсировать им _ префикс ломает идиому (DI parameters).
+dotnet_naming_rule.private_fields_camel_underscore.severity = suggestion
 dotnet_naming_rule.private_fields_camel_underscore.symbols = private_fields
 dotnet_naming_rule.private_fields_camel_underscore.style = camel_underscore
 dotnet_naming_symbols.private_fields.applicable_kinds = field
@@ -83,3 +86,8 @@ dotnet_diagnostic.CA1849.severity = none
 # В тестах ослабляем некоторые правила
 dotnet_diagnostic.CA1707.severity = none      # underscores in test names — норма
 dotnet_diagnostic.CA1062.severity = none      # null checks — не нужны
+dotnet_diagnostic.CA1031.severity = none      # catch (Exception) в Dispose-cleanup — допустимо
+dotnet_diagnostic.CA2000.severity = none      # owned objects тестируются, Dispose делает SUT
+dotnet_diagnostic.CA5394.severity = none      # Random для test data — не security
+dotnet_diagnostic.CA1822.severity = none      # benchmark-методы могут быть instance, BDN это поддерживает
+dotnet_diagnostic.CA1515.severity = none      # public test/benchmark types — допустимо

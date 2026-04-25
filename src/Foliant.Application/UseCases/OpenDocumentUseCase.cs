@@ -24,7 +24,7 @@ public sealed class OpenDocumentUseCase(
         }
 
         var loader = _loaders.FirstOrDefault(l => l.CanLoad(path))
-            ?? throw new UnsupportedDocumentException(path);
+            ?? throw UnsupportedDocumentException.ForPath(path);
 
         log.LogInformation(
             "Открываю {Path} через {Loader} ({Kind})",
@@ -34,8 +34,24 @@ public sealed class OpenDocumentUseCase(
     }
 }
 
-public sealed class UnsupportedDocumentException(string path)
-    : InvalidOperationException($"Не найден loader для документа: {path}")
+public sealed class UnsupportedDocumentException : InvalidOperationException
 {
-    public string Path { get; } = path;
+    public UnsupportedDocumentException()
+    {
+    }
+
+    public UnsupportedDocumentException(string message)
+        : base(message)
+    {
+    }
+
+    public UnsupportedDocumentException(string message, Exception innerException)
+        : base(message, innerException)
+    {
+    }
+
+    public string? Path { get; private init; }
+
+    public static UnsupportedDocumentException ForPath(string path) =>
+        new($"Не найден loader для документа: {path}") { Path = path };
 }

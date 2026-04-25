@@ -8,7 +8,7 @@ using Serilog;
 
 namespace Foliant.App;
 
-public static class Program
+internal static class Program
 {
     [STAThread]
     [SuppressMessage(

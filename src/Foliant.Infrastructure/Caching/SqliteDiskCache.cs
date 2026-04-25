@@ -47,6 +47,8 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public async Task<byte[]?> TryGetAsync(CacheKey key, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(key);
+
         var fileName = key.ToFileName();
         var path = Path.Combine(_pagesDir, fileName);
 

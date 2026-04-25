@@ -20,7 +20,7 @@ public sealed class MemoryPageCache(long capacityBytes, int stickyWindow = 5) : 
 
     public int Count => _cache.Count;
 
-    /// <summary>Пометить «текущую» страницу — её и соседей в окне ±<see cref="stickyWindow"/> не выгоняем.</summary>
+    /// <summary>Пометить «текущую» страницу — её и соседей в окне ±stickyWindow не выгоняем.</summary>
     public void SetCurrent(string docFingerprint, int pageIndex)
     {
         lock (_stickyGate)

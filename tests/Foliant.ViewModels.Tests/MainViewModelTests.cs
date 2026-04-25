@@ -20,7 +20,10 @@ public sealed class MainViewModelTests
         var raised = false;
         vm.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(MainViewModel.StatusMessage)) raised = true;
+            if (e.PropertyName == nameof(MainViewModel.StatusMessage))
+            {
+                raised = true;
+            }
         };
 
         vm.StatusMessage = "Loading...";
