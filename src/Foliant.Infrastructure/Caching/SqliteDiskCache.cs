@@ -1,4 +1,3 @@
-using System.Globalization;
 using Foliant.Domain;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -71,6 +70,8 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public async Task PutAsync(CacheKey key, ReadOnlyMemory<byte> bytes, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(key);
+
         var fileName = key.ToFileName();
         var path = Path.Combine(_pagesDir, fileName);
         var tmp = path + ".tmp";
@@ -86,6 +87,8 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public async Task<bool> RemoveAsync(CacheKey key, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(key);
+
         var fileName = key.ToFileName();
         var path = Path.Combine(_pagesDir, fileName);
         var existed = File.Exists(path);
@@ -139,8 +142,13 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
         try
         {
             using var conn = Open();
-            var current = ScalarLong(conn, "SELECT COALESCE(SUM(size), 0) FROM entries");
-            if (current <= targetBytes) return 0;
+            using var sumCmd = conn.CreateCommand();
+            sumCmd.CommandText = "SELECT COALESCE(SUM(size), 0) FROM entries";
+            var current = (long)(sumCmd.ExecuteScalar() ?? 0L);
+            if (current <= targetBytes)
+            {
+                return 0;
+            }
 
             var evicted = 0;
             using var sel = conn.CreateCommand();
@@ -302,16 +310,11 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
     {
         using var reader = cmd.ExecuteReader();
         var list = new List<string>();
-        while (reader.Read()) list.Add(reader.GetString(0));
+        while (reader.Read())
+        {
+            list.Add(reader.GetString(0));
+        }
         return [.. list];
-    }
-
-    private static long ScalarLong(SqliteConnection conn, string sql)
-    {
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = sql;
-        var v = cmd.ExecuteScalar();
-        return v is long l ? l : Convert.ToInt64(v ?? 0L, CultureInfo.InvariantCulture);
     }
 
     private static long NowTicks() => DateTime.UtcNow.Ticks;

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using Foliant.App.Composition;
 using Foliant.UI;
@@ -10,6 +11,10 @@ namespace Foliant.App;
 public static class Program
 {
     [STAThread]
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Top-level handler must log and translate any unhandled exception into a non-zero exit code.")]
     public static int Main(string[] args)
     {
         using var host = HostBuilder.Build(args);

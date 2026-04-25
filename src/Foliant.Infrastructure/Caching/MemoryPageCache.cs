@@ -72,7 +72,10 @@ public sealed class MemoryPageCache(long capacityBytes, int stickyWindow = 5) : 
             doc = _stickyDocFp;
             center = _stickyCenter;
         }
-        if (doc is null || center < 0) return;
+        if (doc is null || center < 0)
+        {
+            return;
+        }
 
         for (var p = Math.Max(0, center - stickyWindow); p <= center + stickyWindow; p++)
         {

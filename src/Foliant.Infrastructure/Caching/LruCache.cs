@@ -98,7 +98,10 @@ public sealed class LruCache<TKey, TValue>
                 found = true;
             }
         }
-        if (found && evicted is IDisposable d) d.Dispose();
+        if (found && evicted is IDisposable d)
+        {
+            d.Dispose();
+        }
         return found;
     }
 
@@ -119,7 +122,10 @@ public sealed class LruCache<TKey, TValue>
     {
         foreach (var v in values)
         {
-            if (v is IDisposable d) d.Dispose();
+            if (v is IDisposable d)
+            {
+                d.Dispose();
+            }
         }
     }
 
