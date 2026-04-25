@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Foliant.Plugins.Contracts</RootNamespace>
+    <Description>MEF-контракты плагинов: IEnginePlugin, IConverterPlugin, IOcrPlugin, ...</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Composition" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

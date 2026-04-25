@@ -1,0 +1,102 @@
+# Foliant .gitignore — следует Visual Studio template + проектные исключения
+
+## Build outputs
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+*.binlog
+*.tlog
+*.metaproj
+*.metaproj.tmp
+
+## Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userprefs
+*.userosscache
+*.sln.docstates
+*.swp
+
+## .NET artifacts
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+*.pidb
+*.svclog
+*.scc
+TestResult.xml
+[Dd]ebug/
+[Rr]elease/
+[Dd]ebugPublic/
+[Rr]eleases/
+x64/
+x86/
+ARM64/
+publish/
+*.publishsettings
+*.azurePubxml
+
+## NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+.nuget/
+
+## Test coverage
+coverage/
+TestResults/
+*.coverage
+*.coveragexml
+*.opencover.xml
+
+## BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
+## OS detritus
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Foliant-specific
+# Native binaries fetched by tools/fetch-natives.ps1
+native/
+src/**/runtimes/
+tests/**/runtimes/
+
+# Local cache and runtime data (если кто-то запустит приложение из ./)
+%LOCALAPPDATA%/
+**/Cache/
+**/Autosave/
+**/Backup/
+**/CrashReports/
+
+# Closed-source Pro repository (submodule, опц.)
+pro/
+
+# Tessdata models (большие, тащим через fetch-natives)
+**/tessdata/*.traineddata
+
+# Test assets — храним через Git LFS, локально могут быть распакованы
+tests/assets/_unpacked/
+
+# Inno Setup output
+installer/Foliant.Installer.InnoSetup/Output/
+
+# Local secrets (на всякий случай)
+*.key
+*.pfx
+*.p12
+!**/license.public.key
+secrets.json
+appsettings.*.local.json
+
+# Performance baselines temp
+tests/Foliant.Performance/results/

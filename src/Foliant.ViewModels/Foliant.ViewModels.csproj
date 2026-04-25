@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Foliant.ViewModels</RootNamespace>
+    <Description>
+      MVVM ViewModels (CommunityToolkit.Mvvm). Без ссылок на UI / PresentationFramework.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Localization" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foliant.Application\Foliant.Application.csproj" />
+    <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

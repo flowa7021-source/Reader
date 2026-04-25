@@ -1,0 +1,76 @@
+# Foliant — общие правила форматирования
+# Источник истины. Любой IDE/CLI обязан соблюдать.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+max_line_length = 140
+
+[*.{md,markdown}]
+trim_trailing_whitespace = false   # MD двойной пробел = <br>
+max_line_length = off
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.{xml,csproj,props,targets,ruleset}]
+indent_size = 2
+
+[*.{ps1,psm1}]
+indent_size = 4
+
+[*.cs]
+indent_size = 4
+csharp_using_directive_placement = outside_namespace:error
+csharp_style_namespace_declarations = file_scoped:error
+csharp_prefer_braces = true:error
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_constructors = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_pattern_matching_over_is_with_cast_check = true:error
+csharp_style_pattern_matching_over_as_with_null_check = true:error
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_top_level_statements = false:suggestion
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+
+# Naming
+dotnet_naming_rule.interfaces_must_start_with_i.severity = error
+dotnet_naming_rule.interfaces_must_start_with_i.symbols = interface_symbols
+dotnet_naming_rule.interfaces_must_start_with_i.style = i_prefix_pascal
+dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
+dotnet_naming_style.i_prefix_pascal.required_prefix = I
+dotnet_naming_style.i_prefix_pascal.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_camel_underscore.severity = error
+dotnet_naming_rule.private_fields_camel_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_camel_underscore.style = camel_underscore
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.camel_underscore.required_prefix = _
+dotnet_naming_style.camel_underscore.capitalization = camel_case
+
+# Analyzer severities (raise above defaults)
+dotnet_diagnostic.IDE0011.severity = error    # always braces
+dotnet_diagnostic.IDE0040.severity = error    # accessibility modifiers required
+dotnet_diagnostic.IDE0161.severity = error    # file-scoped namespaces
+dotnet_diagnostic.CA1062.severity = error     # validate args of public methods
+dotnet_diagnostic.CA2007.severity = none      # ConfigureAwait — для UI-приложения не нужно везде
+dotnet_diagnostic.CA1303.severity = none      # localized strings — локализация через IStringLocalizer
+
+[**/tests/**/*.cs]
+# В тестах ослабляем некоторые правила
+dotnet_diagnostic.CA1707.severity = none      # underscores in test names — норма
+dotnet_diagnostic.CA1062.severity = none      # null checks — не нужны

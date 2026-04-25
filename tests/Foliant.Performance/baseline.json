@@ -1,0 +1,8 @@
+{
+  "OpenPdf500Pages":      { "P50_ms": 250,  "P95_ms": 500  },
+  "RenderPage1080p_Cold": { "P50_ms": 80,   "P95_ms": 150  },
+  "RenderPage1080p_Warm": { "P50_ms": 3,    "P95_ms": 8    },
+  "SearchAcross10kPages": { "P50_ms": 600,  "P95_ms": 1500 },
+  "OcrPageRus":           { "P50_ms": 1500, "P95_ms": 3000 },
+  "AppColdStart":         { "P50_ms": 800,  "P95_ms": 1500 }
+}

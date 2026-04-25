@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag (e.g. v0.1.0). Leave empty to derive from ref.'
+        required: false
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-installers:
+    name: Build & sign installers
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Fetch native dependencies (all OCR tier'ы)
+        shell: pwsh
+        run: ./tools/fetch-natives.ps1 -Tier Full
+
+      - name: Restore & build
+        run: |
+          dotnet restore Foliant.sln --locked-mode
+          dotnet build Foliant.sln -c Release --no-restore -warnaserror
+
+      - name: Run all tests (including Slow)
+        run: dotnet test Foliant.sln -c Release --no-build --filter "Category!=E2E"
+
+      - name: Publish self-contained
+        run: >-
+          dotnet publish src/Foliant.App/Foliant.App.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=false
+          -o publish/
+
+      - name: Sign primary binaries
+        if: env.SIGNING_CERT_BASE64 != ''
+        env:
+          SIGNING_CERT_BASE64: ${{ secrets.SIGNING_CERT_BASE64 }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+        shell: pwsh
+        run: ./tools/sign-binaries.ps1 -Path publish/ -Patterns "Foliant.exe","Foliant.*.dll"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+
+      - name: Build installer (Basic tier)
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DAppVersion=${{ github.ref_name }} `
+            /DTier=Basic `
+            installer/Foliant.Installer.InnoSetup/Foliant.iss
+
+      - name: Build installer (Standard tier)
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DAppVersion=${{ github.ref_name }} `
+            /DTier=Standard `
+            installer/Foliant.Installer.InnoSetup/Foliant.iss
+
+      - name: Build installer (Full tier)
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DAppVersion=${{ github.ref_name }} `
+            /DTier=Full `
+            installer/Foliant.Installer.InnoSetup/Foliant.iss
+
+      - name: Sign installers
+        if: env.SIGNING_CERT_BASE64 != ''
+        env:
+          SIGNING_CERT_BASE64: ${{ secrets.SIGNING_CERT_BASE64 }}
+          SIGNING_CERT_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
+        shell: pwsh
+        run: ./tools/sign-binaries.ps1 -Path installer/Foliant.Installer.InnoSetup/Output -Patterns "*.exe"
+
+      - name: Compute SHA256SUMS
+        shell: pwsh
+        run: |
+          Get-ChildItem installer/Foliant.Installer.InnoSetup/Output/*.exe |
+            ForEach-Object {
+              $h = (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower()
+              "$h  $($_.Name)"
+            } | Set-Content installer/Foliant.Installer.InnoSetup/Output/SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Foliant ${{ github.ref_name }}
+          body_path: .github/release-notes/${{ github.ref_name }}.md
+          fail_on_unmatched_files: true
+          files: |
+            installer/Foliant.Installer.InnoSetup/Output/*.exe
+            installer/Foliant.Installer.InnoSetup/Output/SHA256SUMS
