@@ -1,3 +1,7 @@
+using Foliant.Application.UseCases;
+using Foliant.Domain;
+using Foliant.Engines.Pdf;
+using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
 using Foliant.UI;
 using Foliant.ViewModels;
@@ -41,12 +45,22 @@ internal static class HostBuilder
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Infrastructure
+        services.AddSingleton<IFileFingerprint, FileFingerprint>();
+        services.AddSingleton<ISettingsStore>(sp =>
+            new JsonSettingsStore(AppPaths.SettingsFile, sp.GetRequiredService<ILogger<JsonSettingsStore>>()));
+
+        // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
+        // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
+        services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
+
+        // Application
+        services.AddSingleton<OpenDocumentUseCase>();
+
         // ViewModels
         services.AddTransient<MainViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
-
-        // Engines / Services / Cache — добавляются спринтами S1+.
     }
 }

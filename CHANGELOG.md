@@ -17,5 +17,12 @@
 - Скелет solution с 9 проектами + тестовыми проектами.
 - `Foliant.Domain` — базовые контракты: `IDocument`, `IPageRender`, `RenderOptions`, `TextLayer`, `DocumentMetadata`.
 - Composition root в `Foliant.App` со Serilog + DI.
+- `Foliant.Infrastructure.Storage.FileFingerprint` — sha256(first 64 KB ‖ size ‖ mtime) для ключей кэша.
+- `Foliant.Infrastructure.Caching.LruCache<TKey, TValue>` — потокобезопасный LRU с capacity-by-bytes и автоматическим Dispose эвиктируемых значений.
+- `Foliant.Infrastructure.Settings`: `AppSettings` (schema-versioned record), `JsonSettingsStore` (атомарная запись через .tmp + System.Text.Json source-gen + миграции), `SettingsMigrator`.
+- `Foliant.Application.UseCases.OpenDocumentUseCase` — маршрутизатор открытия документа по `IDocumentLoader[]`.
+- `Foliant.Engines.Pdf.PdfDocumentLoader` — детект PDF по расширению или магии `%PDF-`. `LoadAsync` — заглушка до S1.
+- DI-регистрации в `Foliant.App.Composition.HostBuilder`.
+- Ещё **31 unit-тест**: FileFingerprint (5), LruCache (10), JsonSettingsStore (6), OpenDocumentUseCase (5+), PdfDocumentLoader (8).
 
 [Unreleased]: https://github.com/flowa7021-source/Reader/compare/HEAD

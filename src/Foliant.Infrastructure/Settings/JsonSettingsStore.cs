@@ -1,0 +1,65 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
+
+namespace Foliant.Infrastructure.Settings;
+
+public sealed class JsonSettingsStore(string filePath, ILogger<JsonSettingsStore> log) : ISettingsStore
+{
+    private static readonly JsonSerializerOptions WriteOptions = new()
+    {
+        WriteIndented = true,
+        TypeInfoResolver = SettingsJsonContext.Default,
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+    };
+
+    private static readonly JsonSerializerOptions ReadOptions = new()
+    {
+        TypeInfoResolver = SettingsJsonContext.Default,
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+    };
+
+    public async Task<AppSettings> LoadAsync(CancellationToken ct)
+    {
+        if (!File.Exists(filePath))
+        {
+            log.LogInformation("Settings file not found at {Path}, using defaults", filePath);
+            return AppSettings.Default;
+        }
+
+        try
+        {
+            await using var stream = File.OpenRead(filePath);
+            var loaded = await JsonSerializer
+                .DeserializeAsync<AppSettings>(stream, ReadOptions, ct)
+                .ConfigureAwait(false);
+
+            return SettingsMigrator.Migrate(loaded ?? AppSettings.Default);
+        }
+        catch (JsonException ex)
+        {
+            log.LogWarning(ex, "Settings file corrupt at {Path}, fallback to defaults", filePath);
+            return AppSettings.Default;
+        }
+    }
+
+    public async Task SaveAsync(AppSettings settings, CancellationToken ct)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        var tmp = filePath + ".tmp";
+
+        await using (var stream = File.Create(tmp))
+        {
+            await JsonSerializer.SerializeAsync(stream, settings, WriteOptions, ct).ConfigureAwait(false);
+        }
+
+        File.Move(tmp, filePath, overwrite: true);
+    }
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(AppSettings))]
+[JsonSerializable(typeof(CacheSettings))]
+[JsonSerializable(typeof(OcrSettings))]
+internal sealed partial class SettingsJsonContext : JsonSerializerContext;
