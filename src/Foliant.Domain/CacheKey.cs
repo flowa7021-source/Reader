@@ -20,6 +20,7 @@ public sealed record CacheKey(
         int engineVersion,
         RenderOptions opts)
     {
+        ArgumentNullException.ThrowIfNull(docFingerprint);
         ArgumentNullException.ThrowIfNull(opts);
 
         var flags = 0;

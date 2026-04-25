@@ -18,6 +18,7 @@ internal static class HostBuilder
 {
     public static IHost Build(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         var builder = Host.CreateApplicationBuilder(args);
 
         ConfigureLogging(builder);

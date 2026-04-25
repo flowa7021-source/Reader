@@ -1,5 +1,6 @@
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
+using PDFiumCore;
 
 namespace Foliant.Engines.Pdf;
 
@@ -31,9 +32,19 @@ public sealed class PdfDocumentLoader(ILogger<PdfDocumentLoader> log) : IDocumen
     public Task<IDocument> LoadAsync(string path, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(path);
-        log.LogDebug("PdfDocumentLoader.LoadAsync для {Path} — реализуется в S1", path);
-        throw new NotImplementedException(
-            "Реальная загрузка через PDFiumCore — спринт S1 (см. IMPLEMENTATION_PLAN.md разделы 4 и 5.2).");
+        return Task.Run<IDocument>(() =>
+        {
+            PdfLibrary.EnsureInitialized();
+            var doc = fpdfview.FPDF_LoadDocument(path, null);
+            if (doc is null)
+            {
+                var err = fpdfview.FPDF_GetLastError();
+                throw new InvalidOperationException($"PDFium failed to load '{path}': error {err}");
+            }
+
+            log.LogDebug("Loaded PDF '{Path}' via PDFium", path);
+            return new PdfDocument(doc);
+        }, ct);
     }
 
     private static bool HasPdfMagic(string path)

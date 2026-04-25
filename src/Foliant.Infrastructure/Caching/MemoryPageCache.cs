@@ -23,6 +23,7 @@ public sealed class MemoryPageCache(long capacityBytes, int stickyWindow = 5) : 
     /// <summary>Пометить «текущую» страницу — её и соседей в окне ±stickyWindow не выгоняем.</summary>
     public void SetCurrent(string docFingerprint, int pageIndex)
     {
+        ArgumentNullException.ThrowIfNull(docFingerprint);
         lock (_stickyGate)
         {
             _stickyDocFp = docFingerprint;
@@ -45,6 +46,7 @@ public sealed class MemoryPageCache(long capacityBytes, int stickyWindow = 5) : 
 
     public void Invalidate(string docFingerprint)
     {
+        ArgumentNullException.ThrowIfNull(docFingerprint);
         // Простая стратегия: полный обход не нужен — DiskCache знает доc_fp; в RAM
         // мы выгоняем точечно, когда документ закрывается. Сейчас просто Clear по
         // всему кэшу при инвалидации (в Phase 1 OK; точечная инвалидация — Phase 2).

@@ -18,6 +18,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public SqliteDiskCache(string root, ILogger<SqliteDiskCache> log)
     {
+        ArgumentNullException.ThrowIfNull(root);
         _root = root;
         _pagesDir = Path.Combine(root, "pages");
         _log = log;

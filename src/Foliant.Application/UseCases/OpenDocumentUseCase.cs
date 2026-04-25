@@ -52,6 +52,9 @@ public sealed class UnsupportedDocumentException : InvalidOperationException
 
     public string? Path { get; private init; }
 
-    public static UnsupportedDocumentException ForPath(string path) =>
-        new($"Не найден loader для документа: {path}") { Path = path };
+    public static UnsupportedDocumentException ForPath(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return new($"Не найден loader для документа: {path}") { Path = path };
+    }
 }
