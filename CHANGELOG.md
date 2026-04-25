@@ -24,5 +24,9 @@
 - `Foliant.Engines.Pdf.PdfDocumentLoader` — детект PDF по расширению или магии `%PDF-`. `LoadAsync` — заглушка до S1.
 - DI-регистрации в `Foliant.App.Composition.HostBuilder`.
 - Ещё **31 unit-тест**: FileFingerprint (5), LruCache (10), JsonSettingsStore (6), OpenDocumentUseCase (5+), PdfDocumentLoader (8).
+- `Foliant.Infrastructure.Caching.MemoryPageCache` — слой 1 кэша рендера: `LruCache<CacheKey, IPageRender>` с capacity-by-bytes (Stride×Height) и sticky-окном ±N от текущей страницы.
+- `Foliant.Infrastructure.Caching.IDiskCache` + `SqliteDiskCache` — слой 4 (persistent): файлы в `pages/`, метаданные в SQLite (WAL), атомарная запись через .tmp + Move(overwrite), LRU-эвикция, инвалидация по document fingerprint, выживает рестарт процесса. Concurrent-safe для разных ключей.
+- DI-регистрация cache-сервисов в `HostBuilder` (RAM: min(15 % памяти системы, 1 ГБ, ≥ 128 МБ); Disk: `AppPaths.Cache`).
+- Ещё **17 тестов**: MemoryPageCache (6 unit), SqliteDiskCache (11 integration: roundtrip, eviction, restart-survival, concurrent Put, …).
 
 [Unreleased]: https://github.com/flowa7021-source/Reader/compare/HEAD

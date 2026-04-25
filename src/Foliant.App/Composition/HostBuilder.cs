@@ -1,6 +1,7 @@
 using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Foliant.Engines.Pdf;
+using Foliant.Infrastructure.Caching;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
 using Foliant.UI;
@@ -49,6 +50,12 @@ internal static class HostBuilder
         services.AddSingleton<IFileFingerprint, FileFingerprint>();
         services.AddSingleton<ISettingsStore>(sp =>
             new JsonSettingsStore(AppPaths.SettingsFile, sp.GetRequiredService<ILogger<JsonSettingsStore>>()));
+
+        // Cache (RAM + Disk). Жёсткий потолок RAM: min(15 % системной, 1 ГБ); по плану.
+        var ramLimit = Math.Min(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 100 * 15, 1L * 1024 * 1024 * 1024);
+        services.AddSingleton(new MemoryPageCache(capacityBytes: Math.Max(ramLimit, 128L * 1024 * 1024)));
+        services.AddSingleton<IDiskCache>(sp =>
+            new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
 
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
