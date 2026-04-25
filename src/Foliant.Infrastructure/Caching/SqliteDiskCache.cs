@@ -102,6 +102,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public async Task<int> InvalidateDocumentAsync(string docFingerprint, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(docFingerprint);
         await _writeGate.WaitAsync(ct).ConfigureAwait(false);
         try
         {

@@ -30,6 +30,7 @@ public sealed class PdfDocumentLoader(ILogger<PdfDocumentLoader> log) : IDocumen
 
     public Task<IDocument> LoadAsync(string path, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(path);
         log.LogDebug("PdfDocumentLoader.LoadAsync для {Path} — реализуется в S1", path);
         throw new NotImplementedException(
             "Реальная загрузка через PDFiumCore — спринт S1 (см. IMPLEMENTATION_PLAN.md разделы 4 и 5.2).");
