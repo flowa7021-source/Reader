@@ -4,7 +4,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
-  <ItemGroup Label="Hosting & DI">
+  <ItemGroup Label="HostingAndDI">
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
@@ -21,18 +21,18 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
   </ItemGroup>
 
-  <ItemGroup Label="MVVM &amp; UI">
+  <ItemGroup Label="MvvmAndUI">
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
   </ItemGroup>
 
-  <ItemGroup Label="Document engines">
+  <ItemGroup Label="DocumentEngines">
     <PackageVersion Include="PDFiumCore" Version="139.0.7228" />
     <PackageVersion Include="PdfPig" Version="0.1.10" />
     <PackageVersion Include="Tesseract" Version="5.2.0" />
     <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.6" />
   </ItemGroup>
 
-  <ItemGroup Label="Storage &amp; serialization">
+  <ItemGroup Label="StorageAndSerialization">
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageVersion Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>
