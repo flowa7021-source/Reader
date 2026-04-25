@@ -2,6 +2,7 @@ using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Caching;
+using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
 using Foliant.UI;
@@ -56,6 +57,16 @@ internal static class HostBuilder
         services.AddSingleton(new MemoryPageCache(capacityBytes: Math.Max(ramLimit, 128L * 1024 * 1024)));
         services.AddSingleton<IDiskCache>(sp =>
             new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
+
+        // Cache janitor — фоновая эвикция.
+        services.AddSingleton(new CacheJanitorOptions());
+        services.AddHostedService<CacheJanitor>();
+
+        // Search index (FTS5).
+        services.AddSingleton<IFtsIndex>(sp =>
+            new SqliteFtsIndex(
+                Path.Combine(AppPaths.Cache, "index", "fts.db"),
+                sp.GetRequiredService<ILogger<SqliteFtsIndex>>()));
 
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).

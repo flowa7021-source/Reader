@@ -28,5 +28,14 @@
 - `Foliant.Infrastructure.Caching.IDiskCache` + `SqliteDiskCache` — слой 4 (persistent): файлы в `pages/`, метаданные в SQLite (WAL), атомарная запись через .tmp + Move(overwrite), LRU-эвикция, инвалидация по document fingerprint, выживает рестарт процесса. Concurrent-safe для разных ключей.
 - DI-регистрация cache-сервисов в `HostBuilder` (RAM: min(15 % памяти системы, 1 ГБ, ≥ 128 МБ); Disk: `AppPaths.Cache`).
 - Ещё **17 тестов**: MemoryPageCache (6 unit), SqliteDiskCache (11 integration: roundtrip, eviction, restart-survival, concurrent Put, …).
+- `Foliant.Domain.SearchHit` + `SearchQuery` records.
+- `Foliant.Infrastructure.Search.IFtsIndex` + `SqliteFtsIndex` — слой 5: FTS5 поверх `documents` + `pages_fts` (unicode61 + remove_diacritics), bm25 ранжирование, `snippet(...)` для подсветки, инвалидация по document fingerprint, ограничение по документу.
+- `Foliant.Infrastructure.Caching.CacheJanitor` — `BackgroundService` с `PeriodicTimer`, держит DiskCache ниже soft-limit (90 % hard), отказоустойчивый (исключения логируются, не пробрасываются).
+- DI: `IFtsIndex` (на `AppPaths.Cache/index/fts.db`), `CacheJanitorOptions`, `AddHostedService<CacheJanitor>`.
+- `docs/ARCHITECTURE.md` — карта слоёв, правила зависимостей, threading-карта, ссылки на под-документы.
+- `docs/CACHE.md` — детальное описание 5 слоёв, ключа, инвалидации, метрик.
+- `docs/PLUGINS.md` — две модели плагинов (in-process MEF / out-of-process Process.Start), карта Pro и опц. плагинов.
+- `docs/BUILD.md` — инструкции сборки, performance, кросс-платформенные нюансы, troubleshooting.
+- Ещё **13 тестов**: SqliteFtsIndex (10 integration: roundtrip, RestrictToDoc, MaxResults, reindex replaces, remove, list ordered desc, diacritics-insensitive), CacheJanitor (3 unit).
 
 [Unreleased]: https://github.com/flowa7021-source/Reader/compare/HEAD
