@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -28,6 +29,10 @@ public sealed class CacheJanitor(
         }
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Background service must not crash on tick failure; exception is logged.")]
     internal async Task TickAsync(CancellationToken ct)
     {
         try

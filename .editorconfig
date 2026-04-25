@@ -70,6 +70,15 @@ dotnet_diagnostic.CA1062.severity = error     # validate args of public methods
 dotnet_diagnostic.CA2007.severity = none      # ConfigureAwait — для UI-приложения не нужно везде
 dotnet_diagnostic.CA1303.severity = none      # localized strings — локализация через IStringLocalizer
 
+# Прагматичные отключения для Phase 0/1:
+# CA1848/CA1873 — LoggerMessage source-gen оптимизация для hot paths.
+#   Перейдём на LoggerMessage когда профайлер покажет логирование как hot path.
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none
+# CA1849 — sync DB-вызовы внутри async. Local SQLite + SemaphoreSlim
+#   уже сериализует writes; real-async overhead больше выигрыша.
+dotnet_diagnostic.CA1849.severity = none
+
 [**/tests/**/*.cs]
 # В тестах ослабляем некоторые правила
 dotnet_diagnostic.CA1707.severity = none      # underscores in test names — норма

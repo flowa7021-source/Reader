@@ -1,3 +1,4 @@
+using System.Globalization;
 using Foliant.Domain;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -26,6 +27,8 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
         IAsyncEnumerable<TextLayer> pages,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(pages);
+
         EnsureInitialized();
         await _writeGate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -67,6 +70,8 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
 
     public Task<IReadOnlyList<SearchHit>> SearchAsync(SearchQuery query, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(query);
+
         EnsureInitialized();
         if (query.IsEmpty)
         {
@@ -180,7 +185,10 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
 
     private void EnsureInitialized()
     {
-        if (_initialized) return;
+        if (_initialized)
+        {
+            return;
+        }
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
         using var conn = Open();
@@ -238,7 +246,7 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
         cmd.CommandText = "SELECT id FROM documents WHERE fp = $fp";
         cmd.Parameters.AddWithValue("$fp", fp);
         var v = cmd.ExecuteScalar();
-        return v is null or DBNull ? null : Convert.ToInt64(v);
+        return v is null or DBNull ? null : Convert.ToInt64(v, CultureInfo.InvariantCulture);
     }
 
     private static void DeletePagesOf(SqliteConnection conn, SqliteTransaction tx, long docId)

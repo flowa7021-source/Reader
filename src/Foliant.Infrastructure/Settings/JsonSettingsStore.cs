@@ -46,6 +46,8 @@ public sealed class JsonSettingsStore(string filePath, ILogger<JsonSettingsStore
 
     public async Task SaveAsync(AppSettings settings, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(settings);
+
         Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
         var tmp = filePath + ".tmp";
 
