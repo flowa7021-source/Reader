@@ -14,7 +14,8 @@ public sealed class MainViewModelTests
     private static MainViewModel CreateVm(
         IRecentsService? recents = null,
         ISettingsService? settings = null,
-        ILocalizationService? localization = null)
+        ILocalizationService? localization = null,
+        IDocumentIndexer? indexer = null)
     {
         var useCase = new OpenDocumentUseCase([], NullLogger<OpenDocumentUseCase>.Instance);
         Func<IDocument, string, DocumentTabViewModel> factory = (_, _) => throw new NotSupportedException();
@@ -26,8 +27,9 @@ public sealed class MainViewModelTests
         settings.Current.Returns(AppSettings.Default);
 
         localization ??= Substitute.For<ILocalizationService>();
+        indexer ??= Substitute.For<IDocumentIndexer>();
 
-        return new MainViewModel(useCase, factory, recents, settings, localization, NullLogger<MainViewModel>.Instance);
+        return new MainViewModel(useCase, factory, recents, settings, localization, indexer, NullLogger<MainViewModel>.Instance);
     }
 
     [Fact]

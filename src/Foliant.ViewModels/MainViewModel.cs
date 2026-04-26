@@ -15,6 +15,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IRecentsService _recents;
     private readonly ISettingsService _settings;
     private readonly ILocalizationService _localization;
+    private readonly IDocumentIndexer _indexer;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -39,6 +40,7 @@ public sealed partial class MainViewModel : ObservableObject
         IRecentsService recents,
         ISettingsService settings,
         ILocalizationService localization,
+        IDocumentIndexer indexer,
         ILogger<MainViewModel> logger)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
@@ -46,6 +48,7 @@ public sealed partial class MainViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(recents);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(localization);
+        ArgumentNullException.ThrowIfNull(indexer);
         ArgumentNullException.ThrowIfNull(logger);
 
         _openUseCase = openUseCase;
@@ -53,6 +56,7 @@ public sealed partial class MainViewModel : ObservableObject
         _recents = recents;
         _settings = settings;
         _localization = localization;
+        _indexer = indexer;
         _logger = logger;
     }
 
@@ -75,6 +79,7 @@ public sealed partial class MainViewModel : ObservableObject
             Tabs.Add(tab);
             SelectedTab = tab;
 
+            _indexer.Enqueue(document, path);
             await _recents.AddAsync(path, ct).ConfigureAwait(false);
             await RefreshRecentsAsync(ct).ConfigureAwait(false);
         }

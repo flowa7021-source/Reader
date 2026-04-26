@@ -75,6 +75,11 @@ internal static class HostBuilder
                 Path.Combine(AppPaths.Cache, "index", "fts.db"),
                 sp.GetRequiredService<ILogger<SqliteFtsIndex>>()));
 
+        // Background document indexer — fires on every document open, populates FTS5.
+        services.AddSingleton<DocumentIndexingService>();
+        services.AddSingleton<IDocumentIndexer>(sp => sp.GetRequiredService<DocumentIndexingService>());
+        services.AddHostedService(sp => sp.GetRequiredService<DocumentIndexingService>());
+
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
