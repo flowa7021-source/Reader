@@ -19,6 +19,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
     public SqliteDiskCache(string root, ILogger<SqliteDiskCache> log)
     {
         ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(log);
         _root = root;
         _pagesDir = Path.Combine(root, "pages");
         _log = log;
@@ -33,6 +34,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
         }.ToString();
 
         InitSchema();
+        _log.LogDebug("Disk cache opened at {Root}", _root);
     }
 
     public long CurrentSizeBytes
@@ -132,6 +134,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
                 del.ExecuteNonQuery();
             }
             tx.Commit();
+            _log.LogDebug("Invalidated {Count} disk-cache entries for document {Fp}", keys.Length, docFingerprint);
             return keys.Length;
         }
         finally
@@ -182,6 +185,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
                 evicted++;
             }
             tx.Commit();
+            _log.LogDebug("Evicted {Count} disk-cache entries; target={Target}B", evicted, targetBytes);
             return evicted;
         }
         finally
