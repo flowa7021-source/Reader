@@ -1,3 +1,4 @@
+using Foliant.Application.Services;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Foliant.Engines.Pdf;
@@ -52,6 +53,7 @@ internal static class HostBuilder
         services.AddSingleton<IFileFingerprint, FileFingerprint>();
         services.AddSingleton<ISettingsStore>(sp =>
             new JsonSettingsStore(AppPaths.SettingsFile, sp.GetRequiredService<ILogger<JsonSettingsStore>>()));
+        services.AddSingleton<IRecentsService, RecentsService>();
 
         // Cache (RAM + Disk). Жёсткий потолок RAM: min(15 % системной, 1 ГБ); по плану.
         var ramLimit = Math.Min(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 100 * 15, 1L * 1024 * 1024 * 1024);

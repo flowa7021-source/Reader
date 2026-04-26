@@ -8,7 +8,8 @@
         Width="1280"
         Height="800"
         Background="{DynamicResource WindowBackground}"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Loaded="OnWindowLoaded">
 
   <Window.Resources>
     <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
@@ -26,6 +27,22 @@
       <MenuItem Header="_File">
         <MenuItem Header="_Open"
                   Click="OnOpenMenuItemClick" />
+        <MenuItem Header="Open _Recent"
+                  ItemsSource="{Binding RecentFiles}">
+          <MenuItem.ItemContainerStyle>
+            <Style TargetType="MenuItem">
+              <Setter Property="Header"
+                      Value="{Binding}" />
+              <Setter Property="Command"
+                      Value="{Binding DataContext.OpenRecentCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+              <Setter Property="CommandParameter"
+                      Value="{Binding}" />
+            </Style>
+          </MenuItem.ItemContainerStyle>
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="_Clear Recent Files"
+                  Command="{Binding ClearRecentsCommand}" />
         <Separator />
         <MenuItem Header="E_xit"
                   Click="OnExitMenuItemClick" />

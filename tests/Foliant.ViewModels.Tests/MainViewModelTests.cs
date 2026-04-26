@@ -1,18 +1,22 @@
 using FluentAssertions;
+using Foliant.Application.Services;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using Xunit;
 
 namespace Foliant.ViewModels.Tests;
 
 public sealed class MainViewModelTests
 {
-    private static MainViewModel CreateVm()
+    private static MainViewModel CreateVm(IRecentsService? recents = null)
     {
         var useCase = new OpenDocumentUseCase([], NullLogger<OpenDocumentUseCase>.Instance);
         Func<IDocument, string, DocumentTabViewModel> factory = (_, _) => throw new NotSupportedException();
-        return new MainViewModel(useCase, factory, NullLogger<MainViewModel>.Instance);
+        recents ??= Substitute.For<IRecentsService>();
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        return new MainViewModel(useCase, factory, recents, NullLogger<MainViewModel>.Instance);
     }
 
     [Fact]
@@ -40,5 +44,40 @@ public sealed class MainViewModelTests
 
         raised.Should().BeTrue();
         vm.StatusMessage.Should().Be("Loading...");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_PopulatesRecentFilesFromService()
+    {
+        var recents = Substitute.For<IRecentsService>();
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(new[] { "a.pdf", "b.pdf" });
+        var vm = CreateVm(recents);
+
+        await vm.InitializeAsync(default);
+
+        vm.RecentFiles.Should().BeEquivalentTo(["a.pdf", "b.pdf"]);
+    }
+
+    [Fact]
+    public async Task ClearRecentsCommand_CallsServiceAndEmptiesCollection()
+    {
+        var recents = Substitute.For<IRecentsService>();
+        var first = true;
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            if (first)
+            {
+                first = false;
+                return new[] { "a.pdf" };
+            }
+            return Array.Empty<string>();
+        });
+        var vm = CreateVm(recents);
+        await vm.InitializeAsync(default);
+
+        await vm.ClearRecentsCommand.ExecuteAsync(null);
+
+        await recents.Received(1).ClearAsync(Arg.Any<CancellationToken>());
+        vm.RecentFiles.Should().BeEmpty();
     }
 }

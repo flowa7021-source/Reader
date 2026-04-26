@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Foliant.Application.Services;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,7 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private readonly OpenDocumentUseCase _openUseCase;
     private readonly Func<IDocument, string, DocumentTabViewModel> _tabFactory;
+    private readonly IRecentsService _recents;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -27,18 +29,28 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
 
+    public ObservableCollection<string> RecentFiles { get; } = [];
+
     public MainViewModel(
         OpenDocumentUseCase openUseCase,
         Func<IDocument, string, DocumentTabViewModel> tabFactory,
+        IRecentsService recents,
         ILogger<MainViewModel> logger)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
+        ArgumentNullException.ThrowIfNull(recents);
         ArgumentNullException.ThrowIfNull(logger);
 
         _openUseCase = openUseCase;
         _tabFactory = tabFactory;
+        _recents = recents;
         _logger = logger;
+    }
+
+    public async Task InitializeAsync(CancellationToken ct)
+    {
+        await RefreshRecentsAsync(ct).ConfigureAwait(false);
     }
 
     public async Task OpenDocumentFromPathAsync(string path, CancellationToken ct)
@@ -51,6 +63,9 @@ public sealed partial class MainViewModel : ObservableObject
             DocumentTabViewModel tab = _tabFactory(document, path);
             Tabs.Add(tab);
             SelectedTab = tab;
+
+            await _recents.AddAsync(path, ct).ConfigureAwait(false);
+            await RefreshRecentsAsync(ct).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex)
         {
@@ -61,6 +76,34 @@ public sealed partial class MainViewModel : ObservableObject
         {
             StatusMessage = ex.Message;
             _logger.LogWarning(ex, "Document not found: '{Path}'.", path);
+
+            await _recents.RemoveAsync(path, ct).ConfigureAwait(false);
+            await RefreshRecentsAsync(ct).ConfigureAwait(false);
+        }
+    }
+
+    [RelayCommand]
+    private Task OpenRecentAsync(string? path)
+    {
+        return string.IsNullOrWhiteSpace(path)
+            ? Task.CompletedTask
+            : OpenDocumentFromPathAsync(path, CancellationToken.None);
+    }
+
+    [RelayCommand]
+    private async Task ClearRecentsAsync()
+    {
+        await _recents.ClearAsync(CancellationToken.None).ConfigureAwait(false);
+        await RefreshRecentsAsync(CancellationToken.None).ConfigureAwait(false);
+    }
+
+    private async Task RefreshRecentsAsync(CancellationToken ct)
+    {
+        IReadOnlyList<string> items = await _recents.GetAsync(ct).ConfigureAwait(false);
+        RecentFiles.Clear();
+        foreach (string p in items)
+        {
+            RecentFiles.Add(p);
         }
     }
 

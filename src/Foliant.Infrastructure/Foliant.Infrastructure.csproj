@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Foliant.Application\Foliant.Application.csproj" />
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
   </ItemGroup>
 
