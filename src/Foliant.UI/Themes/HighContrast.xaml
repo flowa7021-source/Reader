@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <x:Static x:Key="WindowBackground" Member="SystemColors.WindowBrush" />
+  <x:Static x:Key="PageBackground" Member="SystemColors.ControlBrush" />
+  <x:Static x:Key="TabBackground" Member="SystemColors.WindowBrush" />
+  <x:Static x:Key="Foreground" Member="SystemColors.WindowTextBrush" />
+  <x:Static x:Key="AccentColor" Member="SystemColors.HighlightBrush" />
+  <x:Static x:Key="StatusBarBackground" Member="SystemColors.ControlBrush" />
+
+</ResourceDictionary>
