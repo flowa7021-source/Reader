@@ -17,7 +17,14 @@ public sealed class PdfDocumentLoaderTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_tmpDir, recursive: true); } catch { /* best-effort */ }
+        try
+        {
+            Directory.Delete(_tmpDir, recursive: true);
+        }
+        catch
+        {
+            /* best-effort */
+        }
     }
 
     [Fact]

@@ -97,7 +97,14 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
         var fileName = key.ToFileName();
         var path = Path.Combine(_pagesDir, fileName);
         var existed = File.Exists(path);
-        try { File.Delete(path); } catch (IOException) { /* concurrent delete OK */ }
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            /* concurrent delete OK */
+        }
 
         await DeleteEntryAsync(fileName, ct).ConfigureAwait(false);
         return existed;
@@ -309,9 +316,18 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     private static void TryDelete(string path)
     {
-        try { File.Delete(path); }
-        catch (IOException) { /* concurrent delete / locked — best effort */ }
-        catch (UnauthorizedAccessException) { /* same */ }
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            /* concurrent delete / locked — best effort */
+        }
+        catch (UnauthorizedAccessException)
+        {
+            /* same */
+        }
     }
 
     private static string[] ReadKeys(SqliteCommand cmd)

@@ -19,7 +19,14 @@ public sealed class OpenDocumentUseCaseTests : IDisposable
 
     public void Dispose()
     {
-        try { File.Delete(_tmpFile); } catch { /* best-effort */ }
+        try
+        {
+            File.Delete(_tmpFile);
+        }
+        catch
+        {
+            /* best-effort */
+        }
     }
 
     [Fact]
