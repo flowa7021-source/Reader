@@ -8,6 +8,7 @@ namespace Foliant.ViewModels;
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly ISettingsService _settingsService;
+    private readonly ILocalizationService _localization;
 
     [ObservableProperty]
     private string _selectedTheme = "Light";
@@ -28,10 +29,12 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<string> AvailableLanguages { get; } = ["ru", "en"];
 
-    public SettingsViewModel(ISettingsService settingsService)
+    public SettingsViewModel(ISettingsService settingsService, ILocalizationService localization)
     {
         ArgumentNullException.ThrowIfNull(settingsService);
+        ArgumentNullException.ThrowIfNull(localization);
         _settingsService = settingsService;
+        _localization = localization;
         LoadFromCurrent();
     }
 
@@ -60,6 +63,13 @@ public sealed partial class SettingsViewModel : ObservableObject
         };
 
         await _settingsService.SaveAsync(updated, CancellationToken.None).ConfigureAwait(false);
+
+        // Hot-switch культуры — все XAML-биндинги {Path=[Key]} обновятся через "Item[]" PropertyChanged.
+        if (!string.Equals(_localization.CurrentCulture, SelectedLanguage, StringComparison.OrdinalIgnoreCase))
+        {
+            _localization.SetCulture(SelectedLanguage);
+        }
+
         IsSaved = true;
     }
 }

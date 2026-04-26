@@ -8,6 +8,7 @@ using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
 using Foliant.UI;
+using Foliant.UI.Localization;
 using Foliant.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -56,6 +57,7 @@ internal static class HostBuilder
             new JsonSettingsStore(AppPaths.SettingsFile, sp.GetRequiredService<ILogger<JsonSettingsStore>>()));
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IRecentsService, RecentsService>();
+        services.AddSingleton<ILocalizationService>(LocalizationManager.Instance);
 
         // Cache (RAM + Disk). Жёсткий потолок RAM: min(15 % системной, 1 ГБ); по плану.
         var ramLimit = Math.Min(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 100 * 15, 1L * 1024 * 1024 * 1024);

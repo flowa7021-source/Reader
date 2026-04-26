@@ -11,7 +11,10 @@ namespace Foliant.ViewModels.Tests;
 
 public sealed class MainViewModelTests
 {
-    private static MainViewModel CreateVm(IRecentsService? recents = null, ISettingsService? settings = null)
+    private static MainViewModel CreateVm(
+        IRecentsService? recents = null,
+        ISettingsService? settings = null,
+        ILocalizationService? localization = null)
     {
         var useCase = new OpenDocumentUseCase([], NullLogger<OpenDocumentUseCase>.Instance);
         Func<IDocument, string, DocumentTabViewModel> factory = (_, _) => throw new NotSupportedException();
@@ -22,7 +25,9 @@ public sealed class MainViewModelTests
         settings ??= Substitute.For<ISettingsService>();
         settings.Current.Returns(AppSettings.Default);
 
-        return new MainViewModel(useCase, factory, recents, settings, NullLogger<MainViewModel>.Instance);
+        localization ??= Substitute.For<ILocalizationService>();
+
+        return new MainViewModel(useCase, factory, recents, settings, localization, NullLogger<MainViewModel>.Instance);
     }
 
     [Fact]
@@ -74,6 +79,19 @@ public sealed class MainViewModelTests
         await vm.InitializeAsync(default);
 
         vm.CurrentTheme.Should().Be("Dark");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_AppliesCultureFromSettings()
+    {
+        var settings = Substitute.For<ISettingsService>();
+        settings.Current.Returns(AppSettings.Default with { Language = "en" });
+        var localization = Substitute.For<ILocalizationService>();
+        var vm = CreateVm(settings: settings, localization: localization);
+
+        await vm.InitializeAsync(default);
+
+        localization.Received(1).SetCulture("en");
     }
 
     [Fact]
