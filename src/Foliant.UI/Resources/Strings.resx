@@ -124,4 +124,16 @@
   <data name="DialogCancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Find in document...</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="SearchNoResults" xml:space="preserve">
+    <value>No results.</value>
+  </data>
+  <data name="SearchInProgress" xml:space="preserve">
+    <value>Searching...</value>
+  </data>
 </root>

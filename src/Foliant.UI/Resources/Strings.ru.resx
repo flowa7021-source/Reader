@@ -124,4 +124,16 @@
   <data name="DialogCancel" xml:space="preserve">
     <value>Отмена</value>
   </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Поиск в документе...</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>Найти</value>
+  </data>
+  <data name="SearchNoResults" xml:space="preserve">
+    <value>Ничего не найдено.</value>
+  </data>
+  <data name="SearchInProgress" xml:space="preserve">
+    <value>Поиск...</value>
+  </data>
 </root>

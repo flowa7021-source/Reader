@@ -81,12 +81,14 @@ internal static class HostBuilder
 
         // Application
         services.AddSingleton<OpenDocumentUseCase>();
+        services.AddSingleton<ISearchService, SearchService>();
 
         // ViewModels
         services.AddTransient<Func<IDocument, string, DocumentTabViewModel>>(sp =>
             (doc, path) => new DocumentTabViewModel(
                 doc,
                 path,
+                sp.GetRequiredService<ISearchService>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
 
         services.AddTransient<MainViewModel>();

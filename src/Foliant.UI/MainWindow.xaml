@@ -14,7 +14,14 @@
 
   <Window.Resources>
     <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
   </Window.Resources>
+
+  <Window.InputBindings>
+    <KeyBinding Key="F"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ToggleSearchCommand}" />
+  </Window.InputBindings>
 
   <Grid>
     <Grid.RowDefinitions>
@@ -80,17 +87,82 @@
       <TabControl.ContentTemplate>
         <DataTemplate DataType="{x:Type vm:DocumentTabViewModel}">
           <Grid>
-            <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Auto">
-              <ui:PageSurface PageRender="{Binding CurrentRender}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Top" />
-            </ScrollViewer>
-            <TextBlock Text="{Binding ErrorMessage}"
-                       Foreground="Red"
-                       VerticalAlignment="Center"
-                       HorizontalAlignment="Center"
-                       Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}" />
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Page surface -->
+            <Grid Grid.Column="0">
+              <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Auto">
+                <ui:PageSurface PageRender="{Binding CurrentRender}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top" />
+              </ScrollViewer>
+              <TextBlock Text="{Binding ErrorMessage}"
+                         Foreground="Red"
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Center"
+                         Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}" />
+            </Grid>
+
+            <!-- Search sidebar (Ctrl+F toggles IsSearchVisible) -->
+            <Border Grid.Column="1"
+                    Width="320"
+                    BorderBrush="{DynamicResource Foreground}"
+                    BorderThickness="1,0,0,0"
+                    Background="{DynamicResource PageBackground}"
+                    Visibility="{Binding IsSearchVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+              <Grid Margin="8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Query input + button -->
+                <DockPanel Grid.Row="0"
+                           LastChildFill="True">
+                  <Button DockPanel.Dock="Right"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchButton]}"
+                          Width="64"
+                          Margin="4,0,0,0"
+                          Command="{Binding RunSearchCommand}"
+                          IsDefault="True" />
+                  <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                           VerticalContentAlignment="Center"
+                           ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchPlaceholder]}" />
+                </DockPanel>
+
+                <!-- Status -->
+                <TextBlock Grid.Row="1"
+                           Margin="0,8,0,4"
+                           Foreground="{DynamicResource Foreground}"
+                           Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchInProgress]}"
+                           Visibility="{Binding IsSearching, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                <!-- Results -->
+                <ListBox Grid.Row="2"
+                         ItemsSource="{Binding SearchResults}"
+                         SelectedItem="{Binding SelectedSearchHit}"
+                         Background="Transparent"
+                         BorderThickness="0">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel Margin="0,4">
+                        <TextBlock Text="{Binding PageIndex, StringFormat='Page {0}'}"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource Foreground}" />
+                        <TextBlock Text="{Binding Snippet}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource Foreground}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </Grid>
+            </Border>
           </Grid>
         </DataTemplate>
       </TabControl.ContentTemplate>
