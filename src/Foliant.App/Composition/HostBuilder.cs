@@ -64,6 +64,7 @@ internal static class HostBuilder
         services.AddSingleton(new MemoryPageCache(capacityBytes: Math.Max(ramLimit, 128L * 1024 * 1024)));
         services.AddSingleton<IDiskCache>(sp =>
             new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
+        services.AddSingleton<IOcrCache, OcrDiskCache>();
 
         // Cache janitor — фоновая эвикция.
         services.AddSingleton(new CacheJanitorOptions());
