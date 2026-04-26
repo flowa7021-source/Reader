@@ -1,0 +1,18 @@
+# Force LF line endings on all platforms.
+# Without this, Windows Git converts LF→CRLF on checkout, which breaks
+# `dotnet format --verify-no-changes` (editorconfig requires end_of_line=lf).
+
+* text=auto eol=lf
+
+# Explicitly mark well-known binary types as binary to prevent corruption.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.dll binary
+*.exe binary
+*.pdb binary
+*.nupkg binary
