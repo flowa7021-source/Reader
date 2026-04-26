@@ -17,7 +17,14 @@ public sealed class PdfDocumentLoaderTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_tmpDir, recursive: true); } catch { /* best-effort */ }
+        try
+        {
+            Directory.Delete(_tmpDir, recursive: true);
+        }
+        catch
+        {
+            /* best-effort */
+        }
     }
 
     [Fact]
@@ -63,13 +70,14 @@ public sealed class PdfDocumentLoaderTests : IDisposable
         _sut.CanLoad(path!).Should().BeFalse();
 
     [Fact]
-    public async Task LoadAsync_NotImplementedYet_ThrowsExpected()
+    public async Task LoadAsync_InvalidPdf_ThrowsInvalidOperationException()
     {
         var path = Path.Combine(_tmpDir, "doc.pdf");
-        File.WriteAllText(path, "");
+        File.WriteAllText(path, "not a real pdf");
 
-        var act = () => _sut.LoadAsync(path, default);
+        var act = async () => await _sut.LoadAsync(path, default);
 
-        await act.Should().ThrowAsync<NotImplementedException>();
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*PDFium*");
     }
 }

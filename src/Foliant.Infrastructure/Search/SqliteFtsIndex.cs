@@ -27,6 +27,8 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
         IAsyncEnumerable<TextLayer> pages,
         CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(docFingerprint);
+        ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(pages);
 
         EnsureInitialized();
@@ -68,6 +70,26 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
         }
     }
 
+    private const string SearchSql = """
+        SELECT d.fp, d.path, p.page_index,
+               snippet(pages_fts, 2, '[', ']', ' … ', 32),
+               bm25(pages_fts)
+        FROM pages_fts AS p
+        JOIN documents AS d ON d.id = p.doc_id
+        WHERE pages_fts MATCH $q
+        ORDER BY bm25(pages_fts) ASC LIMIT $lim
+        """;
+
+    private const string SearchSqlFiltered = """
+        SELECT d.fp, d.path, p.page_index,
+               snippet(pages_fts, 2, '[', ']', ' … ', 32),
+               bm25(pages_fts)
+        FROM pages_fts AS p
+        JOIN documents AS d ON d.id = p.doc_id
+        WHERE pages_fts MATCH $q AND d.fp = $fp
+        ORDER BY bm25(pages_fts) ASC LIMIT $lim
+        """;
+
     public Task<IReadOnlyList<SearchHit>> SearchAsync(SearchQuery query, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -82,20 +104,7 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
         using var conn = Open();
         using var cmd = conn.CreateCommand();
 
-        var sql = """
-            SELECT d.fp, d.path, p.page_index,
-                   snippet(pages_fts, 2, '[', ']', ' … ', 32),
-                   bm25(pages_fts)
-            FROM pages_fts AS p
-            JOIN documents AS d ON d.id = p.doc_id
-            WHERE pages_fts MATCH $q
-        """;
-        if (query.RestrictToDocFingerprint is not null)
-        {
-            sql += " AND d.fp = $fp";
-        }
-        sql += " ORDER BY bm25(pages_fts) ASC LIMIT $lim";
-        cmd.CommandText = sql;
+        cmd.CommandText = query.RestrictToDocFingerprint is not null ? SearchSqlFiltered : SearchSql;
         cmd.Parameters.AddWithValue("$q", query.Text);
         cmd.Parameters.AddWithValue("$lim", query.MaxResults);
         if (query.RestrictToDocFingerprint is not null)
@@ -118,6 +127,7 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
 
     public async Task<bool> RemoveDocumentAsync(string docFingerprint, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(docFingerprint);
         EnsureInitialized();
         await _writeGate.WaitAsync(ct).ConfigureAwait(false);
         try

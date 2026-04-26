@@ -27,12 +27,24 @@ public sealed class LruCache<TKey, TValue>
 
     public long CurrentBytes
     {
-        get { lock (_gate) { return _currentBytes; } }
+        get
+        {
+            lock (_gate)
+            {
+                return _currentBytes;
+            }
+        }
     }
 
     public int Count
     {
-        get { lock (_gate) { return _map.Count; } }
+        get
+        {
+            lock (_gate)
+            {
+                return _map.Count;
+            }
+        }
     }
 
     public bool TryGet(TKey key, out TValue value)

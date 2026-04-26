@@ -18,6 +18,8 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public SqliteDiskCache(string root, ILogger<SqliteDiskCache> log)
     {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(log);
         _root = root;
         _pagesDir = Path.Combine(root, "pages");
         _log = log;
@@ -32,6 +34,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
         }.ToString();
 
         InitSchema();
+        _log.LogDebug("Disk cache opened at {Root}", _root);
     }
 
     public long CurrentSizeBytes
@@ -47,6 +50,8 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public async Task<byte[]?> TryGetAsync(CacheKey key, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(key);
+
         var fileName = key.ToFileName();
         var path = Path.Combine(_pagesDir, fileName);
 
@@ -92,7 +97,14 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
         var fileName = key.ToFileName();
         var path = Path.Combine(_pagesDir, fileName);
         var existed = File.Exists(path);
-        try { File.Delete(path); } catch (IOException) { /* concurrent delete OK */ }
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            /* concurrent delete OK */
+        }
 
         await DeleteEntryAsync(fileName, ct).ConfigureAwait(false);
         return existed;
@@ -100,6 +112,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     public async Task<int> InvalidateDocumentAsync(string docFingerprint, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(docFingerprint);
         await _writeGate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
@@ -128,6 +141,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
                 del.ExecuteNonQuery();
             }
             tx.Commit();
+            _log.LogDebug("Invalidated {Count} disk-cache entries for document {Fp}", keys.Length, docFingerprint);
             return keys.Length;
         }
         finally
@@ -178,6 +192,7 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
                 evicted++;
             }
             tx.Commit();
+            _log.LogDebug("Evicted {Count} disk-cache entries; target={Target}B", evicted, targetBytes);
             return evicted;
         }
         finally
@@ -301,9 +316,18 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
 
     private static void TryDelete(string path)
     {
-        try { File.Delete(path); }
-        catch (IOException) { /* concurrent delete / locked — best effort */ }
-        catch (UnauthorizedAccessException) { /* same */ }
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            /* concurrent delete / locked — best effort */
+        }
+        catch (UnauthorizedAccessException)
+        {
+            /* same */
+        }
     }
 
     private static string[] ReadKeys(SqliteCommand cmd)

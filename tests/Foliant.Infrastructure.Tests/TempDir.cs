@@ -14,7 +14,13 @@ internal sealed class TempDir : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(Path, recursive: true); }
-        catch { /* best-effort cleanup */ }
+        try
+        {
+            Directory.Delete(Path, recursive: true);
+        }
+        catch
+        {
+            /* best-effort cleanup */
+        }
     }
 }

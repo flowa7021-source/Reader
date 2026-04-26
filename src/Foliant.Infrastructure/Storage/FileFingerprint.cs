@@ -11,6 +11,7 @@ public sealed class FileFingerprint : IFileFingerprint
 
     public async Task<string> ComputeAsync(string path, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(path);
         var info = new FileInfo(path);
         if (!info.Exists)
         {

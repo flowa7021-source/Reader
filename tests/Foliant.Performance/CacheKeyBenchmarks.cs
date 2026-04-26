@@ -12,11 +12,12 @@ public class CacheKeyBenchmarks
         RenderAnnotations = true,
     };
 
+    private readonly CacheKey _key = new("0123456789abcdef", 42, 7, 100, 3);
+
     [Benchmark]
     public CacheKey Construct() =>
         CacheKey.For("0123456789abcdef0123456789abcdef", pageIndex: 42, engineVersion: 7, _opts);
 
     [Benchmark]
-    public string ToFileName() =>
-        new CacheKey("0123456789abcdef", 42, 7, 100, 3).ToFileName();
+    public string ToFileName() => _key.ToFileName();
 }

@@ -18,6 +18,7 @@ internal static class HostBuilder
 {
     public static IHost Build(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         var builder = Host.CreateApplicationBuilder(args);
 
         ConfigureLogging(builder);
@@ -76,6 +77,12 @@ internal static class HostBuilder
         services.AddSingleton<OpenDocumentUseCase>();
 
         // ViewModels
+        services.AddTransient<Func<IDocument, string, DocumentTabViewModel>>(sp =>
+            (doc, path) => new DocumentTabViewModel(
+                doc,
+                path,
+                sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
+
         services.AddTransient<MainViewModel>();
 
         // Views

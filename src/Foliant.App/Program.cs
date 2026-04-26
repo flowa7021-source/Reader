@@ -8,7 +8,7 @@ using Serilog;
 
 namespace Foliant.App;
 
-public static class Program
+internal static class Program
 {
     [STAThread]
     [SuppressMessage(
@@ -17,6 +17,7 @@ public static class Program
         Justification = "Top-level handler must log and translate any unhandled exception into a non-zero exit code.")]
     public static int Main(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         using var host = HostBuilder.Build(args);
 
         Log.Information("App started (version {Version})", typeof(Program).Assembly.GetName().Version);

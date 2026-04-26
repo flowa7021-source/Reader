@@ -19,7 +19,14 @@ public sealed class OpenDocumentUseCaseTests : IDisposable
 
     public void Dispose()
     {
-        try { File.Delete(_tmpFile); } catch { /* best-effort */ }
+        try
+        {
+            File.Delete(_tmpFile);
+        }
+        catch
+        {
+            /* best-effort */
+        }
     }
 
     [Fact]
@@ -34,8 +41,8 @@ public sealed class OpenDocumentUseCaseTests : IDisposable
         var result = await sut.ExecuteAsync(_tmpFile, default);
 
         result.Should().BeSameAs(doc);
-        await loaderA.Received().CanLoad(_tmpFile);
-        await loaderB.Received().CanLoad(_tmpFile);
+        loaderA.Received().CanLoad(_tmpFile);
+        loaderB.Received().CanLoad(_tmpFile);
         await loaderB.Received().LoadAsync(_tmpFile, Arg.Any<CancellationToken>());
         loaderC.DidNotReceive().CanLoad(Arg.Any<string>());  // не должен запрашиваться после успеха
     }

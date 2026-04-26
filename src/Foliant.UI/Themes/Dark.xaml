@@ -1,0 +1,11 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <SolidColorBrush x:Key="WindowBackground" Color="#FF1E1E1E" />
+  <SolidColorBrush x:Key="PageBackground" Color="#FF2D2D2D" />
+  <SolidColorBrush x:Key="TabBackground" Color="#FF252526" />
+  <SolidColorBrush x:Key="Foreground" Color="#FFDCDCDC" />
+  <SolidColorBrush x:Key="AccentColor" Color="#FF4FC3F7" />
+  <SolidColorBrush x:Key="StatusBarBackground" Color="#FF3E3E42" />
+
+</ResourceDictionary>

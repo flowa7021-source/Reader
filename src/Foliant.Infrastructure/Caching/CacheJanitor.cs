@@ -6,7 +6,7 @@ namespace Foliant.Infrastructure.Caching;
 
 /// <summary>
 /// Фоновая задача, держит DiskCache ниже soft-limit (90 % от hard).
-/// Тикает раз в <paramref name="interval"/>. См. план, раздел 5.1.
+/// Тикает раз в <see cref="CacheJanitorOptions.Interval"/>. См. план, раздел 5.1.
 /// </summary>
 public sealed class CacheJanitor(
     IDiskCache diskCache,

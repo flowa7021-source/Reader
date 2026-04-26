@@ -6,6 +6,8 @@ namespace Foliant.Infrastructure.Settings;
 
 public sealed class JsonSettingsStore(string filePath, ILogger<JsonSettingsStore> log) : ISettingsStore
 {
+    private readonly string _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+
     private static readonly JsonSerializerOptions WriteOptions = new()
     {
         WriteIndented = true,
@@ -22,15 +24,15 @@ public sealed class JsonSettingsStore(string filePath, ILogger<JsonSettingsStore
 
     public async Task<AppSettings> LoadAsync(CancellationToken ct)
     {
-        if (!File.Exists(filePath))
+        if (!File.Exists(_filePath))
         {
-            log.LogInformation("Settings file not found at {Path}, using defaults", filePath);
+            log.LogInformation("Settings file not found at {Path}, using defaults", _filePath);
             return AppSettings.Default;
         }
 
         try
         {
-            await using var stream = File.OpenRead(filePath);
+            await using var stream = File.OpenRead(_filePath);
             var loaded = await JsonSerializer
                 .DeserializeAsync<AppSettings>(stream, ReadOptions, ct)
                 .ConfigureAwait(false);
@@ -39,7 +41,7 @@ public sealed class JsonSettingsStore(string filePath, ILogger<JsonSettingsStore
         }
         catch (JsonException ex)
         {
-            log.LogWarning(ex, "Settings file corrupt at {Path}, fallback to defaults", filePath);
+            log.LogWarning(ex, "Settings file corrupt at {Path}, fallback to defaults", _filePath);
             return AppSettings.Default;
         }
     }
@@ -48,15 +50,15 @@ public sealed class JsonSettingsStore(string filePath, ILogger<JsonSettingsStore
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-        var tmp = filePath + ".tmp";
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+        var tmp = _filePath + ".tmp";
 
         await using (var stream = File.Create(tmp))
         {
             await JsonSerializer.SerializeAsync(stream, settings, WriteOptions, ct).ConfigureAwait(false);
         }
 
-        File.Move(tmp, filePath, overwrite: true);
+        File.Move(tmp, _filePath, overwrite: true);
     }
 }
 
