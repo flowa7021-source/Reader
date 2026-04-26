@@ -37,7 +37,8 @@
 - `docs/PLUGINS.md` — две модели плагинов (in-process MEF / out-of-process Process.Start), карта Pro и опц. плагинов.
 - `docs/BUILD.md` — инструкции сборки, performance, кросс-платформенные нюансы, troubleshooting.
 - Ещё **13 тестов**: SqliteFtsIndex (10 integration: roundtrip, RestrictToDoc, MaxResults, reindex replaces, remove, list ordered desc, diacritics-insensitive), CacheJanitor (3 unit).
-- **S5 (часть A) — Recent Files**: `Foliant.Application.Services.IRecentsService` + `Foliant.Infrastructure.Settings.RecentsService` (MRU, кэп = 20, дедупликация по полному пути case-insensitive, персист через `ISettingsStore`, потокобезопасно). `MainViewModel.RecentFiles` + `OpenRecentCommand` + `ClearRecentsCommand`. Подменю `File → Open Recent` с динамическим `ItemsSource`. Файл, который не открылся (FileNotFoundException), удаляется из MRU.
-- Ещё **12 тестов**: RecentsService (10), MainViewModel (2 для нового пути).
+- **S5 (A) — Recent Files**: `IRecentsService` + `RecentsService` (MRU, кэп=20, case-insensitive dedup, персист через `ISettingsStore`, concurrent-safe). `MainViewModel.RecentFiles` + `OpenRecentCommand` + `ClearRecentsCommand`. Подменю `File → Open Recent`. FileNotFoundException при открытии → авто-удаление из MRU.
+- **S5 (B) — SettingsWindow**: `AppSettings` / `ISettingsStore` перемещены в `Foliant.Application.Settings` (правильный слой). `ISettingsService` + `SettingsService` (кэш + concurrent-safe сохранение). `SettingsViewModel` (тема, язык, размер дискового кэша, очистка при выходе). `SettingsWindow.xaml` — модальный диалог OK/Cancel. `MainWindow: Tools → Settings...`. `InitializeAsync` загружает настройки и применяет тему из файла.
+- Ещё **16 тестов**: RecentsService (10), SettingsService (4), MainViewModel (3).
 
 [Unreleased]: https://github.com/flowa7021-source/Reader/compare/HEAD

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Foliant.Application.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace Foliant.Infrastructure.Settings;

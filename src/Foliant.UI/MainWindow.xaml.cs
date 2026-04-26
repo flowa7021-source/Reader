@@ -10,14 +10,17 @@ namespace Foliant.UI;
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
+    private readonly Func<SettingsWindow> _settingsWindowFactory;
     private readonly ILogger<MainWindow> _logger;
 
-    public MainWindow(MainViewModel vm, ILogger<MainWindow> logger)
+    public MainWindow(MainViewModel vm, Func<SettingsWindow> settingsWindowFactory, ILogger<MainWindow> logger)
     {
         ArgumentNullException.ThrowIfNull(vm);
+        ArgumentNullException.ThrowIfNull(settingsWindowFactory);
         ArgumentNullException.ThrowIfNull(logger);
 
         _vm = vm;
+        _settingsWindowFactory = settingsWindowFactory;
         _logger = logger;
 
         InitializeComponent();
@@ -75,6 +78,18 @@ public partial class MainWindow : Window
         {
             _logger.LogError(ex, "Unhandled error opening document '{Path}'.", path);
             MessageBox.Show(this, ex.Message, "Error opening document", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void OnSettingsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        var settingsWin = _settingsWindowFactory();
+        settingsWin.Owner = this;
+
+        if (settingsWin.ShowDialog() == true)
+        {
+            // Theme may have changed — apply immediately.
+            _vm.CurrentTheme = settingsWin.ViewModel.SelectedTheme;
         }
     }
 

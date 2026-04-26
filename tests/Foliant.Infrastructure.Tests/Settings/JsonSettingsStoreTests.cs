@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Foliant.Application.Settings;
 using Foliant.Infrastructure.Settings;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;

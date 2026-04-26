@@ -1,4 +1,5 @@
 using Foliant.Application.Services;
+using Foliant.Application.Settings;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Foliant.Engines.Pdf;
@@ -53,6 +54,7 @@ internal static class HostBuilder
         services.AddSingleton<IFileFingerprint, FileFingerprint>();
         services.AddSingleton<ISettingsStore>(sp =>
             new JsonSettingsStore(AppPaths.SettingsFile, sp.GetRequiredService<ILogger<JsonSettingsStore>>()));
+        services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IRecentsService, RecentsService>();
 
         // Cache (RAM + Disk). Жёсткий потолок RAM: min(15 % системной, 1 ГБ); по плану.
@@ -86,8 +88,11 @@ internal static class HostBuilder
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
 
         services.AddTransient<MainViewModel>();
+        services.AddTransient<SettingsViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
+        services.AddTransient<SettingsWindow>();
+        services.AddTransient<Func<SettingsWindow>>(sp => () => sp.GetRequiredService<SettingsWindow>());
     }
 }

@@ -1,4 +1,5 @@
 using Foliant.Application.Services;
+using Foliant.Application.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace Foliant.Infrastructure.Settings;

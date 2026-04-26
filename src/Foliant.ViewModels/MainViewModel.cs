@@ -13,6 +13,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly OpenDocumentUseCase _openUseCase;
     private readonly Func<IDocument, string, DocumentTabViewModel> _tabFactory;
     private readonly IRecentsService _recents;
+    private readonly ISettingsService _settings;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -35,21 +36,26 @@ public sealed partial class MainViewModel : ObservableObject
         OpenDocumentUseCase openUseCase,
         Func<IDocument, string, DocumentTabViewModel> tabFactory,
         IRecentsService recents,
+        ISettingsService settings,
         ILogger<MainViewModel> logger)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
         ArgumentNullException.ThrowIfNull(recents);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(logger);
 
         _openUseCase = openUseCase;
         _tabFactory = tabFactory;
         _recents = recents;
+        _settings = settings;
         _logger = logger;
     }
 
     public async Task InitializeAsync(CancellationToken ct)
     {
+        await _settings.LoadAsync(ct).ConfigureAwait(false);
+        CurrentTheme = _settings.Current.Theme == "Auto" ? "Light" : _settings.Current.Theme;
         await RefreshRecentsAsync(ct).ConfigureAwait(false);
     }
 

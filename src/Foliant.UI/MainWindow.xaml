@@ -47,6 +47,10 @@
         <MenuItem Header="E_xit"
                   Click="OnExitMenuItemClick" />
       </MenuItem>
+      <MenuItem Header="_Tools">
+        <MenuItem Header="_Settings..."
+                  Click="OnSettingsMenuItemClick" />
+      </MenuItem>
       <MenuItem Header="_View">
         <MenuItem Header="_Theme">
           <MenuItem Header="_Light"
