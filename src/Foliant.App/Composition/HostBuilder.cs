@@ -3,6 +3,7 @@ using Foliant.Application.Settings;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Foliant.Engines.Pdf;
+using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Caching;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
@@ -65,6 +66,10 @@ internal static class HostBuilder
         services.AddSingleton<IDiskCache>(sp =>
             new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
         services.AddSingleton<IOcrCache, OcrDiskCache>();
+
+        // Annotations — JSON sidecar (Phase 1). Phase 2: embed in PDF via PdfPig.
+        services.AddSingleton<IAnnotationStore>(sp =>
+            new JsonAnnotationStore(AppPaths.Annotations, sp.GetRequiredService<ILogger<JsonAnnotationStore>>()));
 
         // Cache janitor — фоновая эвикция.
         services.AddSingleton(new CacheJanitorOptions());
