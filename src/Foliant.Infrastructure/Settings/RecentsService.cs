@@ -108,7 +108,7 @@ public sealed class RecentsService : IRecentsService, IDisposable
         _gate.Dispose();
     }
 
-    private static IReadOnlyList<string> MoveToFrontAndCap(IReadOnlyList<string> existing, string path)
+    private static List<string> MoveToFrontAndCap(IReadOnlyList<string> existing, string path)
     {
         var list = new List<string>(Math.Min(existing.Count + 1, IRecentsService.MaxItems))
         {

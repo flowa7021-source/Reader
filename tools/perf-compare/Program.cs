@@ -57,7 +57,7 @@ internal static class Program
             switch (args[i])
             {
                 case "--baseline" when i + 1 < args.Length: baseline = args[++i]; break;
-                case "--current"  when i + 1 < args.Length: current  = args[++i]; break;
+                case "--current" when i + 1 < args.Length: current = args[++i]; break;
                 case "--threshold" when i + 1 < args.Length: threshold = double.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture); break;
                 default: return null;
             }

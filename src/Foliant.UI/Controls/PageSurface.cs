@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -6,6 +7,8 @@ using Foliant.Domain;
 
 namespace Foliant.UI.Controls;
 
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
+    Justification = "Instantiated via XAML <ui:PageSurface/> in MainWindow.xaml; analyzer does not see XAML refs.")]
 internal sealed class PageSurface : FrameworkElement
 {
     public static readonly DependencyProperty PageRenderProperty = DependencyProperty.Register(

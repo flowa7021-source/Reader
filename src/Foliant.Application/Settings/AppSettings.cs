@@ -24,7 +24,7 @@ public sealed record AppSettings
 public sealed record CacheSettings
 {
     public long DiskLimitBytes { get; init; } = 5L * 1024 * 1024 * 1024;  // 5 ГБ
-    public int  PerDocumentCapPercent { get; init; } = 30;
+    public int PerDocumentCapPercent { get; init; } = 30;
     public bool ClearOnExit { get; init; }
     public bool DpapiEncryptForProtectedDocs { get; init; }
 }
@@ -32,8 +32,8 @@ public sealed record CacheSettings
 public sealed record OcrSettings
 {
     public string DefaultLanguage { get; init; } = "rus+eng";
-    public int    MaxParallelPages { get; init; } = 4;
-    public bool   AutoOcrOpenedScans { get; init; }
+    public int MaxParallelPages { get; init; } = 4;
+    public bool AutoOcrOpenedScans { get; init; }
 }
 
 internal static class AppSettingsVersion

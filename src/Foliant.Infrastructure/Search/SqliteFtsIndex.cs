@@ -90,6 +90,10 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
         ORDER BY bm25(pages_fts) ASC LIMIT $lim
         """;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Security",
+        "CA2100:Review SQL queries for security vulnerabilities",
+        Justification = "CommandText is one of two compile-time SQL constants (SearchSql / SearchSqlFiltered). User input arrives via parameters $q/$lim/$fp.")]
     public Task<IReadOnlyList<SearchHit>> SearchAsync(SearchQuery query, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(query);

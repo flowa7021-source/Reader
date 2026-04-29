@@ -27,7 +27,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = _vm;
 
-        ThemeManager.Apply(_vm.CurrentTheme, Application.Current);
+        ThemeManager.Apply(_vm.CurrentTheme, System.Windows.Application.Current);
 
         _vm.PropertyChanged += OnViewModelPropertyChanged;
         Closed += OnWindowClosed;
@@ -43,7 +43,7 @@ public partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(MainViewModel.CurrentTheme))
         {
-            ThemeManager.Apply(_vm.CurrentTheme, Application.Current);
+            ThemeManager.Apply(_vm.CurrentTheme, System.Windows.Application.Current);
         }
     }
 
@@ -103,6 +103,6 @@ public partial class MainWindow : Window
 
     private void OnExitMenuItemClick(object sender, RoutedEventArgs e)
     {
-        Application.Current.Shutdown();
+        System.Windows.Application.Current.Shutdown();
     }
 }

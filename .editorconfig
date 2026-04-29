@@ -82,7 +82,7 @@ dotnet_diagnostic.CA1873.severity = none
 #   уже сериализует writes; real-async overhead больше выигрыша.
 dotnet_diagnostic.CA1849.severity = none
 
-[**/tests/**/*.cs]
+[tests/**/*.cs]
 # В тестах ослабляем некоторые правила
 dotnet_diagnostic.CA1707.severity = none      # underscores in test names — норма
 dotnet_diagnostic.CA1062.severity = none      # null checks — не нужны
@@ -91,3 +91,6 @@ dotnet_diagnostic.CA2000.severity = none      # owned objects тестируют
 dotnet_diagnostic.CA5394.severity = none      # Random для test data — не security
 dotnet_diagnostic.CA1822.severity = none      # benchmark-методы могут быть instance, BDN это поддерживает
 dotnet_diagnostic.CA1515.severity = none      # public test/benchmark types — допустимо
+dotnet_diagnostic.CA1861.severity = none      # tests часто инлайнят массивы в Returns(...) — норма
+dotnet_diagnostic.CA1859.severity = none      # тестовые helpers возвращают интерфейс ради читаемости
+dotnet_diagnostic.RCS1075.severity = none     # empty catch в test Dispose — best-effort cleanup
