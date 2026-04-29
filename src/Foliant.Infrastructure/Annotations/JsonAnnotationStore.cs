@@ -186,7 +186,7 @@ public sealed class JsonAnnotationStore : IAnnotationStore, IDisposable
         }
     }
 
-    private async Task SaveAsync(string fp, IReadOnlyList<Annotation> items, CancellationToken ct)
+    private async Task SaveAsync(string fp, List<Annotation> items, CancellationToken ct)
     {
         var path = SidecarPath(fp);
         var tmp = path + ".tmp";
