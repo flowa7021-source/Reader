@@ -39,7 +39,7 @@ public sealed class RecentsService : IRecentsService, IDisposable
         try
         {
             AppSettings settings = await _store.LoadAsync(ct).ConfigureAwait(false);
-            IReadOnlyList<string> updated = MoveToFrontAndCap(settings.RecentFiles, canonical);
+            List<string> updated = MoveToFrontAndCap(settings.RecentFiles, canonical);
 
             if (SequenceEquals(updated, settings.RecentFiles))
             {
