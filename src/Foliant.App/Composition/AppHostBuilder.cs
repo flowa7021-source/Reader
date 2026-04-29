@@ -67,7 +67,10 @@ internal static class AppHostBuilder
 
         // Cache (RAM + Disk). Жёсткий потолок RAM: min(15 % системной, 1 ГБ); по плану.
         var ramLimit = Math.Min(GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 100 * 15, 1L * 1024 * 1024 * 1024);
-        services.AddSingleton(new MemoryPageCache(capacityBytes: Math.Max(ramLimit, 128L * 1024 * 1024)));
+        var memoryCacheCapacity = Math.Max(ramLimit, 128L * 1024 * 1024);
+        // Factory-form регистрация — DI владеет lifecycle и сам диспозит на shutdown.
+        // Прямой AddSingleton(new MemoryPageCache(...)) НЕ диспозится, что ловит CA2000.
+        services.AddSingleton(_ => new MemoryPageCache(capacityBytes: memoryCacheCapacity));
         services.AddSingleton<IDiskCache>(sp =>
             new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
         services.AddSingleton<IOcrCache, OcrDiskCache>();
