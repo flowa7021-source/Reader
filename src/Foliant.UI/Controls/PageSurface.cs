@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -36,11 +37,18 @@ internal sealed class PageSurface : FrameworkElement
         }
 
         var bmp = new WriteableBitmap(render.WidthPx, render.HeightPx, 96, 96, PixelFormats.Bgra32, null);
-        bmp.WritePixels(
-            new Int32Rect(0, 0, render.WidthPx, render.HeightPx),
-            render.Bgra32.ToArray(),
-            render.Stride,
-            0);
+        var rect = new Int32Rect(0, 0, render.WidthPx, render.HeightPx);
+
+        // Zero-allocation путь: если ReadOnlyMemory<byte> — обёртка над byte[],
+        // достаём массив без копии. Иначе fallback на ToArray().
+        if (MemoryMarshal.TryGetArray(render.Bgra32, out var segment) && segment.Array is not null)
+        {
+            bmp.WritePixels(rect, segment.Array, render.Stride, segment.Offset);
+        }
+        else
+        {
+            bmp.WritePixels(rect, render.Bgra32.ToArray(), render.Stride, 0);
+        }
 
         _bitmap = bmp;
         InvalidateVisual();

@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Foliant.Application.Services;
 
 namespace Foliant.Infrastructure.Storage;
 

@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Windows;
 using Foliant.App.Composition;
+using Foliant.Application.Services;
 using Foliant.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,6 +25,18 @@ internal static class Program
 
         try
         {
+            // Pre-load settings + apply culture before any window is created — иначе на первом
+            // рендере XAML будет видна вспышка default-локали (en) до того, как InitializeAsync
+            // отработает в Loaded-обработчике.
+            var settings = host.Services.GetRequiredService<ISettingsService>();
+            settings.LoadAsync(default).GetAwaiter().GetResult();
+            var localization = host.Services.GetRequiredService<ILocalizationService>();
+            localization.SetCulture(settings.Current.Language);
+
+            // Стартуем hosted-сервисы (CacheJanitor, DocumentIndexingService) — без этого
+            // фоновая индексация FTS5 и эвикция кэша не работают.
+            host.Start();
+
             if (args.Contains("--smoke"))
             {
                 Log.Information("Smoke run requested — exit immediately after bootstrap.");

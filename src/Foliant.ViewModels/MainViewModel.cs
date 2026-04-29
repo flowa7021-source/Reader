@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Foliant.Application.Services;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,10 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private readonly OpenDocumentUseCase _openUseCase;
     private readonly Func<IDocument, string, DocumentTabViewModel> _tabFactory;
+    private readonly IRecentsService _recents;
+    private readonly ISettingsService _settings;
+    private readonly ILocalizationService _localization;
+    private readonly IDocumentIndexer _indexer;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -27,18 +32,40 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
 
+    public ObservableCollection<string> RecentFiles { get; } = [];
+
     public MainViewModel(
         OpenDocumentUseCase openUseCase,
         Func<IDocument, string, DocumentTabViewModel> tabFactory,
+        IRecentsService recents,
+        ISettingsService settings,
+        ILocalizationService localization,
+        IDocumentIndexer indexer,
         ILogger<MainViewModel> logger)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
+        ArgumentNullException.ThrowIfNull(recents);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(localization);
+        ArgumentNullException.ThrowIfNull(indexer);
         ArgumentNullException.ThrowIfNull(logger);
 
         _openUseCase = openUseCase;
         _tabFactory = tabFactory;
+        _recents = recents;
+        _settings = settings;
+        _localization = localization;
+        _indexer = indexer;
         _logger = logger;
+    }
+
+    public async Task InitializeAsync(CancellationToken ct)
+    {
+        await _settings.LoadAsync(ct);
+        CurrentTheme = _settings.Current.Theme == "Auto" ? "Light" : _settings.Current.Theme;
+        _localization.SetCulture(_settings.Current.Language);
+        await RefreshRecentsAsync(ct);
     }
 
     public async Task OpenDocumentFromPathAsync(string path, CancellationToken ct)
@@ -47,10 +74,15 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            IDocument document = await _openUseCase.ExecuteAsync(path, ct).ConfigureAwait(false);
+            IDocument document = await _openUseCase.ExecuteAsync(path, ct);
             DocumentTabViewModel tab = _tabFactory(document, path);
             Tabs.Add(tab);
             SelectedTab = tab;
+
+            _indexer.Enqueue(document, path);
+            await tab.LoadAnnotationsAsync(ct);
+            await _recents.AddAsync(path, ct);
+            await RefreshRecentsAsync(ct);
         }
         catch (InvalidOperationException ex)
         {
@@ -61,6 +93,34 @@ public sealed partial class MainViewModel : ObservableObject
         {
             StatusMessage = ex.Message;
             _logger.LogWarning(ex, "Document not found: '{Path}'.", path);
+
+            await _recents.RemoveAsync(path, ct);
+            await RefreshRecentsAsync(ct);
+        }
+    }
+
+    [RelayCommand]
+    private Task OpenRecentAsync(string? path)
+    {
+        return string.IsNullOrWhiteSpace(path)
+            ? Task.CompletedTask
+            : OpenDocumentFromPathAsync(path, CancellationToken.None);
+    }
+
+    [RelayCommand]
+    private async Task ClearRecentsAsync()
+    {
+        await _recents.ClearAsync(CancellationToken.None);
+        await RefreshRecentsAsync(CancellationToken.None);
+    }
+
+    private async Task RefreshRecentsAsync(CancellationToken ct)
+    {
+        IReadOnlyList<string> items = await _recents.GetAsync(ct);
+        RecentFiles.Clear();
+        foreach (string p in items)
+        {
+            RecentFiles.Add(p);
         }
     }
 
@@ -73,7 +133,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         Tabs.Remove(tab);
-        await tab.DisposeAsync().ConfigureAwait(false);
+        await tab.DisposeAsync();
     }
 
     [RelayCommand]

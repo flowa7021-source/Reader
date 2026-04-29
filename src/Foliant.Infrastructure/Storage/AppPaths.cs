@@ -23,6 +23,8 @@ public static class AppPaths
 
     public static string CrashReports => EnsureExists(Path.Combine(LocalAppData, "CrashReports"));
 
+    public static string Annotations => EnsureExists(Path.Combine(LocalAppData, "Annotations"));
+
     public static string SettingsFile => Path.Combine(RoamingAppData, "settings.json");
 
     public static string LicenseFile => Path.Combine(RoamingAppData, "license.key");

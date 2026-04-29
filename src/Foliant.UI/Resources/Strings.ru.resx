@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MenuFile" xml:space="preserve">
+    <value>_Файл</value>
+  </data>
+  <data name="MenuFileOpen" xml:space="preserve">
+    <value>_Открыть...</value>
+  </data>
+  <data name="MenuFileOpenRecent" xml:space="preserve">
+    <value>_Недавние</value>
+  </data>
+  <data name="MenuFileClearRecent" xml:space="preserve">
+    <value>_Очистить список недавних</value>
+  </data>
+  <data name="MenuFileExit" xml:space="preserve">
+    <value>В_ыход</value>
+  </data>
+  <data name="MenuTools" xml:space="preserve">
+    <value>_Инструменты</value>
+  </data>
+  <data name="MenuToolsSettings" xml:space="preserve">
+    <value>_Настройки...</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>_Вид</value>
+  </data>
+  <data name="MenuViewTheme" xml:space="preserve">
+    <value>_Тема</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>_Светлая</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>_Тёмная</value>
+  </data>
+  <data name="ThemeHighContrast" xml:space="preserve">
+    <value>_Высокая контрастность</value>
+  </data>
+  <data name="OpenDocumentDialogTitle" xml:space="preserve">
+    <value>Открыть документ</value>
+  </data>
+  <data name="OpenDocumentDialogFilter" xml:space="preserve">
+    <value>PDF-файлы (*.pdf)|*.pdf|Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="ErrorDialogTitle" xml:space="preserve">
+    <value>Ошибка при открытии документа</value>
+  </data>
+  <data name="SettingsTitle" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="SettingsTheme" xml:space="preserve">
+    <value>Тема:</value>
+  </data>
+  <data name="SettingsLanguage" xml:space="preserve">
+    <value>Язык:</value>
+  </data>
+  <data name="SettingsDiskCacheLimit" xml:space="preserve">
+    <value>Лимит дискового кэша (ГБ):</value>
+  </data>
+  <data name="SettingsClearCacheOnExit" xml:space="preserve">
+    <value>Очищать кэш при выходе:</value>
+  </data>
+  <data name="DialogOk" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="DialogCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="SearchPlaceholder" xml:space="preserve">
+    <value>Поиск в документе...</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>Найти</value>
+  </data>
+  <data name="SearchNoResults" xml:space="preserve">
+    <value>Ничего не найдено.</value>
+  </data>
+  <data name="SearchInProgress" xml:space="preserve">
+    <value>Поиск...</value>
+  </data>
+</root>

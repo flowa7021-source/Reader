@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Foliant.Application.Services;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +11,11 @@ namespace Foliant.ViewModels;
 public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
 {
     private readonly IDocument _document;
+    private readonly string _filePath;
+    private readonly ISearchService _searchService;
+    private readonly IAnnotationService _annotationService;
     private readonly ILogger<DocumentTabViewModel> _logger;
+    private readonly List<Annotation> _allAnnotations = [];
 
     [ObservableProperty]
     private string _title = string.Empty;
@@ -34,13 +41,39 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [ObservableProperty]
     private RenderTheme _theme = RenderTheme.Original;
 
-    public DocumentTabViewModel(IDocument document, string filePath, ILogger<DocumentTabViewModel> logger)
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private bool _isSearchVisible;
+
+    [ObservableProperty]
+    private bool _isSearching;
+
+    [ObservableProperty]
+    private SearchHit? _selectedSearchHit;
+
+    public ObservableCollection<SearchHit> SearchResults { get; } = [];
+
+    public ObservableCollection<Annotation> CurrentPageAnnotations { get; } = [];
+
+    public DocumentTabViewModel(
+        IDocument document,
+        string filePath,
+        ISearchService searchService,
+        IAnnotationService annotationService,
+        ILogger<DocumentTabViewModel> logger)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
+        ArgumentNullException.ThrowIfNull(searchService);
+        ArgumentNullException.ThrowIfNull(annotationService);
         ArgumentNullException.ThrowIfNull(logger);
 
         _document = document;
+        _filePath = filePath;
+        _searchService = searchService;
+        _annotationService = annotationService;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
@@ -52,6 +85,99 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         if (clamped != value)
         {
             CurrentPageIndex = clamped;
+            return;
+        }
+        RefreshCurrentPageAnnotations();
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Annotation load failure must not crash the tab.")]
+    public async Task LoadAnnotationsAsync(CancellationToken ct)
+    {
+        try
+        {
+            var loaded = await _annotationService.ListAsync(_filePath, ct);
+            _allAnnotations.Clear();
+            _allAnnotations.AddRange(loaded);
+            RefreshCurrentPageAnnotations();
+        }
+        catch (OperationCanceledException)
+        {
+            // shutdown — игнорируем
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load annotations for '{Path}'.", _filePath);
+        }
+    }
+
+    public async Task AddHighlightAsync(int pageIndex, AnnotationRect bounds, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+
+        var hl = Annotation.Highlight(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow);
+        await _annotationService.AddAsync(_filePath, hl, ct);
+        _allAnnotations.Add(hl);
+        if (pageIndex == CurrentPageIndex)
+        {
+            CurrentPageAnnotations.Add(hl);
+        }
+    }
+
+    public async Task AddNoteAsync(int pageIndex, AnnotationRect bounds, string text, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(colorHex);
+
+        var note = Annotation.StickyNote(pageIndex, bounds, text, colorHex, DateTimeOffset.UtcNow);
+        await _annotationService.AddAsync(_filePath, note, ct);
+        _allAnnotations.Add(note);
+        if (pageIndex == CurrentPageIndex)
+        {
+            CurrentPageAnnotations.Add(note);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveAnnotationAsync(Annotation? annotation)
+    {
+        if (annotation is null)
+        {
+            return;
+        }
+
+        var removed = await _annotationService.RemoveAsync(_filePath, annotation.Id, CancellationToken.None);
+        if (!removed)
+        {
+            return;
+        }
+
+        _allAnnotations.RemoveAll(a => a.Id == annotation.Id);
+        for (int i = CurrentPageAnnotations.Count - 1; i >= 0; i--)
+        {
+            if (CurrentPageAnnotations[i].Id == annotation.Id)
+            {
+                CurrentPageAnnotations.RemoveAt(i);
+            }
+        }
+    }
+
+    private void RefreshCurrentPageAnnotations()
+    {
+        CurrentPageAnnotations.Clear();
+        foreach (var a in _allAnnotations.Where(x => x.PageIndex == CurrentPageIndex))
+        {
+            CurrentPageAnnotations.Add(a);
+        }
+    }
+
+    partial void OnSelectedSearchHitChanged(SearchHit? value)
+    {
+        if (value is not null && value.PageIndex != CurrentPageIndex)
+        {
+            CurrentPageIndex = value.PageIndex;
+            _ = RenderCurrentPageAsync(CancellationToken.None);
         }
     }
 
@@ -59,7 +185,52 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     public async Task RenderCurrentPageAsync(CancellationToken ct)
     {
-        await RenderCurrentPageCoreAsync(ct).ConfigureAwait(false);
+        await RenderCurrentPageCoreAsync(ct);
+    }
+
+    [RelayCommand]
+    private void ToggleSearch()
+    {
+        IsSearchVisible = !IsSearchVisible;
+    }
+
+    [RelayCommand]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Search error must not crash the tab.")]
+    private async Task RunSearchAsync()
+    {
+        SearchResults.Clear();
+        SelectedSearchHit = null;
+
+        if (string.IsNullOrWhiteSpace(SearchText))
+        {
+            return;
+        }
+
+        IsSearching = true;
+        try
+        {
+            var query = new SearchQuery(SearchText.Trim());
+            IReadOnlyList<SearchHit> hits = await _searchService
+                .SearchInDocumentAsync(_document, _filePath, query, CancellationToken.None);
+
+            foreach (SearchHit hit in hits)
+            {
+                SearchResults.Add(hit);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation is not an error.
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            _logger.LogWarning(ex, "Search failed for '{Query}' in '{Title}'.", SearchText, Title);
+        }
+        finally
+        {
+            IsSearching = false;
+        }
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Render failure must not crash the tab.")]
@@ -70,7 +241,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
         try
         {
-            IPageRender result = await _document.RenderPageAsync(CurrentPageIndex, BuildRenderOptions(), ct).ConfigureAwait(false);
+            IPageRender result = await _document.RenderPageAsync(CurrentPageIndex, BuildRenderOptions(), ct);
             IPageRender? old = CurrentRender;
             CurrentRender = result;
             old?.Dispose();
@@ -94,6 +265,6 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     {
         CurrentRender?.Dispose();
         CurrentRender = null;
-        await _document.DisposeAsync().ConfigureAwait(false);
+        await _document.DisposeAsync();
     }
 }
