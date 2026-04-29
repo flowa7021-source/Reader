@@ -21,6 +21,34 @@
     <KeyBinding Key="F"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleSearchCommand}" />
+    <KeyBinding Key="PageDown"
+                Command="{Binding SelectedTab.NextPageCommand}" />
+    <KeyBinding Key="PageUp"
+                Command="{Binding SelectedTab.PreviousPageCommand}" />
+    <KeyBinding Key="Home"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.FirstPageCommand}" />
+    <KeyBinding Key="End"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.LastPageCommand}" />
+    <KeyBinding Key="OemPlus"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ZoomInCommand}" />
+    <KeyBinding Key="Add"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ZoomInCommand}" />
+    <KeyBinding Key="OemMinus"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ZoomOutCommand}" />
+    <KeyBinding Key="Subtract"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ZoomOutCommand}" />
+    <KeyBinding Key="D0"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ResetZoomCommand}" />
+    <KeyBinding Key="NumPad0"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ResetZoomCommand}" />
   </Window.InputBindings>
 
   <Grid>

@@ -10,6 +10,15 @@ namespace Foliant.ViewModels;
 
 public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
 {
+    /// <summary>Минимальный масштаб (10 %).</summary>
+    public const double MinZoom = 0.10;
+
+    /// <summary>Максимальный масштаб (800 %).</summary>
+    public const double MaxZoom = 8.00;
+
+    /// <summary>Шаг для команд ZoomIn/ZoomOut (25 п.п. — соответствует ZoomBucket-сетке в Domain).</summary>
+    public const double ZoomStep = 0.25;
+
     private readonly IDocument _document;
     private readonly string _filePath;
     private readonly ISearchService _searchService;
@@ -88,7 +97,65 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
             return;
         }
         RefreshCurrentPageAnnotations();
+        _ = RenderCurrentPageAsync(CancellationToken.None);
     }
+
+    partial void OnZoomChanged(double value)
+    {
+        double clamped = Math.Clamp(value, MinZoom, MaxZoom);
+        if (Math.Abs(clamped - value) > 1e-9)
+        {
+            Zoom = clamped;
+            return;
+        }
+        _ = RenderCurrentPageAsync(CancellationToken.None);
+    }
+
+    [RelayCommand]
+    private void NextPage()
+    {
+        if (CurrentPageIndex < PageCount - 1)
+        {
+            CurrentPageIndex++;
+        }
+    }
+
+    [RelayCommand]
+    private void PreviousPage()
+    {
+        if (CurrentPageIndex > 0)
+        {
+            CurrentPageIndex--;
+        }
+    }
+
+    [RelayCommand]
+    private void FirstPage() => CurrentPageIndex = 0;
+
+    [RelayCommand]
+    private void LastPage() => CurrentPageIndex = Math.Max(0, PageCount - 1);
+
+    /// <summary>Принимает 1-based номер страницы (как у пользователя в UI), переводит в 0-based индекс.</summary>
+    [RelayCommand]
+    private void GoToPage(int pageNumber)
+    {
+        CurrentPageIndex = Math.Clamp(pageNumber - 1, 0, Math.Max(0, PageCount - 1));
+    }
+
+    [RelayCommand]
+    private void ZoomIn()
+    {
+        Zoom = Math.Min(MaxZoom, Math.Round(Zoom + ZoomStep, 2));
+    }
+
+    [RelayCommand]
+    private void ZoomOut()
+    {
+        Zoom = Math.Max(MinZoom, Math.Round(Zoom - ZoomStep, 2));
+    }
+
+    [RelayCommand]
+    private void ResetZoom() => Zoom = 1.0;
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Annotation load failure must not crash the tab.")]
     public async Task LoadAnnotationsAsync(CancellationToken ct)
@@ -176,8 +243,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     {
         if (value is not null && value.PageIndex != CurrentPageIndex)
         {
+            // OnCurrentPageIndexChanged подхватит и refilter аннотаций, и render.
             CurrentPageIndex = value.PageIndex;
-            _ = RenderCurrentPageAsync(CancellationToken.None);
         }
     }
 
