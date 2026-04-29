@@ -1,7 +1,7 @@
 using FluentAssertions;
+using Foliant.Application.Services;
 using Foliant.Domain;
 using Foliant.Infrastructure.Search;
-using Foliant.Infrastructure.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;

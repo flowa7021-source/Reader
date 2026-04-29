@@ -70,6 +70,7 @@ internal static class HostBuilder
         // Annotations — JSON sidecar (Phase 1). Phase 2: embed in PDF via PdfPig.
         services.AddSingleton<IAnnotationStore>(sp =>
             new JsonAnnotationStore(AppPaths.Annotations, sp.GetRequiredService<ILogger<JsonAnnotationStore>>()));
+        services.AddSingleton<IAnnotationService, AnnotationService>();
 
         // Cache janitor — фоновая эвикция.
         services.AddSingleton(new CacheJanitorOptions());
