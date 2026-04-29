@@ -33,6 +33,10 @@ internal static class Program
             var localization = host.Services.GetRequiredService<ILocalizationService>();
             localization.SetCulture(settings.Current.Language);
 
+            // Стартуем hosted-сервисы (CacheJanitor, DocumentIndexingService) — без этого
+            // фоновая индексация FTS5 и эвикция кэша не работают.
+            host.Start();
+
             if (args.Contains("--smoke"))
             {
                 Log.Information("Smoke run requested — exit immediately after bootstrap.");

@@ -62,7 +62,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             },
         };
 
-        await _settingsService.SaveAsync(updated, CancellationToken.None).ConfigureAwait(false);
+        await _settingsService.SaveAsync(updated, CancellationToken.None);
 
         // Hot-switch культуры — все XAML-биндинги {Path=[Key]} обновятся через "Item[]" PropertyChanged.
         if (!string.Equals(_localization.CurrentCulture, SelectedLanguage, StringComparison.OrdinalIgnoreCase))

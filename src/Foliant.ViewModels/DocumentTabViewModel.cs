@@ -95,7 +95,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     {
         try
         {
-            var loaded = await _annotationService.ListAsync(_filePath, ct).ConfigureAwait(false);
+            var loaded = await _annotationService.ListAsync(_filePath, ct);
             _allAnnotations.Clear();
             _allAnnotations.AddRange(loaded);
             RefreshCurrentPageAnnotations();
@@ -116,7 +116,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         ArgumentNullException.ThrowIfNull(colorHex);
 
         var hl = Annotation.Highlight(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow);
-        await _annotationService.AddAsync(_filePath, hl, ct).ConfigureAwait(false);
+        await _annotationService.AddAsync(_filePath, hl, ct);
         _allAnnotations.Add(hl);
         if (pageIndex == CurrentPageIndex)
         {
@@ -131,7 +131,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         ArgumentNullException.ThrowIfNull(colorHex);
 
         var note = Annotation.StickyNote(pageIndex, bounds, text, colorHex, DateTimeOffset.UtcNow);
-        await _annotationService.AddAsync(_filePath, note, ct).ConfigureAwait(false);
+        await _annotationService.AddAsync(_filePath, note, ct);
         _allAnnotations.Add(note);
         if (pageIndex == CurrentPageIndex)
         {
@@ -147,9 +147,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
             return;
         }
 
-        var removed = await _annotationService
-            .RemoveAsync(_filePath, annotation.Id, CancellationToken.None)
-            .ConfigureAwait(false);
+        var removed = await _annotationService.RemoveAsync(_filePath, annotation.Id, CancellationToken.None);
         if (!removed)
         {
             return;
@@ -187,7 +185,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     public async Task RenderCurrentPageAsync(CancellationToken ct)
     {
-        await RenderCurrentPageCoreAsync(ct).ConfigureAwait(false);
+        await RenderCurrentPageCoreAsync(ct);
     }
 
     [RelayCommand]
@@ -213,8 +211,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         {
             var query = new SearchQuery(SearchText.Trim());
             IReadOnlyList<SearchHit> hits = await _searchService
-                .SearchInDocumentAsync(_document, _filePath, query, CancellationToken.None)
-                .ConfigureAwait(false);
+                .SearchInDocumentAsync(_document, _filePath, query, CancellationToken.None);
 
             foreach (SearchHit hit in hits)
             {
@@ -244,7 +241,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
         try
         {
-            IPageRender result = await _document.RenderPageAsync(CurrentPageIndex, BuildRenderOptions(), ct).ConfigureAwait(false);
+            IPageRender result = await _document.RenderPageAsync(CurrentPageIndex, BuildRenderOptions(), ct);
             IPageRender? old = CurrentRender;
             CurrentRender = result;
             old?.Dispose();
@@ -268,6 +265,6 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     {
         CurrentRender?.Dispose();
         CurrentRender = null;
-        await _document.DisposeAsync().ConfigureAwait(false);
+        await _document.DisposeAsync();
     }
 }

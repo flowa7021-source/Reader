@@ -62,10 +62,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task InitializeAsync(CancellationToken ct)
     {
-        await _settings.LoadAsync(ct).ConfigureAwait(false);
+        await _settings.LoadAsync(ct);
         CurrentTheme = _settings.Current.Theme == "Auto" ? "Light" : _settings.Current.Theme;
         _localization.SetCulture(_settings.Current.Language);
-        await RefreshRecentsAsync(ct).ConfigureAwait(false);
+        await RefreshRecentsAsync(ct);
     }
 
     public async Task OpenDocumentFromPathAsync(string path, CancellationToken ct)
@@ -74,15 +74,15 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            IDocument document = await _openUseCase.ExecuteAsync(path, ct).ConfigureAwait(false);
+            IDocument document = await _openUseCase.ExecuteAsync(path, ct);
             DocumentTabViewModel tab = _tabFactory(document, path);
             Tabs.Add(tab);
             SelectedTab = tab;
 
             _indexer.Enqueue(document, path);
-            await tab.LoadAnnotationsAsync(ct).ConfigureAwait(false);
-            await _recents.AddAsync(path, ct).ConfigureAwait(false);
-            await RefreshRecentsAsync(ct).ConfigureAwait(false);
+            await tab.LoadAnnotationsAsync(ct);
+            await _recents.AddAsync(path, ct);
+            await RefreshRecentsAsync(ct);
         }
         catch (InvalidOperationException ex)
         {
@@ -94,8 +94,8 @@ public sealed partial class MainViewModel : ObservableObject
             StatusMessage = ex.Message;
             _logger.LogWarning(ex, "Document not found: '{Path}'.", path);
 
-            await _recents.RemoveAsync(path, ct).ConfigureAwait(false);
-            await RefreshRecentsAsync(ct).ConfigureAwait(false);
+            await _recents.RemoveAsync(path, ct);
+            await RefreshRecentsAsync(ct);
         }
     }
 
@@ -110,13 +110,13 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task ClearRecentsAsync()
     {
-        await _recents.ClearAsync(CancellationToken.None).ConfigureAwait(false);
-        await RefreshRecentsAsync(CancellationToken.None).ConfigureAwait(false);
+        await _recents.ClearAsync(CancellationToken.None);
+        await RefreshRecentsAsync(CancellationToken.None);
     }
 
     private async Task RefreshRecentsAsync(CancellationToken ct)
     {
-        IReadOnlyList<string> items = await _recents.GetAsync(ct).ConfigureAwait(false);
+        IReadOnlyList<string> items = await _recents.GetAsync(ct);
         RecentFiles.Clear();
         foreach (string p in items)
         {
@@ -133,7 +133,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         Tabs.Remove(tab);
-        await tab.DisposeAsync().ConfigureAwait(false);
+        await tab.DisposeAsync();
     }
 
     [RelayCommand]
