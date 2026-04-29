@@ -15,20 +15,6 @@ namespace Foliant.Infrastructure.Annotations;
 /// </summary>
 public sealed class JsonAnnotationStore : IAnnotationStore, IDisposable
 {
-    private static readonly JsonSerializerOptions ReadOptions = new()
-    {
-        TypeInfoResolver = AnnotationsJsonContext.Default,
-        AllowTrailingCommas = true,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-    };
-
-    private static readonly JsonSerializerOptions WriteOptions = new()
-    {
-        TypeInfoResolver = AnnotationsJsonContext.Default,
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
     private readonly string _rootDir;
     private readonly ILogger<JsonAnnotationStore> _log;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _gates = new(StringComparer.Ordinal);
@@ -247,9 +233,12 @@ internal sealed record RectDto(double X, double Y, double Width, double Height);
 
 internal sealed record PointDto(double X, double Y);
 
+[JsonSourceGenerationOptions(
+    WriteIndented = true,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    UseStringEnumConverter = true)]
 [JsonSerializable(typeof(AnnotationsFile))]
 [JsonSerializable(typeof(AnnotationDto))]
 [JsonSerializable(typeof(RectDto))]
 [JsonSerializable(typeof(PointDto))]
-[JsonSerializable(typeof(AnnotationKind))]
 internal sealed partial class AnnotationsJsonContext : JsonSerializerContext;

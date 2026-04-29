@@ -58,6 +58,7 @@ public sealed class DocumentIndexingService : BackgroundService, IDocumentIndexe
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             var fp = await _fingerprint.ComputeAsync(request.Path, ct).ConfigureAwait(false);
             await _fts.IndexDocumentAsync(fp, request.Path, StreamPages(request.Document, ct), ct)
                 .ConfigureAwait(false);
