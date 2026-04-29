@@ -19,7 +19,7 @@ internal static class Program
     public static int Main(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);
-        using var host = HostBuilder.Build(args);
+        using var host = AppHostBuilder.Build(args);
 
         Log.Information("App started (version {Version})", typeof(Program).Assembly.GetName().Version);
 

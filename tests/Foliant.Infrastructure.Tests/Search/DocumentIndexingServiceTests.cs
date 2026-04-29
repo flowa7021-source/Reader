@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Foliant.Infrastructure.Tests.Search;
 
-public sealed class DocumentIndexingServiceTests
+public sealed class DocumentIndexingServiceTests : IDisposable
 {
     private const string FakeFingerprint = "abc123";
     private const string FakePath = "/docs/test.pdf";
@@ -31,6 +31,8 @@ public sealed class DocumentIndexingServiceTests
 
         _sut = new DocumentIndexingService(_fts, _fp, NullLogger<DocumentIndexingService>.Instance);
     }
+
+    public void Dispose() => _sut.Dispose();
 
     [Fact]
     public async Task ProcessRequest_ComputesFingerprintAndIndexes()
