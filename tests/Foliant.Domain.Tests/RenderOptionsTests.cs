@@ -9,9 +9,9 @@ public sealed class RenderOptionsTests
     [InlineData(1.00, 100)]
     [InlineData(1.10, 100)]   // 110 → bucket 100 (round-down при 110)
     [InlineData(1.13, 125)]   // 113 → 125
-    [InlineData(0.50,  50)]
+    [InlineData(0.50, 50)]
     [InlineData(2.00, 200)]
-    [InlineData(0.10,   0)]   // 10 → ближайшие 25 это 0
+    [InlineData(0.10, 0)]   // 10 → ближайшие 25 это 0
     public void ZoomBucket_RoundsToNearest25Percent(double zoom, int expected)
     {
         var opts = RenderOptions.Default.WithZoom(zoom);

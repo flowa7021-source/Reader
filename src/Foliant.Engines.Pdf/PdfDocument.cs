@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Foliant.Domain;
 using PDFiumCore;
@@ -30,7 +32,7 @@ internal sealed class PdfDocument : IDocument
     {
         lock (_gate)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             var page = fpdfview.FPDF_LoadPage(_doc, pageIndex);
             try
             {
@@ -60,8 +62,8 @@ internal sealed class PdfDocument : IDocument
 
     public ISignatureController? GetSignatures() => null;
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
-        Justification = "DisposeAsync must not throw; close failure is logged and swallowed.")]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "DisposeAsync must not throw; close failure is logged via Debug trace and swallowed.")]
     public ValueTask DisposeAsync()
     {
         lock (_gate)
@@ -77,28 +79,22 @@ internal sealed class PdfDocument : IDocument
             {
                 fpdfview.FPDF_CloseDocument(_doc);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Swallow — DisposeAsync must not throw.
+                // Native FPDF_CloseDocument failure during DisposeAsync — nothing actionable,
+                // but trace so the failure is not invisible during debugging.
+                Debug.WriteLine($"PdfDocument.DisposeAsync: FPDF_CloseDocument threw: {ex}");
             }
         }
 
         return ValueTask.CompletedTask;
     }
 
-    private void ThrowIfDisposed()
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(PdfDocument));
-        }
-    }
-
-    private IPageRender RenderPageCore(int pageIndex, RenderOptions opts)
+    private PdfPageRender RenderPageCore(int pageIndex, RenderOptions opts)
     {
         lock (_gate)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             var page = fpdfview.FPDF_LoadPage(_doc, pageIndex);
             try
@@ -109,16 +105,18 @@ internal sealed class PdfDocument : IDocument
                 int wPx = ComputePixels(wPt, opts.Zoom, opts.MaxWidthPx);
                 int hPx = ComputePixels(hPt, opts.Zoom, opts.MaxHeightPx);
 
-                var bmp = fpdfview.FPDFBitmap_CreateEx(wPx, hPx, 4, IntPtr.Zero, 0);
+                // PDFiumCore 146.x dropped the underscore between `FPDFBitmap` and the verb
+                // (FPDFBitmap_CreateEx → FPDFBitmapCreateEx); FPDF_DWORD args are now `ulong`.
+                var bmp = fpdfview.FPDFBitmapCreateEx(wPx, hPx, 4, IntPtr.Zero, 0);
                 try
                 {
-                    fpdfview.FPDFBitmap_FillRect(bmp, 0, 0, wPx, hPx, 0xFFFFFFFFu);
+                    fpdfview.FPDFBitmapFillRect(bmp, 0, 0, wPx, hPx, 0xFFFFFFFFUL);
 
                     int flags = opts.RenderAnnotations ? 1 : 0; // FPDF_ANNOT = 1
                     fpdfview.FPDF_RenderPageBitmap(bmp, page, 0, 0, wPx, hPx, 0, flags);
 
-                    IntPtr ptr = fpdfview.FPDFBitmap_GetBuffer(bmp);
-                    int stride = fpdfview.FPDFBitmap_GetStride(bmp);
+                    IntPtr ptr = fpdfview.FPDFBitmapGetBuffer(bmp);
+                    int stride = fpdfview.FPDFBitmapGetStride(bmp);
 
                     byte[] bytes = new byte[stride * hPx];
                     Marshal.Copy(ptr, bytes, 0, bytes.Length);
@@ -134,7 +132,7 @@ internal sealed class PdfDocument : IDocument
                 }
                 finally
                 {
-                    fpdfview.FPDFBitmap_Destroy(bmp);
+                    fpdfview.FPDFBitmapDestroy(bmp);
                 }
             }
             finally
@@ -159,27 +157,23 @@ internal sealed class PdfDocument : IDocument
                 float wPt = fpdfview.FPDF_GetPageWidthF(page);
                 float hPt = fpdfview.FPDF_GetPageHeightF(page);
 
-                var tp = fpdf_text.FPDFText_LoadPage(page);
+                // PDFiumCore 146.x: `FPDFText_LoadPage` → `FPDFTextLoadPage`, etc.
+                var tp = fpdf_text.FPDFTextLoadPage(page);
                 try
                 {
-                    int count = fpdf_text.FPDFText_CountChars(tp);
+                    int count = fpdf_text.FPDFTextCountChars(tp);
                     if (count <= 0)
                     {
                         return TextLayer.Empty(pageIndex);
                     }
 
-                    // PDFium uses UTF-16LE; FPDFText_GetText writes to an unmanaged buffer.
-                    IntPtr buf = Marshal.AllocHGlobal((count + 1) * 2);
-                    string text;
-                    try
-                    {
-                        fpdf_text.FPDFText_GetText(tp, 0, count, buf);
-                        text = Marshal.PtrToStringUni(buf, count) ?? string.Empty;
-                    }
-                    finally
-                    {
-                        Marshal.FreeHGlobal(buf);
-                    }
+                    // PDFium uses UTF-16LE; the new binding takes a `ref ushort` and pins it
+                    // for the duration of the call, so we use a managed ushort[] and
+                    // re-interpret it as Span<char> for the string ctor (zero-copy).
+                    ushort[] buffer = new ushort[count + 1];
+                    fpdf_text.FPDFTextGetText(tp, 0, count, ref buffer[0]);
+                    ReadOnlySpan<char> chars = MemoryMarshal.Cast<ushort, char>(buffer.AsSpan(0, count));
+                    string text = new(chars);
 
                     // Phase 1 simplification: one TextRun covering the whole page.
                     // Detailed word positions deferred to S6.
@@ -188,7 +182,7 @@ internal sealed class PdfDocument : IDocument
                 }
                 finally
                 {
-                    fpdf_text.FPDFText_ClosePage(tp);
+                    fpdf_text.FPDFTextClosePage(tp);
                 }
             }
             finally
@@ -212,11 +206,12 @@ internal sealed class PdfDocument : IDocument
     private static string? GetMeta(FpdfDocumentT doc, string tag)
     {
         // FPDF_GetMetaText writes UTF-16LE to a void* buffer; length is in bytes including null.
+        // PDFiumCore 146.x widened FPDF_DWORD to ulong (uint64).
         const int BufBytes = 1024;
         IntPtr buf = Marshal.AllocHGlobal(BufBytes);
         try
         {
-            uint len = fpdf_doc.FPDF_GetMetaText(doc, tag, buf, (uint)BufBytes);
+            ulong len = fpdf_doc.FPDF_GetMetaText(doc, tag, buf, (ulong)BufBytes);
             if (len <= 2)
             {
                 return null;

@@ -10,7 +10,10 @@ internal static class ThemeManager
 
     private static ResourceDictionary? _currentTheme;
 
-    public static void Apply(string themeName, Application app)
+    // Полностью квалифицированный System.Windows.Application — иначе в WPF temp-проекте
+    // (Foliant.UI_*_wpftmp.csproj), который генерирует g.cs для XAML, символ Application
+    // разрешается в пространство имён 'Foliant.Application', а не в WPF-тип.
+    public static void Apply(string themeName, System.Windows.Application app)
     {
         ArgumentNullException.ThrowIfNull(themeName);
         ArgumentNullException.ThrowIfNull(app);

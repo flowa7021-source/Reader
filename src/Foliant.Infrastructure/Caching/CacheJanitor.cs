@@ -61,7 +61,7 @@ public sealed class CacheJanitor(
 
 public sealed record CacheJanitorOptions
 {
-    public long      HardLimitBytes    { get; init; } = 5L * 1024 * 1024 * 1024;  // 5 ГБ default из плана
-    public int       SoftLimitPercent  { get; init; } = 90;
-    public TimeSpan  Interval          { get; init; } = TimeSpan.FromSeconds(30);
+    public long HardLimitBytes { get; init; } = 5L * 1024 * 1024 * 1024;  // 5 ГБ default из плана
+    public int SoftLimitPercent { get; init; } = 90;
+    public TimeSpan Interval { get; init; } = TimeSpan.FromSeconds(30);
 }
