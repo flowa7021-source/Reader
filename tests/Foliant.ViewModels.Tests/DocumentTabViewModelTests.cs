@@ -210,4 +210,168 @@ public sealed class DocumentTabViewModelTests
         await act.Should().NotThrowAsync();
         vm.CurrentPageAnnotations.Should().BeEmpty();
     }
+
+    [Fact]
+    public void NextPageCommand_AdvancesByOne()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 3;
+
+        vm.NextPageCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(4);
+    }
+
+    [Fact]
+    public void NextPageCommand_AtLastPage_StaysOnLastPage()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 9;   // PageCount=10, last=9
+
+        vm.NextPageCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(9);
+    }
+
+    [Fact]
+    public void PreviousPageCommand_DecrementsByOne()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 5;
+
+        vm.PreviousPageCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(4);
+    }
+
+    [Fact]
+    public void PreviousPageCommand_AtFirstPage_StaysOnZero()
+    {
+        var vm = CreateVm();
+
+        vm.PreviousPageCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void FirstPageCommand_GoesToZero()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 7;
+
+        vm.FirstPageCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void LastPageCommand_GoesToLastIndex()
+    {
+        var vm = CreateVm();
+
+        vm.LastPageCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(9);   // PageCount=10
+    }
+
+    [Fact]
+    public void GoToPageCommand_TranslatesOneBasedToZeroBased()
+    {
+        var vm = CreateVm();
+
+        vm.GoToPageCommand.Execute(7);   // user-facing page 7
+
+        vm.CurrentPageIndex.Should().Be(6);
+    }
+
+    [Fact]
+    public void GoToPageCommand_OutOfRange_Clamps()
+    {
+        var vm = CreateVm();
+
+        vm.GoToPageCommand.Execute(999);
+        vm.CurrentPageIndex.Should().Be(9);
+
+        vm.GoToPageCommand.Execute(0);
+        vm.CurrentPageIndex.Should().Be(0);
+
+        vm.GoToPageCommand.Execute(-5);
+        vm.CurrentPageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void ZoomInCommand_AddsStepUpToMax()
+    {
+        var vm = CreateVm();
+        vm.Zoom = 1.0;
+
+        vm.ZoomInCommand.Execute(null);
+
+        vm.Zoom.Should().BeApproximately(1.25, 1e-9);
+    }
+
+    [Fact]
+    public void ZoomInCommand_NearMax_ClampsAtMax()
+    {
+        var vm = CreateVm();
+        vm.Zoom = DocumentTabViewModel.MaxZoom - 0.10;
+
+        vm.ZoomInCommand.Execute(null);
+
+        vm.Zoom.Should().Be(DocumentTabViewModel.MaxZoom);
+    }
+
+    [Fact]
+    public void ZoomOutCommand_SubtractsStepDownToMin()
+    {
+        var vm = CreateVm();
+        vm.Zoom = 1.5;
+
+        vm.ZoomOutCommand.Execute(null);
+
+        vm.Zoom.Should().BeApproximately(1.25, 1e-9);
+    }
+
+    [Fact]
+    public void ZoomOutCommand_NearMin_ClampsAtMin()
+    {
+        var vm = CreateVm();
+        vm.Zoom = DocumentTabViewModel.MinZoom + 0.05;
+
+        vm.ZoomOutCommand.Execute(null);
+
+        vm.Zoom.Should().Be(DocumentTabViewModel.MinZoom);
+    }
+
+    [Fact]
+    public void ResetZoomCommand_SetsToOne()
+    {
+        var vm = CreateVm();
+        vm.Zoom = 2.5;
+
+        vm.ResetZoomCommand.Execute(null);
+
+        vm.Zoom.Should().Be(1.0);
+    }
+
+    [Fact]
+    public void ZoomSetter_OutOfRange_Clamps()
+    {
+        var vm = CreateVm();
+
+        vm.Zoom = 100.0;
+
+        vm.Zoom.Should().Be(DocumentTabViewModel.MaxZoom);
+    }
+
+    [Fact]
+    public void ZoomSetter_BelowMin_Clamps()
+    {
+        var vm = CreateVm();
+
+        vm.Zoom = 0.001;
+
+        vm.Zoom.Should().Be(DocumentTabViewModel.MinZoom);
+    }
 }
