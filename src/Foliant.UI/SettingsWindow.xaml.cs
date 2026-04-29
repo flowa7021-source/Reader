@@ -22,7 +22,7 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            await ViewModel.SaveCommand.ExecuteAsync(null).ConfigureAwait(true);
+            await ViewModel.SaveCommand.ExecuteAsync(null);
             DialogResult = true;
         }
         catch (Exception)

@@ -83,7 +83,12 @@ public sealed class LruCache<TKey, TValue>
             _map[key] = node;
             _currentBytes += size;
 
-            while (_currentBytes > _capacityBytes && _order.Last is { } last)
+            // Если значение само больше capacity — храним его, кэш временно превышает лимит.
+            // Альтернатива (выгнать его сразу) приводила к Dispose значения, на которое caller
+            // ещё держит ссылку — use-after-dispose.
+            while (_currentBytes > _capacityBytes
+                   && _order.Last is { } last
+                   && !ReferenceEquals(last, node))
             {
                 _order.RemoveLast();
                 _map.Remove(last.Value.Key);

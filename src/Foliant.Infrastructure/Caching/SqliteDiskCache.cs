@@ -60,17 +60,20 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
             return null;
         }
 
-        await UpdateAccessTimeAsync(fileName, ct).ConfigureAwait(false);
-
+        byte[] bytes;
         try
         {
-            return await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
+            bytes = await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
         }
         catch (FileNotFoundException)
         {
-            // Гонка: запись удалили между Exists и Read.
+            // Гонка: запись удалили между Exists и Read. Не обновляем access-time —
+            // иначе остаётся orphan-строка в metadata.db, указывающая на отсутствующий файл.
             return null;
         }
+
+        await UpdateAccessTimeAsync(fileName, ct).ConfigureAwait(false);
+        return bytes;
     }
 
     public async Task PutAsync(CacheKey key, ReadOnlyMemory<byte> bytes, CancellationToken ct)
