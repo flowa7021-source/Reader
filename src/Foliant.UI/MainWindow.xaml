@@ -203,6 +203,15 @@
         <TextBlock Text="{Binding StatusMessage}"
                    Foreground="{DynamicResource Foreground}" />
       </StatusBarItem>
+      <StatusBarItem HorizontalAlignment="Right">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{Binding SelectedTab.PageInfo}"
+                     Foreground="{DynamicResource Foreground}"
+                     Margin="0,0,16,0" />
+          <TextBlock Text="{Binding SelectedTab.ZoomPercent, StringFormat='{}{0}%'}"
+                     Foreground="{DynamicResource Foreground}" />
+        </StackPanel>
+      </StatusBarItem>
     </StatusBar>
   </Grid>
 

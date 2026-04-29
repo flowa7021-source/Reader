@@ -30,9 +30,11 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private string _title = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
     private int _pageCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
     private int _currentPageIndex;
 
     [ObservableProperty]
@@ -45,6 +47,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private IPageRender? _currentRender;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ZoomPercent))]
     private double _zoom = 1.0;
 
     [ObservableProperty]
@@ -65,6 +68,12 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     public ObservableCollection<SearchHit> SearchResults { get; } = [];
 
     public ObservableCollection<Annotation> CurrentPageAnnotations { get; } = [];
+
+    /// <summary>«N/M» — отображается в статус-баре. Локаль-агностичный формат: чисто цифры.</summary>
+    public string PageInfo => $"{CurrentPageIndex + 1}/{Math.Max(PageCount, 1)}";
+
+    /// <summary>Текущий масштаб в процентах для статус-бара. Округлён до целого.</summary>
+    public int ZoomPercent => (int)Math.Round(Zoom * 100);
 
     public DocumentTabViewModel(
         IDocument document,

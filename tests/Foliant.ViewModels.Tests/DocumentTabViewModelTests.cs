@@ -386,4 +386,55 @@ public sealed class DocumentTabViewModelTests
 
         vm.Zoom.Should().Be(DocumentTabViewModel.MinZoom);
     }
+
+    [Fact]
+    public void PageInfo_FormatsAsOneBasedSlashTotal()
+    {
+        var vm = CreateVm();   // PageCount = 10
+
+        vm.PageInfo.Should().Be("1/10");
+
+        vm.CurrentPageIndex = 4;
+
+        vm.PageInfo.Should().Be("5/10");
+    }
+
+    [Fact]
+    public void PageInfo_FiresPropertyChanged_WhenCurrentPageIndexChanges()
+    {
+        var vm = CreateVm();
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.CurrentPageIndex = 3;
+
+        fired.Should().Contain(nameof(DocumentTabViewModel.PageInfo));
+    }
+
+    [Fact]
+    public void ZoomPercent_RoundsZoomToInteger()
+    {
+        var vm = CreateVm();
+
+        vm.Zoom = 1.0;
+        vm.ZoomPercent.Should().Be(100);
+
+        vm.Zoom = 1.25;
+        vm.ZoomPercent.Should().Be(125);
+
+        vm.Zoom = 0.50;
+        vm.ZoomPercent.Should().Be(50);
+    }
+
+    [Fact]
+    public void ZoomPercent_FiresPropertyChanged_WhenZoomChanges()
+    {
+        var vm = CreateVm();
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.Zoom = 2.0;
+
+        fired.Should().Contain(nameof(DocumentTabViewModel.ZoomPercent));
+    }
 }
