@@ -15,17 +15,29 @@ public sealed class DocumentTabViewModelTests
         IAnnotationService? annotations = null,
         string filePath = "/tmp/x.pdf")
     {
-        document ??= Substitute.For<IDocument>();
-        document.PageCount.Returns(10);
+        // Стартовая настройка применяется ТОЛЬКО когда CreateVm сам создаёт mock —
+        // если caller передал свой настроенный Substitute, его .Returns(...) сетапы
+        // не должны быть перетёрты дефолтами хелпера.
+        if (document is null)
+        {
+            document = Substitute.For<IDocument>();
+            document.PageCount.Returns(10);
+        }
 
-        search ??= Substitute.For<ISearchService>();
-        search
-            .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        if (search is null)
+        {
+            search = Substitute.For<ISearchService>();
+            search
+                .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        }
 
-        annotations ??= Substitute.For<IAnnotationService>();
-        annotations.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                   .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        if (annotations is null)
+        {
+            annotations = Substitute.For<IAnnotationService>();
+            annotations.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                       .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        }
 
         return new DocumentTabViewModel(document, filePath, search, annotations, NullLogger<DocumentTabViewModel>.Instance);
     }
