@@ -80,6 +80,7 @@ public sealed partial class MainViewModel : ObservableObject
             SelectedTab = tab;
 
             _indexer.Enqueue(document, path);
+            await tab.LoadAnnotationsAsync(ct).ConfigureAwait(false);
             await _recents.AddAsync(path, ct).ConfigureAwait(false);
             await RefreshRecentsAsync(ct).ConfigureAwait(false);
         }

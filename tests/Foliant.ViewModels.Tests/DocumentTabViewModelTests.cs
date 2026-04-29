@@ -12,6 +12,7 @@ public sealed class DocumentTabViewModelTests
     private static DocumentTabViewModel CreateVm(
         IDocument? document = null,
         ISearchService? search = null,
+        IAnnotationService? annotations = null,
         string filePath = "/tmp/x.pdf")
     {
         document ??= Substitute.For<IDocument>();
@@ -22,7 +23,11 @@ public sealed class DocumentTabViewModelTests
             .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
 
-        return new DocumentTabViewModel(document, filePath, search, NullLogger<DocumentTabViewModel>.Instance);
+        annotations ??= Substitute.For<IAnnotationService>();
+        annotations.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                   .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+
+        return new DocumentTabViewModel(document, filePath, search, annotations, NullLogger<DocumentTabViewModel>.Instance);
     }
 
     [Fact]
@@ -92,5 +97,117 @@ public sealed class DocumentTabViewModelTests
         vm.SelectedSearchHit = hit;
 
         vm.CurrentPageIndex.Should().Be(7);
+    }
+
+    [Fact]
+    public async Task LoadAnnotations_PopulatesCurrentPageCollection()
+    {
+        var page0 = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var page1 = Annotation.Highlight(1, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var page2 = Annotation.Highlight(2, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([page0, page1, page2]));
+        var vm = CreateVm(annotations: ann);
+
+        await vm.LoadAnnotationsAsync(default);
+
+        vm.CurrentPageAnnotations.Should().ContainSingle().Which.PageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ChangingCurrentPage_RefiltersAnnotations()
+    {
+        var page0 = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var page2 = Annotation.Highlight(2, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([page0, page2]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        vm.CurrentPageIndex = 2;
+
+        vm.CurrentPageAnnotations.Should().ContainSingle().Which.Id.Should().Be(page2.Id);
+    }
+
+    [Fact]
+    public async Task AddHighlight_DelegatesToService_AppendsIfCurrentPage()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        await vm.AddHighlightAsync(0, new AnnotationRect(1, 2, 3, 4), "#FF0", default);
+
+        await ann.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Highlight && a.PageIndex == 0),
+            Arg.Any<CancellationToken>());
+        vm.CurrentPageAnnotations.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task AddHighlight_OnDifferentPage_DoesNotAppendToCurrent()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        await vm.AddHighlightAsync(5, new AnnotationRect(0, 0, 10, 10), "#FF0", default);
+
+        vm.CurrentPageAnnotations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RemoveAnnotationCommand_DropsFromCollection_WhenServiceConfirms()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([hl]));
+        ann.RemoveAsync(Arg.Any<string>(), hl.Id, Arg.Any<CancellationToken>())
+           .Returns(true);
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        await vm.RemoveAnnotationCommand.ExecuteAsync(hl);
+
+        vm.CurrentPageAnnotations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RemoveAnnotationCommand_ServiceReturnsFalse_LeavesCollection()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([hl]));
+        ann.RemoveAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+           .Returns(false);
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        await vm.RemoveAnnotationCommand.ExecuteAsync(hl);
+
+        vm.CurrentPageAnnotations.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task LoadAnnotations_ServiceThrows_DoesNotPropagate()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromException<IReadOnlyList<Annotation>>(new IOException("boom")));
+        var vm = CreateVm(annotations: ann);
+
+        var act = async () => await vm.LoadAnnotationsAsync(default);
+
+        await act.Should().NotThrowAsync();
+        vm.CurrentPageAnnotations.Should().BeEmpty();
     }
 }

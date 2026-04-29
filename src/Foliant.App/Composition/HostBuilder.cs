@@ -101,6 +101,7 @@ internal static class HostBuilder
                 doc,
                 path,
                 sp.GetRequiredService<ISearchService>(),
+                sp.GetRequiredService<IAnnotationService>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
 
         services.AddTransient<MainViewModel>();

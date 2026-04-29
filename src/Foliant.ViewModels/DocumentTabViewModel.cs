@@ -13,7 +13,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IDocument _document;
     private readonly string _filePath;
     private readonly ISearchService _searchService;
+    private readonly IAnnotationService _annotationService;
     private readonly ILogger<DocumentTabViewModel> _logger;
+    private readonly List<Annotation> _allAnnotations = [];
 
     [ObservableProperty]
     private string _title = string.Empty;
@@ -53,20 +55,25 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     public ObservableCollection<SearchHit> SearchResults { get; } = [];
 
+    public ObservableCollection<Annotation> CurrentPageAnnotations { get; } = [];
+
     public DocumentTabViewModel(
         IDocument document,
         string filePath,
         ISearchService searchService,
+        IAnnotationService annotationService,
         ILogger<DocumentTabViewModel> logger)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
         ArgumentNullException.ThrowIfNull(searchService);
+        ArgumentNullException.ThrowIfNull(annotationService);
         ArgumentNullException.ThrowIfNull(logger);
 
         _document = document;
         _filePath = filePath;
         _searchService = searchService;
+        _annotationService = annotationService;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
@@ -78,6 +85,92 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         if (clamped != value)
         {
             CurrentPageIndex = clamped;
+            return;
+        }
+        RefreshCurrentPageAnnotations();
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Annotation load failure must not crash the tab.")]
+    public async Task LoadAnnotationsAsync(CancellationToken ct)
+    {
+        try
+        {
+            var loaded = await _annotationService.ListAsync(_filePath, ct).ConfigureAwait(false);
+            _allAnnotations.Clear();
+            _allAnnotations.AddRange(loaded);
+            RefreshCurrentPageAnnotations();
+        }
+        catch (OperationCanceledException)
+        {
+            // shutdown — игнорируем
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load annotations for '{Path}'.", _filePath);
+        }
+    }
+
+    public async Task AddHighlightAsync(int pageIndex, AnnotationRect bounds, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+
+        var hl = Annotation.Highlight(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow);
+        await _annotationService.AddAsync(_filePath, hl, ct).ConfigureAwait(false);
+        _allAnnotations.Add(hl);
+        if (pageIndex == CurrentPageIndex)
+        {
+            CurrentPageAnnotations.Add(hl);
+        }
+    }
+
+    public async Task AddNoteAsync(int pageIndex, AnnotationRect bounds, string text, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(colorHex);
+
+        var note = Annotation.StickyNote(pageIndex, bounds, text, colorHex, DateTimeOffset.UtcNow);
+        await _annotationService.AddAsync(_filePath, note, ct).ConfigureAwait(false);
+        _allAnnotations.Add(note);
+        if (pageIndex == CurrentPageIndex)
+        {
+            CurrentPageAnnotations.Add(note);
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveAnnotationAsync(Annotation? annotation)
+    {
+        if (annotation is null)
+        {
+            return;
+        }
+
+        var removed = await _annotationService
+            .RemoveAsync(_filePath, annotation.Id, CancellationToken.None)
+            .ConfigureAwait(false);
+        if (!removed)
+        {
+            return;
+        }
+
+        _allAnnotations.RemoveAll(a => a.Id == annotation.Id);
+        for (int i = CurrentPageAnnotations.Count - 1; i >= 0; i--)
+        {
+            if (CurrentPageAnnotations[i].Id == annotation.Id)
+            {
+                CurrentPageAnnotations.RemoveAt(i);
+            }
+        }
+    }
+
+    private void RefreshCurrentPageAnnotations()
+    {
+        CurrentPageAnnotations.Clear();
+        foreach (var a in _allAnnotations.Where(x => x.PageIndex == CurrentPageIndex))
+        {
+            CurrentPageAnnotations.Add(a);
         }
     }
 
