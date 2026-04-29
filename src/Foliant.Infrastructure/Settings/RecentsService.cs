@@ -41,7 +41,7 @@ public sealed class RecentsService : IRecentsService, IDisposable
             AppSettings settings = await _store.LoadAsync(ct).ConfigureAwait(false);
             List<string> updated = MoveToFrontAndCap(settings.RecentFiles, canonical);
 
-            if (SequenceEquals(updated, settings.RecentFiles))
+            if (updated.SequenceEqual(settings.RecentFiles, StringComparer.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -128,22 +128,6 @@ public sealed class RecentsService : IRecentsService, IDisposable
         }
 
         return list;
-    }
-
-    private static bool SequenceEquals(IReadOnlyList<string> a, IReadOnlyList<string> b)
-    {
-        if (a.Count != b.Count)
-        {
-            return false;
-        }
-        for (int i = 0; i < a.Count; i++)
-        {
-            if (!PathEquals(a[i], b[i]))
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static bool PathEquals(string a, string b)
