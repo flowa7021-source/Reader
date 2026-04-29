@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.IO;
 using Foliant.Application.Services;
 using Foliant.Application.Settings;
 using Foliant.Application.UseCases;
@@ -18,7 +20,9 @@ using Serilog;
 
 namespace Foliant.App.Composition;
 
-internal static class HostBuilder
+// Названо AppHostBuilder, чтобы не сталкиваться с Microsoft.Extensions.Hosting.HostBuilder
+// (тот публичен и попадает в скоуп через `using Microsoft.Extensions.Hosting`).
+internal static class AppHostBuilder
 {
     public static IHost Build(string[] args)
     {
@@ -38,12 +42,13 @@ internal static class HostBuilder
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
             .Enrich.FromLogContext()
-            .WriteTo.Console()
+            .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
             .WriteTo.File(
                 path: logFile,
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 14,
-                fileSizeLimitBytes: 50 * 1024 * 1024)
+                fileSizeLimitBytes: 50 * 1024 * 1024,
+                formatProvider: CultureInfo.InvariantCulture)
             .CreateLogger();
 
         builder.Logging.ClearProviders();

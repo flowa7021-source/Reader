@@ -87,6 +87,7 @@ dotnet_diagnostic.CA1849.severity = none
 dotnet_diagnostic.CA1707.severity = none      # underscores in test names — норма
 dotnet_diagnostic.CA1062.severity = none      # null checks — не нужны
 dotnet_diagnostic.CA1031.severity = none      # catch (Exception) в Dispose-cleanup — допустимо
+dotnet_diagnostic.CA1001.severity = none      # IAsyncLifetime/xUnit lifecycle — CA1001 не распознаёт
 dotnet_diagnostic.CA2000.severity = none      # owned objects тестируются, Dispose делает SUT
 dotnet_diagnostic.CA5394.severity = none      # Random для test data — не security
 dotnet_diagnostic.CA1822.severity = none      # benchmark-методы могут быть instance, BDN это поддерживает
