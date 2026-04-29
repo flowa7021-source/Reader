@@ -20,11 +20,19 @@ public sealed class MainViewModelTests
         var useCase = new OpenDocumentUseCase([], NullLogger<OpenDocumentUseCase>.Instance);
         Func<IDocument, string, DocumentTabViewModel> factory = (_, _) => throw new NotSupportedException();
 
-        recents ??= Substitute.For<IRecentsService>();
-        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        // Дефолты применяются ТОЛЬКО если caller не передал свой настроенный mock —
+        // иначе кастомные .Returns(...) будут переписаны хелпером.
+        if (recents is null)
+        {
+            recents = Substitute.For<IRecentsService>();
+            recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        }
 
-        settings ??= Substitute.For<ISettingsService>();
-        settings.Current.Returns(AppSettings.Default);
+        if (settings is null)
+        {
+            settings = Substitute.For<ISettingsService>();
+            settings.Current.Returns(AppSettings.Default);
+        }
 
         localization ??= Substitute.For<ILocalizationService>();
         indexer ??= Substitute.For<IDocumentIndexer>();
