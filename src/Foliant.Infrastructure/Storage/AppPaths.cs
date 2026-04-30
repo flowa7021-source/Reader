@@ -25,6 +25,8 @@ public static class AppPaths
 
     public static string Annotations => EnsureExists(Path.Combine(LocalAppData, "Annotations"));
 
+    public static string Bookmarks => EnsureExists(Path.Combine(LocalAppData, "Bookmarks"));
+
     public static string SettingsFile => Path.Combine(RoamingAppData, "settings.json");
 
     public static string LicenseFile => Path.Combine(RoamingAppData, "license.key");

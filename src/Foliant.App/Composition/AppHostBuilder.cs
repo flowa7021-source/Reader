@@ -6,6 +6,7 @@ using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
+using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
@@ -79,6 +80,11 @@ internal static class AppHostBuilder
         services.AddSingleton<IAnnotationStore>(sp =>
             new JsonAnnotationStore(AppPaths.Annotations, sp.GetRequiredService<ILogger<JsonAnnotationStore>>()));
         services.AddSingleton<IAnnotationService, AnnotationService>();
+
+        // Bookmarks — JSON sidecar (parallel to annotations).
+        services.AddSingleton<IBookmarkStore>(sp =>
+            new JsonBookmarkStore(AppPaths.Bookmarks, sp.GetRequiredService<ILogger<JsonBookmarkStore>>()));
+        services.AddSingleton<IBookmarkService, BookmarkService>();
 
         // Cache janitor — фоновая эвикция.
         services.AddSingleton(new CacheJanitorOptions());
