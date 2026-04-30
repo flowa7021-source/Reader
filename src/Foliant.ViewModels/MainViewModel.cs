@@ -178,6 +178,21 @@ public sealed partial class MainViewModel : ObservableObject
         SelectedTab = Tabs[(idx - 1 + Tabs.Count) % Tabs.Count];
     }
 
+    /// <summary>
+    /// Принимает 1-based номер вкладки (как пользователь видит на клавиатуре —
+    /// Ctrl+1..Ctrl+9). Если такого индекса нет — no-op.
+    /// </summary>
+    [RelayCommand]
+    private void SelectTabByNumber(int oneBasedIndex)
+    {
+        int zeroBased = oneBasedIndex - 1;
+        if (zeroBased < 0 || zeroBased >= Tabs.Count)
+        {
+            return;
+        }
+        SelectedTab = Tabs[zeroBased];
+    }
+
     [RelayCommand]
     private void ChangeTheme(string? themeName)
     {

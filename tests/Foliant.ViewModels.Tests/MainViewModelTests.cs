@@ -227,6 +227,51 @@ public sealed class MainViewModelTests
         vm.SelectedTab.Should().BeNull();
     }
 
+    [Fact]
+    public void SelectTabByNumberCommand_OneBased_SelectsCorrectTab()
+    {
+        var vm = CreateVm();
+        var t0 = MakeTabStub();
+        var t1 = MakeTabStub();
+        var t2 = MakeTabStub();
+        vm.Tabs.Add(t0);
+        vm.Tabs.Add(t1);
+        vm.Tabs.Add(t2);
+        vm.SelectedTab = t0;
+
+        vm.SelectTabByNumberCommand.Execute(2);
+
+        vm.SelectedTab.Should().BeSameAs(t1);
+    }
+
+    [Fact]
+    public void SelectTabByNumberCommand_OutOfRange_NoOp()
+    {
+        var vm = CreateVm();
+        var t = MakeTabStub();
+        vm.Tabs.Add(t);
+        vm.SelectedTab = t;
+
+        vm.SelectTabByNumberCommand.Execute(5);   // вкладки 5 нет
+
+        vm.SelectedTab.Should().BeSameAs(t);
+    }
+
+    [Fact]
+    public void SelectTabByNumberCommand_ZeroOrNegative_NoOp()
+    {
+        var vm = CreateVm();
+        var t = MakeTabStub();
+        vm.Tabs.Add(t);
+        vm.SelectedTab = t;
+
+        vm.SelectTabByNumberCommand.Execute(0);
+        vm.SelectedTab.Should().BeSameAs(t);
+
+        vm.SelectTabByNumberCommand.Execute(-3);
+        vm.SelectedTab.Should().BeSameAs(t);
+    }
+
     private static DocumentTabViewModel MakeTabStub()
     {
         var doc = Substitute.For<IDocument>();
