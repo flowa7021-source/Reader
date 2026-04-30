@@ -954,4 +954,89 @@ public sealed class DocumentTabViewModelTests
 
         vm.Metadata.HasAnyKnownField.Should().BeFalse();
     }
+
+    // ───── Annotation filter mode (S10/E) ─────
+
+    [Fact]
+    public async Task AnnotationFilter_DefaultAll_ShowsEverythingOnCurrentPage()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([hl, note]));
+        var vm = CreateVm(annotations: ann);
+
+        await vm.LoadAnnotationsAsync(default);
+
+        vm.AnnotationFilter.Should().Be(AnnotationFilterMode.All);
+        vm.CurrentPageAnnotations.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task AnnotationFilter_HighlightsOnly_HidesOtherKinds()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var ink = Annotation.Freehand(0, [new AnnotationPoint(0, 0)], "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([hl, note, ink]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        vm.AnnotationFilter = AnnotationFilterMode.Highlights;
+
+        vm.CurrentPageAnnotations.Should().ContainSingle().Which.Kind.Should().Be(AnnotationKind.Highlight);
+    }
+
+    [Fact]
+    public async Task AnnotationFilter_NotesOnly_FiltersToNotes()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([hl, note]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        vm.AnnotationFilter = AnnotationFilterMode.Notes;
+
+        vm.CurrentPageAnnotations.Should().ContainSingle().Which.Kind.Should().Be(AnnotationKind.StickyNote);
+    }
+
+    [Fact]
+    public async Task AnnotationFilter_AddingFilteredOutKind_DoesNotAppendToView()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+        vm.AnnotationFilter = AnnotationFilterMode.Highlights;
+
+        await vm.AddNoteAsync(0, new AnnotationRect(0, 0, 1, 1), "hidden", "#000", default);
+
+        vm.CurrentPageAnnotations.Should().BeEmpty();
+        vm.TotalAnnotationsCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AnnotationFilter_ChangingBackToAll_RevealsHidden()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([hl, note]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+        vm.AnnotationFilter = AnnotationFilterMode.Highlights;
+        vm.CurrentPageAnnotations.Should().ContainSingle();
+
+        vm.AnnotationFilter = AnnotationFilterMode.All;
+
+        vm.CurrentPageAnnotations.Should().HaveCount(2);
+    }
 }

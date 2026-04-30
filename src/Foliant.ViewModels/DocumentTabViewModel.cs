@@ -68,6 +68,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private string _searchText = string.Empty;
 
     [ObservableProperty]
+    private AnnotationFilterMode _annotationFilter = AnnotationFilterMode.All;
+
+    [ObservableProperty]
     private bool _isSearchVisible;
 
     [ObservableProperty]
@@ -306,7 +309,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         await _annotationService.AddAsync(_filePath, hl, ct);
         _allAnnotations.Add(hl);
         OnPropertyChanged(nameof(TotalAnnotationsCount));
-        if (pageIndex == CurrentPageIndex)
+        if (pageIndex == CurrentPageIndex && MatchesFilter(hl))
         {
             CurrentPageAnnotations.Add(hl);
         }
@@ -322,7 +325,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         await _annotationService.AddAsync(_filePath, note, ct);
         _allAnnotations.Add(note);
         OnPropertyChanged(nameof(TotalAnnotationsCount));
-        if (pageIndex == CurrentPageIndex)
+        if (pageIndex == CurrentPageIndex && MatchesFilter(note))
         {
             CurrentPageAnnotations.Add(note);
         }
@@ -356,11 +359,22 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private void RefreshCurrentPageAnnotations()
     {
         CurrentPageAnnotations.Clear();
-        foreach (var a in _allAnnotations.Where(x => x.PageIndex == CurrentPageIndex))
+        foreach (var a in _allAnnotations.Where(x => x.PageIndex == CurrentPageIndex && MatchesFilter(x)))
         {
             CurrentPageAnnotations.Add(a);
         }
     }
+
+    private bool MatchesFilter(Annotation a) => AnnotationFilter switch
+    {
+        AnnotationFilterMode.Highlights => a.Kind == AnnotationKind.Highlight,
+        AnnotationFilterMode.Notes => a.Kind == AnnotationKind.StickyNote,
+        AnnotationFilterMode.Freehand => a.Kind == AnnotationKind.Freehand,
+        _ => true,   // All
+    };
+
+    partial void OnAnnotationFilterChanged(AnnotationFilterMode value) =>
+        RefreshCurrentPageAnnotations();
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Bookmark load failure must not crash the tab.")]
     public async Task LoadBookmarksAsync(CancellationToken ct)
