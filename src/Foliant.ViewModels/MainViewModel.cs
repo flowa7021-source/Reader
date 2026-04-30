@@ -133,8 +133,49 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
+        int removingIndex = Tabs.IndexOf(tab);
         Tabs.Remove(tab);
+
+        // Если закрыли активный таб — переселиться на соседа.
+        if (ReferenceEquals(SelectedTab, tab) || SelectedTab is null)
+        {
+            if (Tabs.Count == 0)
+            {
+                SelectedTab = null;
+            }
+            else
+            {
+                int next = Math.Min(removingIndex, Tabs.Count - 1);
+                SelectedTab = Tabs[next];
+            }
+        }
+
         await tab.DisposeAsync();
+    }
+
+    [RelayCommand]
+    private Task CloseCurrentTabAsync() => CloseTabAsync(SelectedTab);
+
+    [RelayCommand]
+    private void NextTab()
+    {
+        if (Tabs.Count <= 1 || SelectedTab is null)
+        {
+            return;
+        }
+        int idx = Tabs.IndexOf(SelectedTab);
+        SelectedTab = Tabs[(idx + 1) % Tabs.Count];
+    }
+
+    [RelayCommand]
+    private void PreviousTab()
+    {
+        if (Tabs.Count <= 1 || SelectedTab is null)
+        {
+            return;
+        }
+        int idx = Tabs.IndexOf(SelectedTab);
+        SelectedTab = Tabs[(idx - 1 + Tabs.Count) % Tabs.Count];
     }
 
     [RelayCommand]

@@ -24,6 +24,15 @@
     <KeyBinding Key="D"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleBookmarkCommand}" />
+    <KeyBinding Key="Tab"
+                Modifiers="Control"
+                Command="{Binding NextTabCommand}" />
+    <KeyBinding Key="Tab"
+                Modifiers="Control+Shift"
+                Command="{Binding PreviousTabCommand}" />
+    <KeyBinding Key="W"
+                Modifiers="Control"
+                Command="{Binding CloseCurrentTabCommand}" />
     <KeyBinding Key="PageDown"
                 Command="{Binding SelectedTab.NextPageCommand}" />
     <KeyBinding Key="PageUp"

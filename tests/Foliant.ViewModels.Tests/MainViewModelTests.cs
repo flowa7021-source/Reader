@@ -126,4 +126,120 @@ public sealed class MainViewModelTests
         await recents.Received(1).ClearAsync(Arg.Any<CancellationToken>());
         vm.RecentFiles.Should().BeEmpty();
     }
+
+    // ───── Multi-tab navigation (S11/E) ─────
+
+    [Fact]
+    public void NextTabCommand_CyclesForward()
+    {
+        var vm = CreateVm();
+        var t0 = MakeTabStub();
+        var t1 = MakeTabStub();
+        var t2 = MakeTabStub();
+        vm.Tabs.Add(t0);
+        vm.Tabs.Add(t1);
+        vm.Tabs.Add(t2);
+        vm.SelectedTab = t0;
+
+        vm.NextTabCommand.Execute(null);
+        vm.SelectedTab.Should().BeSameAs(t1);
+
+        vm.NextTabCommand.Execute(null);
+        vm.SelectedTab.Should().BeSameAs(t2);
+
+        vm.NextTabCommand.Execute(null);
+        vm.SelectedTab.Should().BeSameAs(t0);   // wrap
+    }
+
+    [Fact]
+    public void PreviousTabCommand_CyclesBackward()
+    {
+        var vm = CreateVm();
+        var t0 = MakeTabStub();
+        var t1 = MakeTabStub();
+        var t2 = MakeTabStub();
+        vm.Tabs.Add(t0);
+        vm.Tabs.Add(t1);
+        vm.Tabs.Add(t2);
+        vm.SelectedTab = t0;
+
+        vm.PreviousTabCommand.Execute(null);
+        vm.SelectedTab.Should().BeSameAs(t2);   // wrap
+
+        vm.PreviousTabCommand.Execute(null);
+        vm.SelectedTab.Should().BeSameAs(t1);
+    }
+
+    [Fact]
+    public void NextTabCommand_SingleTab_NoOp()
+    {
+        var vm = CreateVm();
+        var t = MakeTabStub();
+        vm.Tabs.Add(t);
+        vm.SelectedTab = t;
+
+        vm.NextTabCommand.Execute(null);
+
+        vm.SelectedTab.Should().BeSameAs(t);
+    }
+
+    [Fact]
+    public void NextTabCommand_NoTabs_NoOp()
+    {
+        var vm = CreateVm();
+
+        var act = () => vm.NextTabCommand.Execute(null);
+        act.Should().NotThrow();
+        vm.SelectedTab.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CloseCurrentTabCommand_RemovesActive_SelectsNeighbor()
+    {
+        var vm = CreateVm();
+        var t0 = MakeTabStub();
+        var t1 = MakeTabStub();
+        var t2 = MakeTabStub();
+        vm.Tabs.Add(t0);
+        vm.Tabs.Add(t1);
+        vm.Tabs.Add(t2);
+        vm.SelectedTab = t1;
+
+        await vm.CloseCurrentTabCommand.ExecuteAsync(null);
+
+        vm.Tabs.Should().HaveCount(2);
+        vm.Tabs.Should().NotContain(t1);
+        // Closing index 1 of [t0,t1,t2] -> remaining [t0,t2], next = min(1, 1) = 1 -> t2.
+        vm.SelectedTab.Should().BeSameAs(t2);
+    }
+
+    [Fact]
+    public async Task CloseCurrentTabCommand_LastTab_LeavesNullSelected()
+    {
+        var vm = CreateVm();
+        var t = MakeTabStub();
+        vm.Tabs.Add(t);
+        vm.SelectedTab = t;
+
+        await vm.CloseCurrentTabCommand.ExecuteAsync(null);
+
+        vm.Tabs.Should().BeEmpty();
+        vm.SelectedTab.Should().BeNull();
+    }
+
+    private static DocumentTabViewModel MakeTabStub()
+    {
+        var doc = Substitute.For<IDocument>();
+        doc.PageCount.Returns(1);
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        var bm = Substitute.For<IBookmarkService>();
+        bm.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
+        return new DocumentTabViewModel(doc, "/tmp/x.pdf", search, ann, bm, NullLogger<DocumentTabViewModel>.Instance);
+    }
 }
