@@ -677,4 +677,88 @@ public sealed class DocumentTabViewModelTests
 
         vm.SelectedSearchHit.Should().BeSameAs(h1);   // wrap
     }
+
+    // ───── Page navigation history (S11/I) ─────
+
+    [Fact]
+    public void NavigationHistory_FreshTab_CannotGoBackOrForward()
+    {
+        var vm = CreateVm();
+
+        vm.CanGoBack.Should().BeFalse();
+        vm.CanGoForward.Should().BeFalse();
+    }
+
+    [Fact]
+    public void NavigationHistory_PageChangePushesBack_ClearsForward()
+    {
+        var vm = CreateVm();
+
+        vm.CurrentPageIndex = 5;
+
+        vm.CanGoBack.Should().BeTrue();   // от 0 ушли — есть back
+        vm.CanGoForward.Should().BeFalse();
+    }
+
+    [Fact]
+    public void GoBack_RestoresPreviousPage_PushesCurrentToForward()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 5;
+
+        vm.GoBackCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(0);
+        vm.CanGoBack.Should().BeFalse();
+        vm.CanGoForward.Should().BeTrue();
+    }
+
+    [Fact]
+    public void GoBack_GoForward_RoundTrip()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 3;
+        vm.CurrentPageIndex = 7;
+
+        vm.GoBackCommand.Execute(null);
+        vm.CurrentPageIndex.Should().Be(3);
+
+        vm.GoForwardCommand.Execute(null);
+        vm.CurrentPageIndex.Should().Be(7);
+    }
+
+    [Fact]
+    public void NavigationHistory_NewJumpAfterBack_ClearsForwardStack()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 3;
+        vm.CurrentPageIndex = 7;
+        vm.GoBackCommand.Execute(null);   // на 3, forward = [7]
+        vm.CanGoForward.Should().BeTrue();
+
+        vm.CurrentPageIndex = 5;          // новая навигация — forward сбрасывается
+
+        vm.CanGoForward.Should().BeFalse();
+    }
+
+    [Fact]
+    public void GoBackCommand_EmptyStack_NoOp()
+    {
+        var vm = CreateVm();
+
+        var act = () => vm.GoBackCommand.Execute(null);
+        act.Should().NotThrow();
+        vm.CurrentPageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public void GoForwardCommand_EmptyStack_NoOp()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 5;
+
+        var act = () => vm.GoForwardCommand.Execute(null);
+        act.Should().NotThrow();
+        vm.CurrentPageIndex.Should().Be(5);
+    }
 }

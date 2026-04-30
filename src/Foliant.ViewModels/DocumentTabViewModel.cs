@@ -27,6 +27,14 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly ILogger<DocumentTabViewModel> _logger;
     private readonly List<Annotation> _allAnnotations = [];
 
+    /// <summary>Stack страниц, на которых пользователь был раньше (top — самая свежая).</summary>
+    private readonly Stack<int> _navBack = new();
+    /// <summary>Stack страниц, отменённых через Back (готовы к Forward).</summary>
+    private readonly Stack<int> _navForward = new();
+    /// <summary>True пока активна команда Go-Back / Go-Forward — чтобы свой собственный пуш в стек
+    /// не делать в OnCurrentPageIndexChanged.</summary>
+    private bool _navigatingHistory;
+
     [ObservableProperty]
     private string _title = string.Empty;
 
@@ -36,6 +44,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanGoBack))]
+    [NotifyPropertyChangedFor(nameof(CanGoForward))]
     private int _currentPageIndex;
 
     [ObservableProperty]
@@ -85,6 +95,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// <summary>Текущий масштаб в процентах для статус-бара. Округлён до целого.</summary>
     public int ZoomPercent => (int)Math.Round(Zoom * 100);
 
+    public bool CanGoBack => _navBack.Count > 0;
+
+    public bool CanGoForward => _navForward.Count > 0;
+
     public DocumentTabViewModel(
         IDocument document,
         string filePath,
@@ -110,16 +124,73 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         PageCount = document.PageCount;
     }
 
-    partial void OnCurrentPageIndexChanged(int value)
+    partial void OnCurrentPageIndexChanged(int oldValue, int newValue)
     {
-        int clamped = Math.Clamp(value, 0, Math.Max(0, PageCount - 1));
-        if (clamped != value)
+        int clamped = Math.Clamp(newValue, 0, Math.Max(0, PageCount - 1));
+        if (clamped != newValue)
         {
             CurrentPageIndex = clamped;
             return;
         }
+
+        // Если переход не из Back/Forward команды — это «новая» навигация:
+        // запоминаем откуда ушли, ресет forward-стека (как в браузере).
+        if (!_navigatingHistory && oldValue != newValue)
+        {
+            _navBack.Push(oldValue);
+            _navForward.Clear();
+            OnPropertyChanged(nameof(CanGoBack));
+            OnPropertyChanged(nameof(CanGoForward));
+        }
+
         RefreshCurrentPageAnnotations();
         _ = RenderCurrentPageAsync(CancellationToken.None);
+    }
+
+    [RelayCommand]
+    private void GoBack()
+    {
+        if (_navBack.Count == 0)
+        {
+            return;
+        }
+
+        int previous = _navBack.Pop();
+        _navForward.Push(CurrentPageIndex);
+        _navigatingHistory = true;
+        try
+        {
+            CurrentPageIndex = previous;
+        }
+        finally
+        {
+            _navigatingHistory = false;
+        }
+        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanGoForward));
+    }
+
+    [RelayCommand]
+    private void GoForward()
+    {
+        if (_navForward.Count == 0)
+        {
+            return;
+        }
+
+        int next = _navForward.Pop();
+        _navBack.Push(CurrentPageIndex);
+        _navigatingHistory = true;
+        try
+        {
+            CurrentPageIndex = next;
+        }
+        finally
+        {
+            _navigatingHistory = false;
+        }
+        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanGoForward));
     }
 
     partial void OnZoomChanged(double value)

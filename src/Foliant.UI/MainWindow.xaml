@@ -26,6 +26,12 @@
     <KeyBinding Key="F3"
                 Modifiers="Shift"
                 Command="{Binding SelectedTab.PreviousSearchHitCommand}" />
+    <KeyBinding Key="Left"
+                Modifiers="Alt"
+                Command="{Binding SelectedTab.GoBackCommand}" />
+    <KeyBinding Key="Right"
+                Modifiers="Alt"
+                Command="{Binding SelectedTab.GoForwardCommand}" />
     <KeyBinding Key="D"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleBookmarkCommand}" />
