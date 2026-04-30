@@ -533,4 +533,88 @@ public sealed class DocumentTabViewModelTests
         await act.Should().NotThrowAsync();
         vm.Bookmarks.Should().BeEmpty();
     }
+
+    // ───── Recent searches (S11/F) ─────
+
+    [Fact]
+    public async Task RunSearch_PromotesQueryToRecent_MostRecentFirst()
+    {
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        var vm = CreateVm(search: search);
+
+        vm.SearchText = "first";
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.SearchText = "second";
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.RecentSearches.Should().Equal(["second", "first"]);
+    }
+
+    [Fact]
+    public async Task RunSearch_DedupsCaseInsensitively_PromotesExisting()
+    {
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        var vm = CreateVm(search: search);
+
+        vm.SearchText = "Foliant";
+        await vm.RunSearchCommand.ExecuteAsync(null);
+        vm.SearchText = "anything";
+        await vm.RunSearchCommand.ExecuteAsync(null);
+        vm.SearchText = "FOLIANT";   // тот же запрос с другим кейсом
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.RecentSearches.Should().Equal(["FOLIANT", "anything"]);
+    }
+
+    [Fact]
+    public async Task RunSearch_RecentCappedAtMax()
+    {
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        var vm = CreateVm(search: search);
+
+        for (int i = 0; i < DocumentTabViewModel.MaxRecentSearches + 5; i++)
+        {
+            vm.SearchText = $"q{i}";
+            await vm.RunSearchCommand.ExecuteAsync(null);
+        }
+
+        vm.RecentSearches.Count.Should().Be(DocumentTabViewModel.MaxRecentSearches);
+        vm.RecentSearches[0].Should().Be($"q{DocumentTabViewModel.MaxRecentSearches + 4}");
+    }
+
+    [Fact]
+    public async Task RunSearch_EmptyText_DoesNotPromote()
+    {
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        var vm = CreateVm(search: search);
+        vm.SearchText = "";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.RecentSearches.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SelectRecentSearchCommand_FillsSearchTextAndRunsSearch()
+    {
+        var hits = new SearchHit[] { new("", "/x.pdf", 2, "snip", 1.0) };
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(Task.FromResult<IReadOnlyList<SearchHit>>(hits));
+        var vm = CreateVm(search: search);
+
+        await vm.SelectRecentSearchCommand.ExecuteAsync("foo");
+
+        vm.SearchText.Should().Be("foo");
+        vm.SearchResults.Should().ContainSingle();
+    }
 }

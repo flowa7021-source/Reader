@@ -73,6 +73,12 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// <summary>Все закладки документа, отсортированные по PageIndex. Биндится в sidebar.</summary>
     public ObservableCollection<Bookmark> Bookmarks { get; } = [];
 
+    /// <summary>Session-history search-запросов (most-recent first), capped at <see cref="MaxRecentSearches"/>. Не персистится.</summary>
+    public ObservableCollection<string> RecentSearches { get; } = [];
+
+    /// <summary>Сколько последних поисков держим в памяти на вкладку.</summary>
+    public const int MaxRecentSearches = 10;
+
     /// <summary>«N/M» — отображается в статус-баре. Локаль-агностичный формат: чисто цифры.</summary>
     public string PageInfo => $"{CurrentPageIndex + 1}/{Math.Max(PageCount, 1)}";
 
@@ -317,6 +323,43 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         CurrentPageIndex = bookmark.PageIndex;
     }
 
+    /// <summary>
+    /// Pull-to-front + cap. Регистро-нечувствительный дедуп: ввод "Cat" и "cat"
+    /// считаются одной записью; новый занимает место старого.
+    /// </summary>
+    private void PromoteRecentSearch(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return;
+        }
+
+        for (int i = RecentSearches.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(RecentSearches[i], query, StringComparison.OrdinalIgnoreCase))
+            {
+                RecentSearches.RemoveAt(i);
+            }
+        }
+        RecentSearches.Insert(0, query);
+        while (RecentSearches.Count > MaxRecentSearches)
+        {
+            RecentSearches.RemoveAt(RecentSearches.Count - 1);
+        }
+    }
+
+    /// <summary>Команда заполняет <see cref="SearchText"/> из истории и сразу запускает поиск.</summary>
+    [RelayCommand]
+    private async Task SelectRecentSearchAsync(string? query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return;
+        }
+        SearchText = query;
+        await RunSearchAsync();
+    }
+
     partial void OnSelectedSearchHitChanged(SearchHit? value)
     {
         if (value is not null && value.PageIndex != CurrentPageIndex)
@@ -352,9 +395,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         }
 
         IsSearching = true;
+        string trimmed = SearchText.Trim();
         try
         {
-            var query = new SearchQuery(SearchText.Trim());
+            var query = new SearchQuery(trimmed);
             IReadOnlyList<SearchHit> hits = await _searchService
                 .SearchInDocumentAsync(_document, _filePath, query, CancellationToken.None);
 
@@ -362,6 +406,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
             {
                 SearchResults.Add(hit);
             }
+            PromoteRecentSearch(trimmed);
         }
         catch (OperationCanceledException)
         {
