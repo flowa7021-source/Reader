@@ -23,6 +23,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly string _filePath;
     private readonly ISearchService _searchService;
     private readonly IAnnotationService _annotationService;
+    private readonly IBookmarkService _bookmarkService;
     private readonly ILogger<DocumentTabViewModel> _logger;
     private readonly List<Annotation> _allAnnotations = [];
 
@@ -69,6 +70,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     public ObservableCollection<Annotation> CurrentPageAnnotations { get; } = [];
 
+    /// <summary>Все закладки документа, отсортированные по PageIndex. Биндится в sidebar.</summary>
+    public ObservableCollection<Bookmark> Bookmarks { get; } = [];
+
     /// <summary>«N/M» — отображается в статус-баре. Локаль-агностичный формат: чисто цифры.</summary>
     public string PageInfo => $"{CurrentPageIndex + 1}/{Math.Max(PageCount, 1)}";
 
@@ -80,18 +84,21 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         string filePath,
         ISearchService searchService,
         IAnnotationService annotationService,
+        IBookmarkService bookmarkService,
         ILogger<DocumentTabViewModel> logger)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
         ArgumentNullException.ThrowIfNull(searchService);
         ArgumentNullException.ThrowIfNull(annotationService);
+        ArgumentNullException.ThrowIfNull(bookmarkService);
         ArgumentNullException.ThrowIfNull(logger);
 
         _document = document;
         _filePath = filePath;
         _searchService = searchService;
         _annotationService = annotationService;
+        _bookmarkService = bookmarkService;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
@@ -246,6 +253,68 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         {
             CurrentPageAnnotations.Add(a);
         }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Bookmark load failure must not crash the tab.")]
+    public async Task LoadBookmarksAsync(CancellationToken ct)
+    {
+        try
+        {
+            var loaded = await _bookmarkService.ListAsync(_filePath, ct);
+            Bookmarks.Clear();
+            foreach (var bm in loaded.OrderBy(b => b.PageIndex))
+            {
+                Bookmarks.Add(bm);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // shutdown — игнорируем
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load bookmarks for '{Path}'.", _filePath);
+        }
+    }
+
+    /// <summary>Toggle закладки на текущей странице. Label = "Page N" по умолчанию.</summary>
+    [RelayCommand]
+    private async Task ToggleBookmarkAsync()
+    {
+        int page = CurrentPageIndex;
+        string defaultLabel = $"Page {page + 1}";
+
+        var bm = await _bookmarkService.ToggleAsync(_filePath, page, defaultLabel, CancellationToken.None);
+        if (bm is null)
+        {
+            // удалили — выкидываем по PageIndex (на странице была одна закладка по контракту Toggle).
+            for (int i = Bookmarks.Count - 1; i >= 0; i--)
+            {
+                if (Bookmarks[i].PageIndex == page)
+                {
+                    Bookmarks.RemoveAt(i);
+                }
+            }
+            return;
+        }
+
+        // вставляем сохранив сортировку по PageIndex
+        int insertAt = 0;
+        while (insertAt < Bookmarks.Count && Bookmarks[insertAt].PageIndex < bm.PageIndex)
+        {
+            insertAt++;
+        }
+        Bookmarks.Insert(insertAt, bm);
+    }
+
+    [RelayCommand]
+    private void JumpToBookmark(Bookmark? bookmark)
+    {
+        if (bookmark is null)
+        {
+            return;
+        }
+        CurrentPageIndex = bookmark.PageIndex;
     }
 
     partial void OnSelectedSearchHitChanged(SearchHit? value)

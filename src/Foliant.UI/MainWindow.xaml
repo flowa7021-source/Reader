@@ -21,6 +21,9 @@
     <KeyBinding Key="F"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleSearchCommand}" />
+    <KeyBinding Key="D"
+                Modifiers="Control"
+                Command="{Binding SelectedTab.ToggleBookmarkCommand}" />
     <KeyBinding Key="PageDown"
                 Command="{Binding SelectedTab.NextPageCommand}" />
     <KeyBinding Key="PageUp"

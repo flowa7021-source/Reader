@@ -81,6 +81,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             _indexer.Enqueue(document, path);
             await tab.LoadAnnotationsAsync(ct);
+            await tab.LoadBookmarksAsync(ct);
             await _recents.AddAsync(path, ct);
             await RefreshRecentsAsync(ct);
         }

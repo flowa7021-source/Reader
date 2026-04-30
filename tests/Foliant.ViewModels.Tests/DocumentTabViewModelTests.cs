@@ -13,6 +13,7 @@ public sealed class DocumentTabViewModelTests
         IDocument? document = null,
         ISearchService? search = null,
         IAnnotationService? annotations = null,
+        IBookmarkService? bookmarks = null,
         string filePath = "/tmp/x.pdf")
     {
         // Стартовая настройка применяется ТОЛЬКО когда CreateVm сам создаёт mock —
@@ -39,7 +40,14 @@ public sealed class DocumentTabViewModelTests
                        .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
         }
 
-        return new DocumentTabViewModel(document, filePath, search, annotations, NullLogger<DocumentTabViewModel>.Instance);
+        if (bookmarks is null)
+        {
+            bookmarks = Substitute.For<IBookmarkService>();
+            bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                     .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
+        }
+
+        return new DocumentTabViewModel(document, filePath, search, annotations, bookmarks, NullLogger<DocumentTabViewModel>.Instance);
     }
 
     [Fact]
@@ -436,5 +444,93 @@ public sealed class DocumentTabViewModelTests
         vm.Zoom = 2.0;
 
         fired.Should().Contain(nameof(DocumentTabViewModel.ZoomPercent));
+    }
+
+    [Fact]
+    public async Task LoadBookmarks_PopulatesSortedByPageIndex()
+    {
+        var b3 = Bookmark.Create(3, "p3", DateTimeOffset.UtcNow);
+        var b1 = Bookmark.Create(1, "p1", DateTimeOffset.UtcNow);
+        var b7 = Bookmark.Create(7, "p7", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([b3, b1, b7]));
+        var vm = CreateVm(bookmarks: bookmarks);
+
+        await vm.LoadBookmarksAsync(default);
+
+        vm.Bookmarks.Select(b => b.PageIndex).Should().Equal([1, 3, 7]);
+    }
+
+    [Fact]
+    public async Task ToggleBookmark_NoExisting_AddsBookmark_InsertsByPage()
+    {
+        var existingP1 = Bookmark.Create(1, "p1", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([existingP1]));
+        bookmarks.ToggleAsync(Arg.Any<string>(), 5, Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<Bookmark?>(Bookmark.Create(5, "Page 6", DateTimeOffset.UtcNow)));
+        var vm = CreateVm(bookmarks: bookmarks);
+        await vm.LoadBookmarksAsync(default);
+        vm.CurrentPageIndex = 5;
+
+        await vm.ToggleBookmarkCommand.ExecuteAsync(null);
+
+        vm.Bookmarks.Select(b => b.PageIndex).Should().Equal([1, 5]);
+    }
+
+    [Fact]
+    public async Task ToggleBookmark_ExistingOnPage_DropsIt()
+    {
+        var existing = Bookmark.Create(2, "p2", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([existing]));
+        bookmarks.ToggleAsync(Arg.Any<string>(), 2, Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<Bookmark?>(null));
+        var vm = CreateVm(bookmarks: bookmarks);
+        await vm.LoadBookmarksAsync(default);
+        vm.CurrentPageIndex = 2;
+
+        await vm.ToggleBookmarkCommand.ExecuteAsync(null);
+
+        vm.Bookmarks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void JumpToBookmark_SetsCurrentPageIndex()
+    {
+        var vm = CreateVm();
+        var bm = Bookmark.Create(7, "ch3", DateTimeOffset.UtcNow);
+
+        vm.JumpToBookmarkCommand.Execute(bm);
+
+        vm.CurrentPageIndex.Should().Be(7);
+    }
+
+    [Fact]
+    public void JumpToBookmark_Null_NoOp()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 3;
+
+        vm.JumpToBookmarkCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task LoadBookmarks_ServiceThrows_DoesNotPropagate()
+    {
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromException<IReadOnlyList<Bookmark>>(new IOException("boom")));
+        var vm = CreateVm(bookmarks: bookmarks);
+
+        var act = async () => await vm.LoadBookmarksAsync(default);
+
+        await act.Should().NotThrowAsync();
+        vm.Bookmarks.Should().BeEmpty();
     }
 }

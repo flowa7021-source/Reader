@@ -116,6 +116,7 @@ internal static class AppHostBuilder
                 path,
                 sp.GetRequiredService<ISearchService>(),
                 sp.GetRequiredService<IAnnotationService>(),
+                sp.GetRequiredService<IBookmarkService>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
 
         services.AddTransient<MainViewModel>();
