@@ -49,3 +49,10 @@ public sealed record LicenseValidationResult(LicenseStatus Status, License? Lice
     public static LicenseValidationResult Missing { get; } =
         new(LicenseStatus.Missing, null, "No license file present");
 }
+
+/// <summary>
+/// «Сырой» payload лицензии — JSON документа + base64-подпись. Хранится
+/// напрямую в <c>license.key</c> через <c>ILicenseStorage</c>; верифицируется
+/// каждый запуск через <c>ILicenseVerifier</c>.
+/// </summary>
+public sealed record LicenseBlob(string LicenseJson, string SignatureBase64);
