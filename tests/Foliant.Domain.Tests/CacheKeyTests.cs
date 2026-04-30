@@ -56,4 +56,34 @@ public sealed class CacheKeyTests
         baseKey.ToFileName().Should().NotBe((baseKey with { Flags = 1 }).ToFileName());
         baseKey.ToFileName().Should().NotBe((baseKey with { DocFingerprint = "fp2" }).ToFileName());
     }
+
+    [Fact]
+    public void For_EncodesRotation_IntoBits5And6()
+    {
+        var none = CacheKey.For("fp", 0, 1, RenderOptions.Default with { RenderAnnotations = false });
+        var cw90 = CacheKey.For("fp", 0, 1, RenderOptions.Default with { RenderAnnotations = false, Rotation = ViewRotation.Cw90 });
+        var cw180 = CacheKey.For("fp", 0, 1, RenderOptions.Default with { RenderAnnotations = false, Rotation = ViewRotation.Cw180 });
+        var cw270 = CacheKey.For("fp", 0, 1, RenderOptions.Default with { RenderAnnotations = false, Rotation = ViewRotation.Cw270 });
+
+        none.Flags.Should().Be(0);
+        cw90.Flags.Should().Be(1 << 5);
+        cw180.Flags.Should().Be(2 << 5);
+        cw270.Flags.Should().Be(3 << 5);
+    }
+
+    [Fact]
+    public void For_RotationCombinedWithThemeAndAnnotations_BitsDoNotCollide()
+    {
+        var opts = RenderOptions.Default with
+        {
+            RenderAnnotations = true,
+            Theme = RenderTheme.HighContrast,
+            Rotation = ViewRotation.Cw270,
+        };
+
+        var key = CacheKey.For("fp", 0, 1, opts);
+
+        // bit0 = 1 (annotations), bits1-4 = HighContrast (2) → 2<<1 = 4, bits5-6 = 3<<5 = 96
+        key.Flags.Should().Be(1 | 4 | 96);
+    }
 }
