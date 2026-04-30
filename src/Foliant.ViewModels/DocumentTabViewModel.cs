@@ -394,6 +394,32 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         CurrentPageIndex = bookmark.PageIndex;
     }
 
+    /// <summary>Прыгает на ближайшую закладку с PageIndex &gt; CurrentPageIndex; wrap к первой.</summary>
+    [RelayCommand]
+    private void NextBookmark()
+    {
+        if (Bookmarks.Count == 0)
+        {
+            return;
+        }
+        Bookmark? target = Bookmarks.FirstOrDefault(b => b.PageIndex > CurrentPageIndex);
+        target ??= Bookmarks[0];
+        CurrentPageIndex = target.PageIndex;
+    }
+
+    /// <summary>Прыгает на ближайшую закладку с PageIndex &lt; CurrentPageIndex; wrap к последней.</summary>
+    [RelayCommand]
+    private void PreviousBookmark()
+    {
+        if (Bookmarks.Count == 0)
+        {
+            return;
+        }
+        Bookmark? target = Bookmarks.LastOrDefault(b => b.PageIndex < CurrentPageIndex);
+        target ??= Bookmarks[^1];
+        CurrentPageIndex = target.PageIndex;
+    }
+
     /// <summary>
     /// Pull-to-front + cap. Регистро-нечувствительный дедуп: ввод "Cat" и "cat"
     /// считаются одной записью; новый занимает место старого.

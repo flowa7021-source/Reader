@@ -761,4 +761,87 @@ public sealed class DocumentTabViewModelTests
         act.Should().NotThrow();
         vm.CurrentPageIndex.Should().Be(5);
     }
+
+    // ───── Next/Previous bookmark (S11/K) ─────
+
+    [Fact]
+    public async Task NextBookmark_WithBookmarks_JumpsToNearestAheadOfCurrent()
+    {
+        var b0 = Bookmark.Create(0, "p0", DateTimeOffset.UtcNow);
+        var b3 = Bookmark.Create(3, "p3", DateTimeOffset.UtcNow);
+        var b7 = Bookmark.Create(7, "p7", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([b0, b3, b7]));
+        var vm = CreateVm(bookmarks: bookmarks);
+        await vm.LoadBookmarksAsync(default);
+        vm.CurrentPageIndex = 4;
+
+        vm.NextBookmarkCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(7);
+    }
+
+    [Fact]
+    public async Task NextBookmark_NoneAhead_WrapsToFirst()
+    {
+        var b0 = Bookmark.Create(0, "p0", DateTimeOffset.UtcNow);
+        var b3 = Bookmark.Create(3, "p3", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([b0, b3]));
+        var vm = CreateVm(bookmarks: bookmarks);
+        await vm.LoadBookmarksAsync(default);
+        vm.CurrentPageIndex = 9;
+
+        vm.NextBookmarkCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task PreviousBookmark_WithBookmarks_JumpsToNearestBehindCurrent()
+    {
+        var b1 = Bookmark.Create(1, "p1", DateTimeOffset.UtcNow);
+        var b5 = Bookmark.Create(5, "p5", DateTimeOffset.UtcNow);
+        var b8 = Bookmark.Create(8, "p8", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([b1, b5, b8]));
+        var vm = CreateVm(bookmarks: bookmarks);
+        await vm.LoadBookmarksAsync(default);
+        vm.CurrentPageIndex = 7;
+
+        vm.PreviousBookmarkCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task PreviousBookmark_NoneBehind_WrapsToLast()
+    {
+        var b3 = Bookmark.Create(3, "p3", DateTimeOffset.UtcNow);
+        var b7 = Bookmark.Create(7, "p7", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([b3, b7]));
+        var vm = CreateVm(bookmarks: bookmarks);
+        await vm.LoadBookmarksAsync(default);
+        vm.CurrentPageIndex = 1;
+
+        vm.PreviousBookmarkCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(7);
+    }
+
+    [Fact]
+    public void NextBookmark_Empty_NoOp()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 3;
+
+        vm.NextBookmarkCommand.Execute(null);
+
+        vm.CurrentPageIndex.Should().Be(3);
+    }
 }

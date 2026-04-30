@@ -35,6 +35,11 @@
     <KeyBinding Key="D"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleBookmarkCommand}" />
+    <KeyBinding Key="F2"
+                Command="{Binding SelectedTab.NextBookmarkCommand}" />
+    <KeyBinding Key="F2"
+                Modifiers="Shift"
+                Command="{Binding SelectedTab.PreviousBookmarkCommand}" />
     <KeyBinding Key="Tab"
                 Modifiers="Control"
                 Command="{Binding NextTabCommand}" />
