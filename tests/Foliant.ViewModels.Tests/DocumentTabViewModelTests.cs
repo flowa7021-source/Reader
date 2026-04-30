@@ -844,4 +844,69 @@ public sealed class DocumentTabViewModelTests
 
         vm.CurrentPageIndex.Should().Be(3);
     }
+
+    // ───── Counts (S11/L) ─────
+
+    [Fact]
+    public async Task TotalAnnotationsCount_StartsAtZero_GrowsWithLoadAndAdd()
+    {
+        var page0 = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var page2 = Annotation.Highlight(2, new AnnotationRect(0, 0, 10, 10), "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([page0, page2]));
+        var vm = CreateVm(annotations: ann);
+
+        vm.TotalAnnotationsCount.Should().Be(0);
+
+        await vm.LoadAnnotationsAsync(default);
+        vm.TotalAnnotationsCount.Should().Be(2);
+
+        await vm.AddHighlightAsync(5, new AnnotationRect(0, 0, 1, 1), "#FF0", default);
+        vm.TotalAnnotationsCount.Should().Be(3);
+    }
+
+    [Fact]
+    public void CurrentPageAnnotationsCount_FollowsCollection()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageAnnotationsCount.Should().Be(0);
+
+        vm.CurrentPageAnnotations.Add(Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow));
+        vm.CurrentPageAnnotationsCount.Should().Be(1);
+
+        vm.CurrentPageAnnotations.Clear();
+        vm.CurrentPageAnnotationsCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task BookmarksCount_FollowsCollection()
+    {
+        var b0 = Bookmark.Create(0, "p0", DateTimeOffset.UtcNow);
+        var b3 = Bookmark.Create(3, "p3", DateTimeOffset.UtcNow);
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([b0, b3]));
+        var vm = CreateVm(bookmarks: bookmarks);
+
+        vm.BookmarksCount.Should().Be(0);
+
+        await vm.LoadBookmarksAsync(default);
+        vm.BookmarksCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void Counts_FirePropertyChanged_OnMutation()
+    {
+        var vm = CreateVm();
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.CurrentPageAnnotations.Add(Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow));
+        fired.Should().Contain(nameof(DocumentTabViewModel.CurrentPageAnnotationsCount));
+
+        fired.Clear();
+        vm.Bookmarks.Add(Bookmark.Create(0, "x", DateTimeOffset.UtcNow));
+        fired.Should().Contain(nameof(DocumentTabViewModel.BookmarksCount));
+    }
 }

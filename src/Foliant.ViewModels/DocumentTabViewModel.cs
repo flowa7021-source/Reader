@@ -99,6 +99,17 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     public bool CanGoForward => _navForward.Count > 0;
 
+    /// <summary>Общее число аннотаций по всему документу. Обновляется при load/add/remove.</summary>
+    public int TotalAnnotationsCount => _allAnnotations.Count;
+
+    /// <summary>Число аннотаций именно на текущей странице. Совпадает с <c>CurrentPageAnnotations.Count</c>,
+    /// но отдельным property удобнее биндить — counter в sidebar/status-bar не должен подписываться
+    /// на <c>CollectionChanged</c>.</summary>
+    public int CurrentPageAnnotationsCount => CurrentPageAnnotations.Count;
+
+    /// <summary>Число закладок в документе.</summary>
+    public int BookmarksCount => Bookmarks.Count;
+
     public DocumentTabViewModel(
         IDocument document,
         string filePath,
@@ -122,6 +133,13 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
+
+        // Computed counts биндятся в sidebar/status — пробрасываем
+        // CollectionChanged → PropertyChanged для соответствующего count-property.
+        CurrentPageAnnotations.CollectionChanged += (_, _) =>
+            OnPropertyChanged(nameof(CurrentPageAnnotationsCount));
+        Bookmarks.CollectionChanged += (_, _) =>
+            OnPropertyChanged(nameof(BookmarksCount));
     }
 
     partial void OnCurrentPageIndexChanged(int oldValue, int newValue)
@@ -258,6 +276,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
             var loaded = await _annotationService.ListAsync(_filePath, ct);
             _allAnnotations.Clear();
             _allAnnotations.AddRange(loaded);
+            OnPropertyChanged(nameof(TotalAnnotationsCount));
             RefreshCurrentPageAnnotations();
         }
         catch (OperationCanceledException)
@@ -278,6 +297,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         var hl = Annotation.Highlight(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow);
         await _annotationService.AddAsync(_filePath, hl, ct);
         _allAnnotations.Add(hl);
+        OnPropertyChanged(nameof(TotalAnnotationsCount));
         if (pageIndex == CurrentPageIndex)
         {
             CurrentPageAnnotations.Add(hl);
@@ -293,6 +313,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         var note = Annotation.StickyNote(pageIndex, bounds, text, colorHex, DateTimeOffset.UtcNow);
         await _annotationService.AddAsync(_filePath, note, ct);
         _allAnnotations.Add(note);
+        OnPropertyChanged(nameof(TotalAnnotationsCount));
         if (pageIndex == CurrentPageIndex)
         {
             CurrentPageAnnotations.Add(note);
@@ -314,6 +335,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         }
 
         _allAnnotations.RemoveAll(a => a.Id == annotation.Id);
+        OnPropertyChanged(nameof(TotalAnnotationsCount));
         for (int i = CurrentPageAnnotations.Count - 1; i >= 0; i--)
         {
             if (CurrentPageAnnotations[i].Id == annotation.Id)
