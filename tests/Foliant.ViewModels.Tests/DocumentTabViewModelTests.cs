@@ -617,4 +617,64 @@ public sealed class DocumentTabViewModelTests
         vm.SearchText.Should().Be("foo");
         vm.SearchResults.Should().ContainSingle();
     }
+
+    // ───── Find next/previous (S11/H) ─────
+
+    [Fact]
+    public void NextSearchHit_NoResults_NoOp()
+    {
+        var vm = CreateVm();
+
+        var act = () => vm.NextSearchHitCommand.Execute(null);
+        act.Should().NotThrow();
+        vm.SelectedSearchHit.Should().BeNull();
+    }
+
+    [Fact]
+    public void NextSearchHit_NoSelection_PicksFirst()
+    {
+        var vm = CreateVm();
+        var h0 = new SearchHit("", "/x", 0, "a", 1.0);
+        var h1 = new SearchHit("", "/x", 5, "b", 1.0);
+        vm.SearchResults.Add(h0);
+        vm.SearchResults.Add(h1);
+
+        vm.NextSearchHitCommand.Execute(null);
+
+        vm.SelectedSearchHit.Should().BeSameAs(h0);
+    }
+
+    [Fact]
+    public void NextSearchHit_CyclesAndWraps()
+    {
+        var vm = CreateVm();
+        var h0 = new SearchHit("", "/x", 0, "a", 1.0);
+        var h1 = new SearchHit("", "/x", 1, "b", 1.0);
+        var h2 = new SearchHit("", "/x", 2, "c", 1.0);
+        vm.SearchResults.Add(h0);
+        vm.SearchResults.Add(h1);
+        vm.SearchResults.Add(h2);
+        vm.SelectedSearchHit = h1;
+
+        vm.NextSearchHitCommand.Execute(null);
+        vm.SelectedSearchHit.Should().BeSameAs(h2);
+
+        vm.NextSearchHitCommand.Execute(null);
+        vm.SelectedSearchHit.Should().BeSameAs(h0);   // wrap
+    }
+
+    [Fact]
+    public void PreviousSearchHit_WrapsAtStart()
+    {
+        var vm = CreateVm();
+        var h0 = new SearchHit("", "/x", 0, "a", 1.0);
+        var h1 = new SearchHit("", "/x", 1, "b", 1.0);
+        vm.SearchResults.Add(h0);
+        vm.SearchResults.Add(h1);
+        vm.SelectedSearchHit = h0;
+
+        vm.PreviousSearchHitCommand.Execute(null);
+
+        vm.SelectedSearchHit.Should().BeSameAs(h1);   // wrap
+    }
 }

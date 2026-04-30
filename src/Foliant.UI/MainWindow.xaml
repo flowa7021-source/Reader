@@ -21,6 +21,11 @@
     <KeyBinding Key="F"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleSearchCommand}" />
+    <KeyBinding Key="F3"
+                Command="{Binding SelectedTab.NextSearchHitCommand}" />
+    <KeyBinding Key="F3"
+                Modifiers="Shift"
+                Command="{Binding SelectedTab.PreviousSearchHitCommand}" />
     <KeyBinding Key="D"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleBookmarkCommand}" />

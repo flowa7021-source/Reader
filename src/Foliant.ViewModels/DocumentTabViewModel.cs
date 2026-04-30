@@ -360,6 +360,30 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         await RunSearchAsync();
     }
 
+    /// <summary>Перейти к следующему хиту в <see cref="SearchResults"/>; wrap при достижении конца.</summary>
+    [RelayCommand]
+    private void NextSearchHit()
+    {
+        if (SearchResults.Count == 0)
+        {
+            return;
+        }
+        int idx = SelectedSearchHit is null ? -1 : SearchResults.IndexOf(SelectedSearchHit);
+        SelectedSearchHit = SearchResults[(idx + 1) % SearchResults.Count];
+    }
+
+    /// <summary>Перейти к предыдущему хиту; wrap в начале.</summary>
+    [RelayCommand]
+    private void PreviousSearchHit()
+    {
+        if (SearchResults.Count == 0)
+        {
+            return;
+        }
+        int idx = SelectedSearchHit is null ? 0 : SearchResults.IndexOf(SelectedSearchHit);
+        SelectedSearchHit = SearchResults[(idx - 1 + SearchResults.Count) % SearchResults.Count];
+    }
+
     partial void OnSelectedSearchHitChanged(SearchHit? value)
     {
         if (value is not null && value.PageIndex != CurrentPageIndex)
