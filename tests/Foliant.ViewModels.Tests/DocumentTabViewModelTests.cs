@@ -909,4 +909,49 @@ public sealed class DocumentTabViewModelTests
         vm.Bookmarks.Add(Bookmark.Create(0, "x", DateTimeOffset.UtcNow));
         fired.Should().Contain(nameof(DocumentTabViewModel.BookmarksCount));
     }
+
+    // ───── Metadata exposure (S11/M) ─────
+
+    [Fact]
+    public void Metadata_BuiltFromDocumentMetadata_ContainsTitleAndPageCount()
+    {
+        var doc = Substitute.For<IDocument>();
+        doc.PageCount.Returns(42);
+        doc.Metadata.Returns(new DocumentMetadata(
+            Title: "Sample",
+            Author: null,
+            Subject: null,
+            Created: null,
+            Modified: null,
+            Custom: new Dictionary<string, string>()));
+        var vm = CreateVm(document: doc, filePath: "/tmp/sample.pdf");
+
+        var meta = vm.Metadata;
+
+        meta.Title.Should().Be("Sample");
+        meta.PageCount.Should().Be(42);
+        meta.FilePath.Should().Be("/tmp/sample.pdf");
+    }
+
+    [Fact]
+    public void Metadata_LazyEvaluated_SameInstanceAcrossAccesses()
+    {
+        var vm = CreateVm();
+
+        var first = vm.Metadata;
+        var second = vm.Metadata;
+
+        second.Should().BeSameAs(first);
+    }
+
+    [Fact]
+    public void Metadata_NoFieldsPresent_HasAnyKnownField_False()
+    {
+        var doc = Substitute.For<IDocument>();
+        doc.PageCount.Returns(1);
+        doc.Metadata.Returns(DocumentMetadata.Empty);
+        var vm = CreateVm(document: doc);
+
+        vm.Metadata.HasAnyKnownField.Should().BeFalse();
+    }
 }

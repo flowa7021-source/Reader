@@ -110,6 +110,12 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// <summary>Число закладок в документе.</summary>
     public int BookmarksCount => Bookmarks.Count;
 
+    /// <summary>Read-only обёртка над <see cref="IDocument.Metadata"/> для info-диалога.
+    /// Создаётся лениво — пока пользователь не открыл «Document Info», VM не строится.</summary>
+    public DocumentMetadataViewModel Metadata => _metadataLazy.Value;
+
+    private readonly Lazy<DocumentMetadataViewModel> _metadataLazy;
+
     public DocumentTabViewModel(
         IDocument document,
         string filePath,
@@ -133,6 +139,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
+        _metadataLazy = new Lazy<DocumentMetadataViewModel>(
+            () => new DocumentMetadataViewModel(_document.Metadata, _filePath, PageCount));
 
         // Computed counts биндятся в sidebar/status — пробрасываем
         // CollectionChanged → PropertyChanged для соответствующего count-property.
