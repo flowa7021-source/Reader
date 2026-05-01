@@ -157,6 +157,26 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
         var flat = Groups.SelectMany(g => g.Annotations).ToList();
         ExportedText = flat.Count == 0 ? string.Empty : _exporter.Export(flat);
     }
+
+    /// <summary>Очистить только поисковую строку (<see cref="SearchText"/>) — kind-фильтр
+    /// и сортировки сохраняются. Полезно для кнопки «×» внутри поля поиска.</summary>
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        SearchText = string.Empty;
+    }
+
+    /// <summary>Сбросить все фильтры и сортировки к значениям по умолчанию: показ
+    /// всех видов, без поискового слова, страницы по возрастанию, аннотации
+    /// по возрастанию даты создания.</summary>
+    [RelayCommand]
+    private void ClearFilters()
+    {
+        FilterMode = AnnotationFilterMode.All;
+        SearchText = string.Empty;
+        SortPageDescending = false;
+        SortWithinGroupNewestFirst = false;
+    }
 }
 
 /// <summary>Аннотации одной страницы. <c>OneBasedPageNumber</c> готов к показу в UI.</summary>

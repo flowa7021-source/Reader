@@ -74,4 +74,77 @@ public sealed class LicenseImportViewModelTests
         vm.LastResult!.Status.Should().Be(LicenseStatus.Invalid);
         vm.WasImportedSuccessfully.Should().BeFalse();
     }
+
+    // ───── ErrorMessage + ClearCommand (S13/K) ─────
+
+    [Fact]
+    public async Task Import_ManagerThrows_SetsErrorMessage_DoesNotPropagate()
+    {
+        _manager.ImportAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromException<LicenseValidationResult>(new InvalidOperationException("disk error")));
+        var vm = new LicenseImportViewModel(_manager);
+        vm.LicenseJson = "x";
+        vm.SignatureBase64 = "y";
+
+        var act = async () => await vm.ImportCommand.ExecuteAsync(null);
+
+        await act.Should().NotThrowAsync();
+        vm.ErrorMessage.Should().Be("disk error");
+        vm.LastResult!.Status.Should().Be(LicenseStatus.Invalid);
+    }
+
+    [Fact]
+    public async Task Import_AfterPriorError_ResetsErrorMessage_OnSuccess()
+    {
+        var vm = new LicenseImportViewModel(_manager);
+        vm.LicenseJson = "x";
+        vm.SignatureBase64 = "y";
+        _manager.ImportAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromException<LicenseValidationResult>(new InvalidOperationException("boom")));
+        await vm.ImportCommand.ExecuteAsync(null);
+        vm.ErrorMessage.Should().NotBeNull();
+
+        var lic = new License("u", "Pro", DateTimeOffset.UtcNow.AddYears(1), []);
+        _manager.ImportAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(LicenseValidationResult.Valid(lic));
+        await vm.ImportCommand.ExecuteAsync(null);
+
+        vm.ErrorMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public void ClearCommand_EmptyVm_CannotExecute()
+    {
+        var vm = new LicenseImportViewModel(_manager);
+
+        vm.ClearCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearCommand_WithInput_CanExecute()
+    {
+        var vm = new LicenseImportViewModel(_manager);
+        vm.LicenseJson = "anything";
+
+        vm.ClearCommand.CanExecute(null).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ClearCommand_ResetsAllFields()
+    {
+        var lic = new License("u", "Pro", DateTimeOffset.UtcNow.AddYears(1), []);
+        _manager.ImportAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(LicenseValidationResult.Valid(lic));
+        var vm = new LicenseImportViewModel(_manager);
+        vm.LicenseJson = "payload";
+        vm.SignatureBase64 = "sig";
+        await vm.ImportCommand.ExecuteAsync(null);
+
+        vm.ClearCommand.Execute(null);
+
+        vm.LicenseJson.Should().BeEmpty();
+        vm.SignatureBase64.Should().BeEmpty();
+        vm.LastResult.Should().BeNull();
+        vm.ErrorMessage.Should().BeNull();
+    }
 }

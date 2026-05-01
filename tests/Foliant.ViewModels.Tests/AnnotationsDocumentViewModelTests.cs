@@ -476,4 +476,53 @@ public sealed class AnnotationsDocumentViewModelTests
 
         fired.Should().Contain(nameof(AnnotationsDocumentViewModel.CanExport));
     }
+
+    // ───── ClearSearch / ClearFilters (S10/L) ─────
+
+    [Fact]
+    public void ClearSearchCommand_ResetsSearchText_LeavesOtherFiltersAlone()
+    {
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.SearchText = "foo";
+        vm.FilterMode = AnnotationFilterMode.Notes;
+        vm.SortPageDescending = true;
+
+        vm.ClearSearchCommand.Execute(null);
+
+        vm.SearchText.Should().BeEmpty();
+        vm.FilterMode.Should().Be(AnnotationFilterMode.Notes);
+        vm.SortPageDescending.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ClearFiltersCommand_RestoresDefaults()
+    {
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.SearchText = "x";
+        vm.FilterMode = AnnotationFilterMode.Highlights;
+        vm.SortPageDescending = true;
+        vm.SortWithinGroupNewestFirst = true;
+
+        vm.ClearFiltersCommand.Execute(null);
+
+        vm.SearchText.Should().BeEmpty();
+        vm.FilterMode.Should().Be(AnnotationFilterMode.All);
+        vm.SortPageDescending.Should().BeFalse();
+        vm.SortWithinGroupNewestFirst.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearFiltersCommand_RebuildsGroupsToShowAllItems()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([hl, note]);
+        vm.FilterMode = AnnotationFilterMode.Highlights;
+        vm.TotalCount.Should().Be(1);
+
+        vm.ClearFiltersCommand.Execute(null);
+
+        vm.TotalCount.Should().Be(2);
+    }
 }

@@ -1435,4 +1435,87 @@ public sealed class DocumentTabViewModelTests
         await bm.Received(1).RenameAsync(
             Arg.Any<string>(), original.Id, "trimmed", Arg.Any<CancellationToken>());
     }
+
+    // ───── ISearchHistoryService wiring (S6/F) ─────
+
+    private static DocumentTabViewModel CreateVmWithHistory(
+        ISearchHistoryService history,
+        ISearchService? search = null)
+    {
+        var doc = Substitute.For<IDocument>();
+        doc.PageCount.Returns(10);
+
+        if (search is null)
+        {
+            search = Substitute.For<ISearchService>();
+            search
+                .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        }
+
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        var bm = Substitute.For<IBookmarkService>();
+        bm.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
+
+        return new DocumentTabViewModel(
+            doc, "/tmp/x.pdf", search, ann, bm,
+            NullLogger<DocumentTabViewModel>.Instance,
+            history);
+    }
+
+    [Fact]
+    public void Constructor_WithSearchHistory_SeedsRecentSearchesFromService()
+    {
+        var history = Substitute.For<ISearchHistoryService>();
+        history.GetHistory().Returns(new[] { "a", "b", "c" });
+
+        var vm = CreateVmWithHistory(history);
+
+        vm.RecentSearches.Should().Equal(["a", "b", "c"]);
+    }
+
+    [Fact]
+    public async Task RunSearch_WithSearchHistory_AddsQueryToService()
+    {
+        var history = Substitute.For<ISearchHistoryService>();
+        history.GetHistory().Returns(Array.Empty<string>());
+        var vm = CreateVmWithHistory(history);
+        vm.SearchText = "foo";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        history.Received(1).Add("foo");
+    }
+
+    [Fact]
+    public async Task RunSearch_WithoutSearchHistory_DoesNotThrow()
+    {
+        // Без сервиса — никакой Add не вызываем (в коде `?.Add`).
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
+        var vm = CreateVm(search: search);
+        vm.SearchText = "any";
+
+        var act = async () => await vm.RunSearchCommand.ExecuteAsync(null);
+
+        await act.Should().NotThrowAsync();
+        vm.RecentSearches.Should().Equal(["any"]);   // legacy per-tab promotion still works
+    }
+
+    [Fact]
+    public async Task RunSearch_EmptyText_DoesNotCallHistoryAdd()
+    {
+        var history = Substitute.For<ISearchHistoryService>();
+        history.GetHistory().Returns(Array.Empty<string>());
+        var vm = CreateVmWithHistory(history);
+        vm.SearchText = "";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        history.DidNotReceive().Add(Arg.Any<string>());
+    }
 }

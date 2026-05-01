@@ -24,6 +24,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly ISearchService _searchService;
     private readonly IAnnotationService _annotationService;
     private readonly IBookmarkService _bookmarkService;
+    private readonly ISearchHistoryService? _searchHistory;
     private readonly ILogger<DocumentTabViewModel> _logger;
     private readonly List<Annotation> _allAnnotations = [];
 
@@ -203,7 +204,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         ISearchService searchService,
         IAnnotationService annotationService,
         IBookmarkService bookmarkService,
-        ILogger<DocumentTabViewModel> logger)
+        ILogger<DocumentTabViewModel> logger,
+        ISearchHistoryService? searchHistory = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -217,11 +219,20 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _searchService = searchService;
         _annotationService = annotationService;
         _bookmarkService = bookmarkService;
+        _searchHistory = searchHistory;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
         _metadataLazy = new Lazy<DocumentMetadataViewModel>(
             () => new DocumentMetadataViewModel(_document.Metadata, _filePath, PageCount));
+
+        if (_searchHistory is not null)
+        {
+            foreach (var q in _searchHistory.GetHistory())
+            {
+                RecentSearches.Add(q);
+            }
+        }
 
         // Computed counts биндятся в sidebar/status — пробрасываем
         // CollectionChanged → PropertyChanged для соответствующего count-property.
@@ -627,7 +638,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     /// <summary>
     /// Pull-to-front + cap. Регистро-нечувствительный дедуп: ввод "Cat" и "cat"
-    /// считаются одной записью; новый занимает место старого.
+    /// считаются одной записью; новый занимает место старого. Если зарегистрирован
+    /// <see cref="ISearchHistoryService"/>, вызов также обновляет shared-историю —
+    /// другие вкладки увидят новый запрос при следующем чтении.
     /// </summary>
     private void PromoteRecentSearch(string query)
     {
@@ -648,6 +661,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         {
             RecentSearches.RemoveAt(RecentSearches.Count - 1);
         }
+
+        _searchHistory?.Add(query);
     }
 
     /// <summary>Команда заполняет <see cref="SearchText"/> из истории и сразу запускает поиск.</summary>
