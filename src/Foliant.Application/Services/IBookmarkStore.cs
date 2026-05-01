@@ -12,6 +12,10 @@ public interface IBookmarkStore
 
     Task AddAsync(string docFingerprint, Bookmark bookmark, CancellationToken ct);
 
+    /// <summary>Заменить existing bookmark с тем же Id. Бросает <see cref="KeyNotFoundException"/>
+    /// если такой Id отсутствует — clobber-by-id вместо silent-create.</summary>
+    Task UpdateAsync(string docFingerprint, Bookmark bookmark, CancellationToken ct);
+
     Task<bool> RemoveAsync(string docFingerprint, Guid bookmarkId, CancellationToken ct);
 
     Task RemoveAllAsync(string docFingerprint, CancellationToken ct);

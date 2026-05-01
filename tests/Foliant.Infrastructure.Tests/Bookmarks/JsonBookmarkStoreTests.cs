@@ -119,4 +119,26 @@ public sealed class JsonBookmarkStoreTests : IDisposable
         (await _sut.ListAsync("doc-A", default)).Should().ContainSingle().Which.Id.Should().Be(a.Id);
         (await _sut.ListAsync("doc-B", default)).Should().ContainSingle().Which.Id.Should().Be(b.Id);
     }
+
+    [Fact]
+    public async Task Update_ExistingId_ReplacesBookmark()
+    {
+        var bm = Bookmark.Create(3, "old", DateTimeOffset.UtcNow);
+        await _sut.AddAsync(Fp, bm, default);
+
+        await _sut.UpdateAsync(Fp, bm with { Label = "new" }, default);
+
+        var result = await _sut.ListAsync(Fp, default);
+        result.Should().ContainSingle().Which.Label.Should().Be("new");
+    }
+
+    [Fact]
+    public async Task Update_UnknownId_ThrowsKeyNotFound()
+    {
+        var phantom = Bookmark.Create(0, "x", DateTimeOffset.UtcNow);
+
+        var act = () => _sut.UpdateAsync(Fp, phantom, default);
+
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
 }

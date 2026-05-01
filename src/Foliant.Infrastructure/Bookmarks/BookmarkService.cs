@@ -31,6 +31,23 @@ public sealed class BookmarkService(
         return await store.RemoveAsync(fp, bookmarkId, ct).ConfigureAwait(false);
     }
 
+    public async Task<Bookmark?> RenameAsync(string documentPath, Guid bookmarkId, string newLabel, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(newLabel);
+        var fp = await fingerprint.ComputeAsync(documentPath, ct).ConfigureAwait(false);
+        var existing = await store.ListAsync(fp, ct).ConfigureAwait(false);
+        var current = existing.FirstOrDefault(b => b.Id == bookmarkId);
+        if (current is null)
+        {
+            return null;
+        }
+
+        var renamed = current with { Label = newLabel };
+        await store.UpdateAsync(fp, renamed, ct).ConfigureAwait(false);
+        log.LogDebug("Bookmark renamed: {Path} {Id} → '{Label}'", documentPath, bookmarkId, newLabel);
+        return renamed;
+    }
+
     public async Task<Bookmark?> ToggleAsync(string documentPath, int pageIndex, string label, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(label);

@@ -63,6 +63,44 @@ public sealed class JsonBookmarkStore : IBookmarkStore, IDisposable
         }
     }
 
+    public async Task UpdateAsync(string docFingerprint, Bookmark bookmark, CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(docFingerprint);
+        ArgumentNullException.ThrowIfNull(bookmark);
+
+        var gate = GetGate(docFingerprint);
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var existing = await LoadAsync(docFingerprint, ct).ConfigureAwait(false);
+            var next = new List<Bookmark>(existing.Count);
+            bool replaced = false;
+            foreach (var b in existing)
+            {
+                if (b.Id == bookmark.Id)
+                {
+                    next.Add(bookmark);
+                    replaced = true;
+                }
+                else
+                {
+                    next.Add(b);
+                }
+            }
+
+            if (!replaced)
+            {
+                throw new KeyNotFoundException($"Bookmark {bookmark.Id} not found for document {docFingerprint}");
+            }
+
+            await SaveAsync(docFingerprint, next, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
     public async Task<bool> RemoveAsync(string docFingerprint, Guid bookmarkId, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(docFingerprint);

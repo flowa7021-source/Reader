@@ -96,4 +96,39 @@ public sealed class BookmarkServiceTests
         result!.PageIndex.Should().Be(7);
         await _store.Received(1).AddAsync(Fp, Arg.Any<Bookmark>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task Rename_KnownId_UpdatesLabel_ReturnsUpdated()
+    {
+        var bm = Bookmark.Create(3, "old", DateTimeOffset.UtcNow);
+        _store.ListAsync(Fp, Arg.Any<CancellationToken>()).Returns(new[] { bm });
+
+        var result = await _sut.RenameAsync(Path, bm.Id, "new label", default);
+
+        result.Should().NotBeNull();
+        result!.Label.Should().Be("new label");
+        result.Id.Should().Be(bm.Id);
+        result.PageIndex.Should().Be(3);
+        await _store.Received(1).UpdateAsync(Fp,
+            Arg.Is<Bookmark>(b => b.Id == bm.Id && b.Label == "new label"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Rename_UnknownId_ReturnsNull_DoesNotUpdate()
+    {
+        _store.ListAsync(Fp, Arg.Any<CancellationToken>()).Returns(Array.Empty<Bookmark>());
+
+        var result = await _sut.RenameAsync(Path, Guid.NewGuid(), "x", default);
+
+        result.Should().BeNull();
+        await _store.DidNotReceive().UpdateAsync(Fp, Arg.Any<Bookmark>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Rename_NullLabel_Throws()
+    {
+        var act = () => _sut.RenameAsync(Path, Guid.NewGuid(), null!, default);
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
 }
