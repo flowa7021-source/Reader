@@ -454,6 +454,41 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         }
     }
 
+    /// <summary>
+    /// Сохранить изменённую аннотацию (например, новый текст StickyNote или другой цвет).
+    /// Персистирует через <see cref="IAnnotationService.UpdateAsync"/> и обновляет
+    /// оба внутренних списка (<c>_allAnnotations</c> и <c>CurrentPageAnnotations</c>),
+    /// чтобы UI немедленно отразил изменения без перезагрузки.
+    /// </summary>
+    [RelayCommand]
+    private async Task UpdateAnnotationAsync(Annotation? annotation)
+    {
+        if (annotation is null)
+        {
+            return;
+        }
+
+        await _annotationService.UpdateAsync(_filePath, annotation, CancellationToken.None);
+
+        for (int i = 0; i < _allAnnotations.Count; i++)
+        {
+            if (_allAnnotations[i].Id == annotation.Id)
+            {
+                _allAnnotations[i] = annotation;
+                break;
+            }
+        }
+
+        for (int i = 0; i < CurrentPageAnnotations.Count; i++)
+        {
+            if (CurrentPageAnnotations[i].Id == annotation.Id)
+            {
+                CurrentPageAnnotations[i] = annotation;
+                break;
+            }
+        }
+    }
+
     private void RefreshCurrentPageAnnotations()
     {
         CurrentPageAnnotations.Clear();

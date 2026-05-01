@@ -1263,4 +1263,93 @@ public sealed class DocumentTabViewModelTests
         fired.Should().Contain(nameof(DocumentTabViewModel.SearchHitCount));
         fired.Should().Contain(nameof(DocumentTabViewModel.SearchHitInfo));
     }
+
+    // ───── UpdateAnnotationCommand (S10/J) ─────
+
+    [Fact]
+    public async Task UpdateAnnotationCommand_CallsServiceAndUpdatesAllAnnotations()
+    {
+        var original = Annotation.StickyNote(0, new AnnotationRect(0, 0, 10, 10), "old text", "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([original]));
+        ann.UpdateAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>())
+           .Returns(Task.CompletedTask);
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        var updated = original with { Text = "new text" };
+        await vm.UpdateAnnotationCommand.ExecuteAsync(updated);
+
+        await ann.Received(1).UpdateAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Id == original.Id && a.Text == "new text"),
+            Arg.Any<CancellationToken>());
+        vm.TotalAnnotationsCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task UpdateAnnotationCommand_UpdatesCurrentPageAnnotations_WhenOnCurrentPage()
+    {
+        var original = Annotation.StickyNote(0, new AnnotationRect(0, 0, 10, 10), "before", "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([original]));
+        ann.UpdateAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>())
+           .Returns(Task.CompletedTask);
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        var updated = original with { Text = "after" };
+        await vm.UpdateAnnotationCommand.ExecuteAsync(updated);
+
+        vm.CurrentPageAnnotations.Should().ContainSingle()
+            .Which.Text.Should().Be("after");
+    }
+
+    [Fact]
+    public async Task UpdateAnnotationCommand_AnnotationOnOtherPage_DoesNotTouchCurrentPage()
+    {
+        var page3 = Annotation.StickyNote(3, new AnnotationRect(0, 0, 10, 10), "p3", "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([page3]));
+        ann.UpdateAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>())
+           .Returns(Task.CompletedTask);
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default); // CurrentPage = 0
+
+        await vm.UpdateAnnotationCommand.ExecuteAsync(page3 with { Text = "updated" });
+
+        vm.CurrentPageAnnotations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task UpdateAnnotationCommand_NullArg_IsNoOp()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(annotations: ann);
+
+        await vm.UpdateAnnotationCommand.ExecuteAsync(null);
+
+        await ann.DidNotReceive().UpdateAsync(
+            Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAnnotationCommand_UnknownId_DoesNotCrash()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        ann.UpdateAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>())
+           .Returns(Task.CompletedTask);
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        var orphan = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "x", "#000", DateTimeOffset.UtcNow);
+        var act = async () => await vm.UpdateAnnotationCommand.ExecuteAsync(orphan);
+
+        await act.Should().NotThrowAsync();
+    }
 }

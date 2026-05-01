@@ -534,6 +534,67 @@ public sealed class MainViewModelTests
         vm.LicenseStatus!.Status.Should().Be(LicenseStatus.Missing);
     }
 
+    // ───── LicenseStatusView (S13/J) ─────
+
+    [Fact]
+    public void LicenseStatusView_NoLicenseStatus_IsMissing()
+    {
+        var vm = CreateVm();
+        // _licenseStatus starts null
+
+        vm.LicenseStatusView.IsMissing.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LicenseStatusView_AfterInit_ReflectsLicenseStatus()
+    {
+        var lm = Substitute.For<ILicenseManager>();
+        var lic = new License("bob", "Pro", DateTimeOffset.UtcNow.AddDays(90), []);
+        lm.CurrentAsync(Arg.Any<CancellationToken>())
+          .Returns(LicenseValidationResult.Valid(lic));
+        var vm = CreateVm(licenseManager: lm);
+
+        await vm.InitializeAsync(default);
+
+        vm.LicenseStatusView.IsValid.Should().BeTrue();
+        vm.LicenseStatusView.User.Should().Be("bob");
+    }
+
+    [Fact]
+    public async Task LicenseStatusView_FiresPropertyChanged_WhenLicenseStatusChanges()
+    {
+        var lm = Substitute.For<ILicenseManager>();
+        lm.CurrentAsync(Arg.Any<CancellationToken>())
+          .Returns(LicenseValidationResult.Missing);
+        var vm = CreateVm(licenseManager: lm);
+        await vm.InitializeAsync(default);
+
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        lm.CurrentAsync(Arg.Any<CancellationToken>())
+          .Returns(LicenseValidationResult.Valid(
+              new License("u", "Pro", DateTimeOffset.UtcNow.AddDays(30), [])));
+        await vm.RefreshLicenseStatusCommand.ExecuteAsync(null);
+
+        fired.Should().Contain(nameof(MainViewModel.LicenseStatusView));
+    }
+
+    [Fact]
+    public async Task LicenseStatusView_Expired_ReflectsExpiredState()
+    {
+        var lm = Substitute.For<ILicenseManager>();
+        var expired = new License("u", "Pro", DateTimeOffset.UtcNow.AddDays(-5), []);
+        lm.CurrentAsync(Arg.Any<CancellationToken>())
+          .Returns(LicenseValidationResult.Expired(expired));
+        var vm = CreateVm(licenseManager: lm);
+
+        await vm.InitializeAsync(default);
+
+        vm.LicenseStatusView.IsExpired.Should().BeTrue();
+        vm.LicenseStatusView.IsLicensed.Should().BeFalse();
+    }
+
     // ───── CloseAllTabs (S11/Q) ─────
 
     [Fact]

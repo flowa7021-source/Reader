@@ -37,6 +37,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private LicenseValidationResult? _licenseStatus;
 
+    /// <summary>UI-ready снимок текущего статуса лицензии. Автоматически пересоздаётся
+    /// при каждом изменении <see cref="LicenseStatus"/>. Биндится в статус-бар,
+    /// диалог «About» и менеджер лицензии вместо сырого domain-record'а.</summary>
+    public LicenseStatusViewModel LicenseStatusView =>
+        new(LicenseStatus, DateTimeOffset.UtcNow);
+
     public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
 
     public ObservableCollection<string> RecentFiles { get; } = [];
@@ -342,6 +348,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         CurrentTheme = themeName;
     }
+
+    partial void OnLicenseStatusChanged(LicenseValidationResult? value) =>
+        OnPropertyChanged(nameof(LicenseStatusView));
 
     partial void OnSelectedTabChanged(DocumentTabViewModel? oldValue, DocumentTabViewModel? newValue)
     {
