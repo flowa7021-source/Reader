@@ -152,4 +152,63 @@ public sealed class JsonlEventStoreTests : IDisposable
         }
         collected.Should().ContainSingle().Which.Kind.Should().Be("Persisted");
     }
+
+    // ───── ListPendingFingerprintsAsync (S12/B) ─────
+
+    [Fact]
+    public async Task ListPending_NoDocs_ReturnsEmpty()
+    {
+        var pending = await _sut.ListPendingFingerprintsAsync(default);
+        pending.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListPending_ReturnsOnlyDocsWithEvents()
+    {
+        await _sut.AppendAsync("doc-A", new DocumentCommandRecord("X", "{}"), default);
+        await _sut.AppendAsync("doc-B", new DocumentCommandRecord("Y", "{}"), default);
+
+        var pending = await _sut.ListPendingFingerprintsAsync(default);
+
+        pending.Should().BeEquivalentTo(["doc-A", "doc-B"]);
+    }
+
+    [Fact]
+    public async Task ListPending_SkipsEmptyJsonl()
+    {
+        // Создаём папку с пустым events.jsonl — это «легальное» состояние после Clear+Append-empty.
+        var emptyDir = Path.Combine(_tmp.Path, "empty-doc");
+        Directory.CreateDirectory(emptyDir);
+        await File.WriteAllTextAsync(Path.Combine(emptyDir, "events.jsonl"), string.Empty, default);
+
+        await _sut.AppendAsync("real-doc", new DocumentCommandRecord("X", "{}"), default);
+
+        var pending = await _sut.ListPendingFingerprintsAsync(default);
+
+        pending.Should().Equal(["real-doc"]);
+    }
+
+    [Fact]
+    public async Task ListPending_SkipsDirsWithoutJsonl()
+    {
+        // Папка без events.jsonl — например, остатки от другого слоя.
+        Directory.CreateDirectory(Path.Combine(_tmp.Path, "stray-dir"));
+
+        await _sut.AppendAsync("real-doc", new DocumentCommandRecord("X", "{}"), default);
+
+        var pending = await _sut.ListPendingFingerprintsAsync(default);
+
+        pending.Should().Equal(["real-doc"]);
+    }
+
+    [Fact]
+    public async Task ListPending_AfterClear_DropsFingerprint()
+    {
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("X", "{}"), default);
+        (await _sut.ListPendingFingerprintsAsync(default)).Should().Contain(Fp);
+
+        await _sut.ClearAsync(Fp, default);
+
+        (await _sut.ListPendingFingerprintsAsync(default)).Should().NotContain(Fp);
+    }
 }

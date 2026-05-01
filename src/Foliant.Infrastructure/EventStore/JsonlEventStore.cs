@@ -107,6 +107,33 @@ public sealed class JsonlEventStore : IEventStore, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task<IReadOnlyList<string>> ListPendingFingerprintsAsync(CancellationToken ct)
+    {
+        if (!Directory.Exists(_rootDir))
+        {
+            return Task.FromResult<IReadOnlyList<string>>([]);
+        }
+
+        var result = new List<string>();
+        foreach (var dir in Directory.EnumerateDirectories(_rootDir))
+        {
+            ct.ThrowIfCancellationRequested();
+            var jsonl = Path.Combine(dir, "events.jsonl");
+            if (!File.Exists(jsonl))
+            {
+                continue;
+            }
+            var info = new FileInfo(jsonl);
+            if (info.Length == 0)
+            {
+                continue;
+            }
+            result.Add(Path.GetFileName(dir));
+        }
+
+        return Task.FromResult<IReadOnlyList<string>>(result);
+    }
+
     public void Dispose()
     {
         foreach (var s in _gates.Values)

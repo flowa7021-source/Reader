@@ -19,4 +19,9 @@ public interface IEventStore
     IAsyncEnumerable<DocumentCommandRecord> ReadAllAsync(string docFingerprint, CancellationToken ct);
 
     Task ClearAsync(string docFingerprint, CancellationToken ct);
+
+    /// <summary>Список fingerprint'ов, у которых есть непустой <c>events.jsonl</c>.
+    /// Используется при старте приложения для crash recovery: «у вас есть несохранённые
+    /// действия для документов X, Y, Z». Пустые / отсутствующие файлы пропускаются.</summary>
+    Task<IReadOnlyList<string>> ListPendingFingerprintsAsync(CancellationToken ct);
 }
