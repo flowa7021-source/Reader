@@ -837,6 +837,50 @@ public sealed class DocumentTabViewModelTests
         captured.MatchWholeWord.Should().BeFalse();
     }
 
+    // ───── Per-kind counts (S11/S) ─────
+
+    [Fact]
+    public async Task PerKindCounts_StartAtZero_GrowWithLoad()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var ink = Annotation.Freehand(0, [new AnnotationPoint(0, 0)], "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([hl, note, ink, hl]));
+        var vm = CreateVm(annotations: ann);
+
+        vm.HighlightCount.Should().Be(0);
+        vm.NoteCount.Should().Be(0);
+        vm.FreehandCount.Should().Be(0);
+
+        await vm.LoadAnnotationsAsync(default);
+
+        vm.HighlightCount.Should().Be(2);
+        vm.NoteCount.Should().Be(1);
+        vm.FreehandCount.Should().Be(1);
+        vm.TotalAnnotationsCount.Should().Be(4);
+    }
+
+    [Fact]
+    public async Task PerKindCounts_FirePropertyChanged_OnAdd()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        var vm = CreateVm(annotations: ann);
+        await vm.LoadAnnotationsAsync(default);
+
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        await vm.AddHighlightAsync(0, new AnnotationRect(0, 0, 1, 1), "#000", default);
+
+        fired.Should().Contain(nameof(DocumentTabViewModel.HighlightCount));
+        fired.Should().Contain(nameof(DocumentTabViewModel.TotalAnnotationsCount));
+        fired.Should().Contain(nameof(DocumentTabViewModel.NoteCount));   // helper рейзит для всех — это ок
+    }
+
     // ───── Next/Previous bookmark (S11/K) ─────
 
     [Fact]
