@@ -129,6 +129,87 @@ public sealed class SearchServiceTests
         result[0].Snippet.Should().EndWith("...");
     }
 
+    // ───── Case-sensitive / whole-word options (S6/B) ─────
+
+    [Fact]
+    public async Task MatchCase_True_DoesNotFindLowercaseInUppercaseSource()
+    {
+        var doc = MakeDoc(["Hello WORLD"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("world", MatchCase: true), default);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task MatchCase_False_DefaultIsCaseInsensitive()
+    {
+        var doc = MakeDoc(["Hello WORLD"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("world"), default);
+
+        result.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task MatchWholeWord_True_RejectsSubstringMatches()
+    {
+        // "cat" is inside "category" and "catalog" but not whole-word — must not match.
+        var doc = MakeDoc(["the category and catalog show a cat."]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("cat", MatchWholeWord: true), default);
+
+        result.Should().HaveCount(1, "только последний 'cat.' окружён non-word characters");
+    }
+
+    [Fact]
+    public async Task MatchWholeWord_False_FindsAllSubstrings()
+    {
+        var doc = MakeDoc(["the category and catalog show a cat."]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("cat"), default);
+
+        result.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task MatchWholeWord_HonorsBoundaries_AtStartAndEnd()
+    {
+        var doc = MakeDoc(["cat sits on the cat"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("cat", MatchWholeWord: true), default);
+
+        result.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task MatchWholeWord_With_Underscore_TreatsAsWordChar()
+    {
+        // "_id" внутри "user_id" не должно матчиться при whole-word
+        var doc = MakeDoc(["user_id and user id"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("id", MatchWholeWord: true), default);
+
+        result.Should().HaveCount(1, "только 'id' после пробела матчится; 'user_id' — нет");
+    }
+
+    [Fact]
+    public async Task BothOptionsCombined_Strict()
+    {
+        var doc = MakeDoc(["The Dog and the dog and DOG"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("Dog", MatchCase: true, MatchWholeWord: true), default);
+
+        result.Should().HaveCount(1, "только первый 'Dog' (case-sensitive whole-word)");
+    }
+
     private static IDocument MakeDoc(string[] pageTexts)
     {
         var doc = Substitute.For<IDocument>();
