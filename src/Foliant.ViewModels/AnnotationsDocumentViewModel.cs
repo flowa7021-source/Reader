@@ -13,11 +13,17 @@ namespace Foliant.ViewModels;
 public sealed partial class AnnotationsDocumentViewModel : ObservableObject
 {
     private readonly Action<int> _onJumpToPage;
+    private IReadOnlyList<Annotation> _source = Array.Empty<Annotation>();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]
     [NotifyPropertyChangedFor(nameof(TotalCount))]
     private int _refreshTick;
+
+    /// <summary>Фильтр сайдбара: какие kind'ы аннотаций показывать. Default — All.
+    /// При смене значения группы перестраиваются автоматически.</summary>
+    [ObservableProperty]
+    private AnnotationFilterMode _filterMode = AnnotationFilterMode.All;
 
     public ObservableCollection<AnnotationPageGroup> Groups { get; } = [];
 
@@ -32,12 +38,31 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
     }
 
     /// <summary>Перестроить группы по новому списку аннотаций. Группирует по PageIndex,
-    /// сортирует группы по странице, аннотации внутри группы — по CreatedAt.</summary>
+    /// сортирует группы по странице, аннотации внутри группы — по CreatedAt.
+    /// Учитывает текущий <see cref="FilterMode"/>.</summary>
     public void Rebuild(IReadOnlyList<Annotation> annotations)
     {
         ArgumentNullException.ThrowIfNull(annotations);
+        _source = annotations;
+        RebuildGroups();
+    }
+
+    partial void OnFilterModeChanged(AnnotationFilterMode value)
+    {
+        RebuildGroups();
+    }
+
+    private void RebuildGroups()
+    {
         Groups.Clear();
-        foreach (var group in annotations.GroupBy(a => a.PageIndex).OrderBy(g => g.Key))
+        IEnumerable<Annotation> filtered = FilterMode switch
+        {
+            AnnotationFilterMode.Highlights => _source.Where(a => a.Kind == AnnotationKind.Highlight),
+            AnnotationFilterMode.Notes => _source.Where(a => a.Kind == AnnotationKind.StickyNote),
+            AnnotationFilterMode.Freehand => _source.Where(a => a.Kind == AnnotationKind.Freehand),
+            _ => _source,
+        };
+        foreach (var group in filtered.GroupBy(a => a.PageIndex).OrderBy(g => g.Key))
         {
             Groups.Add(new AnnotationPageGroup(
                 group.Key,

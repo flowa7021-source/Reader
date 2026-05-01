@@ -104,4 +104,89 @@ public sealed class AnnotationsDocumentViewModelTests
         var group = new AnnotationPageGroup(4, []);
         group.OneBasedPageNumber.Should().Be(5);
     }
+
+    // ───── FilterMode (S10/G) ─────
+
+    [Fact]
+    public void FilterMode_DefaultsToAll()
+    {
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.FilterMode.Should().Be(AnnotationFilterMode.All);
+    }
+
+    [Fact]
+    public void FilterMode_Highlights_FiltersOutNotesAndFreehand()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var fh = Annotation.Freehand(0, [new AnnotationPoint(0, 0)], "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([hl, note, fh]);
+
+        vm.FilterMode = AnnotationFilterMode.Highlights;
+
+        vm.TotalCount.Should().Be(1);
+        vm.Groups.Single().Annotations.Should().ContainSingle(a => a.Id == hl.Id);
+    }
+
+    [Fact]
+    public void FilterMode_Notes_FiltersOutHighlightsAndFreehand()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var fh = Annotation.Freehand(0, [new AnnotationPoint(0, 0)], "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([hl, note, fh]);
+
+        vm.FilterMode = AnnotationFilterMode.Notes;
+
+        vm.TotalCount.Should().Be(1);
+        vm.Groups.Single().Annotations.Should().ContainSingle(a => a.Id == note.Id);
+    }
+
+    [Fact]
+    public void FilterMode_Freehand_FiltersOutHighlightsAndNotes()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var fh = Annotation.Freehand(0, [new AnnotationPoint(0, 0)], "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([hl, note, fh]);
+
+        vm.FilterMode = AnnotationFilterMode.Freehand;
+
+        vm.TotalCount.Should().Be(1);
+        vm.Groups.Single().Annotations.Should().ContainSingle(a => a.Id == fh.Id);
+    }
+
+    [Fact]
+    public void FilterMode_AllAfterHighlights_RestoresFullList()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "n", "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([hl, note]);
+
+        vm.FilterMode = AnnotationFilterMode.Highlights;
+        vm.TotalCount.Should().Be(1);
+
+        vm.FilterMode = AnnotationFilterMode.All;
+        vm.TotalCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void FilterMode_Change_RaisesPropertyChanged()
+    {
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow)]);
+
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.FilterMode = AnnotationFilterMode.Notes;
+
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.FilterMode));
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.TotalCount));
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.IsEmpty));
+    }
 }
