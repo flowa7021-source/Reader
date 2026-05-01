@@ -47,6 +47,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [NotifyPropertyChangedFor(nameof(PageInfo))]
     [NotifyPropertyChangedFor(nameof(CanGoBack))]
     [NotifyPropertyChangedFor(nameof(CanGoForward))]
+    [NotifyPropertyChangedFor(nameof(IsCurrentPageBookmarked))]
     private int _currentPageIndex;
 
     [ObservableProperty]
@@ -156,6 +157,11 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// <summary>Число закладок в документе.</summary>
     public int BookmarksCount => Bookmarks.Count;
 
+    /// <summary><c>true</c> if the current page has at least one bookmark. Updates when
+    /// <see cref="CurrentPageIndex"/> changes or when <see cref="Bookmarks"/> changes.</summary>
+    public bool IsCurrentPageBookmarked =>
+        Bookmarks.Any(b => b.PageIndex == CurrentPageIndex);
+
     /// <summary>Сколько хитов в текущем поисковом результате. Биндится в статус-бар
     /// (рядом с PageInfo / ZoomPercent) и индикатор search-sidebar.</summary>
     public int SearchHitCount => SearchResults.Count;
@@ -239,7 +245,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         CurrentPageAnnotations.CollectionChanged += (_, _) =>
             OnPropertyChanged(nameof(CurrentPageAnnotationsCount));
         Bookmarks.CollectionChanged += (_, _) =>
+        {
             OnPropertyChanged(nameof(BookmarksCount));
+            OnPropertyChanged(nameof(IsCurrentPageBookmarked));
+        };
         SearchResults.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(SearchHitCount));

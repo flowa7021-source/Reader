@@ -23,6 +23,15 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _clearCacheOnExit;
 
     [ObservableProperty]
+    private string _ocrLanguage = "rus+eng";
+
+    [ObservableProperty]
+    private int _maxParallelOcrPages = 4;
+
+    [ObservableProperty]
+    private bool _autoOcrOpenedScans;
+
+    [ObservableProperty]
     private bool _isSaved;
 
     public IReadOnlyList<string> AvailableThemes { get; } = ["Auto", "Light", "Dark", "HighContrast"];
@@ -45,6 +54,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         SelectedLanguage = s.Language;
         DiskCacheLimitGb = s.Cache.DiskLimitBytes / (1024.0 * 1024 * 1024);
         ClearCacheOnExit = s.Cache.ClearOnExit;
+        OcrLanguage = s.Ocr.DefaultLanguage;
+        MaxParallelOcrPages = s.Ocr.MaxParallelPages;
+        AutoOcrOpenedScans = s.Ocr.AutoOcrOpenedScans;
         IsSaved = false;
     }
 
@@ -55,6 +67,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnDiskCacheLimitGbChanged(double value) => IsSaved = false;
 
     partial void OnClearCacheOnExitChanged(bool value) => IsSaved = false;
+
+    partial void OnOcrLanguageChanged(string value) => IsSaved = false;
+
+    partial void OnMaxParallelOcrPagesChanged(int value) => IsSaved = false;
+
+    partial void OnAutoOcrOpenedScansChanged(bool value) => IsSaved = false;
 
     [RelayCommand]
     private async Task SaveAsync()
@@ -67,6 +85,12 @@ public sealed partial class SettingsViewModel : ObservableObject
             {
                 DiskLimitBytes = (long)(DiskCacheLimitGb * 1024 * 1024 * 1024),
                 ClearOnExit = ClearCacheOnExit,
+            },
+            Ocr = _settingsService.Current.Ocr with
+            {
+                DefaultLanguage = OcrLanguage,
+                MaxParallelPages = MaxParallelOcrPages,
+                AutoOcrOpenedScans = AutoOcrOpenedScans,
             },
         };
 
@@ -92,5 +116,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         SelectedLanguage = defaults.Language;
         DiskCacheLimitGb = defaults.Cache.DiskLimitBytes / (1024.0 * 1024 * 1024);
         ClearCacheOnExit = defaults.Cache.ClearOnExit;
+        OcrLanguage = defaults.Ocr.DefaultLanguage;
+        MaxParallelOcrPages = defaults.Ocr.MaxParallelPages;
+        AutoOcrOpenedScans = defaults.Ocr.AutoOcrOpenedScans;
     }
 }

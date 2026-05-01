@@ -23,4 +23,8 @@ public interface IBookmarkService
     /// <summary>Если на <paramref name="pageIndex"/> уже есть закладка — удаляет её, возвращает <c>null</c>.
     /// Иначе создаёт новую и возвращает её.</summary>
     Task<Bookmark?> ToggleAsync(string documentPath, int pageIndex, string label, CancellationToken ct);
+
+    /// <summary>Returns <c>true</c> if at least one bookmark exists on <paramref name="pageIndex"/>
+    /// for the given document. Cheaper than <see cref="ListAsync"/> + LINQ when only presence is needed.</summary>
+    Task<bool> ContainsPageAsync(string documentPath, int pageIndex, CancellationToken ct);
 }

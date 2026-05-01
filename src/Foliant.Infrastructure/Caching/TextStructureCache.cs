@@ -1,3 +1,4 @@
+using Foliant.Application.Services;
 using Foliant.Domain;
 
 namespace Foliant.Infrastructure.Caching;
@@ -14,7 +15,7 @@ namespace Foliant.Infrastructure.Caching;
 ///
 /// Concurrency: thread-safe (Lock на словаре).
 /// </summary>
-public sealed class TextStructureCache
+public sealed class TextStructureCache : ITextLayerCache
 {
     private readonly Dictionary<int, TextLayer> _entries = new();
     private readonly Lock _gate = new();

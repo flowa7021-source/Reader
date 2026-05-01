@@ -166,4 +166,54 @@ public sealed class OcrPipelineServiceTests
         await act2.Should().ThrowAsync<ArgumentNullException>();
         await act3.Should().ThrowAsync<ArgumentNullException>();
     }
+
+    // ───── S8/C: ITextLayerCache wiring ─────
+
+    [Fact]
+    public async Task RecognizeDocument_TextCacheHit_SkipsRenderAndEngine()
+    {
+        var expectedLayer = new TextLayer(0, [new TextRun("cached", 0, 0, 10, 10)]);
+        var textCache = Substitute.For<ITextLayerCache>();
+        textCache.TryGet(0, out Arg.Any<TextLayer>())
+                 .Returns(ci => { ci[1] = expectedLayer; return true; });
+
+        var pageUseCase = new OcrPageUseCase(_engine, _cache, NullLogger<OcrPageUseCase>.Instance);
+        var sut = new OcrPipelineService(pageUseCase, NullLogger<OcrPipelineService>.Instance, textCache);
+        var doc = MakeDocument(1);
+
+        var result = await sut.RecognizeDocumentAsync(doc, Fp, new OcrOptions(), null, default);
+
+        result.Should().HaveCount(1);
+        result[0].Should().Be(expectedLayer);
+        // Render and engine must NOT have been called because the in-memory cache answered.
+        await doc.DidNotReceive().RenderPageAsync(Arg.Any<int>(), Arg.Any<RenderOptions>(), Arg.Any<CancellationToken>());
+        await _engine.DidNotReceive().RecognizeAsync(Arg.Any<IPageRender>(), Arg.Any<int>(), Arg.Any<OcrOptions>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RecognizeDocument_TextCacheMiss_StoresResultInCache()
+    {
+        var textCache = Substitute.For<ITextLayerCache>();
+        textCache.TryGet(Arg.Any<int>(), out Arg.Any<TextLayer>()).Returns(false);
+
+        var pageUseCase = new OcrPageUseCase(_engine, _cache, NullLogger<OcrPageUseCase>.Instance);
+        var sut = new OcrPipelineService(pageUseCase, NullLogger<OcrPipelineService>.Instance, textCache);
+        var doc = MakeDocument(2);
+
+        await sut.RecognizeDocumentAsync(doc, Fp, new OcrOptions(), null, default);
+
+        textCache.Received(1).Put(0, Arg.Any<TextLayer>());
+        textCache.Received(1).Put(1, Arg.Any<TextLayer>());
+    }
+
+    [Fact]
+    public async Task RecognizeDocument_NoTextCache_WorksWithoutIt()
+    {
+        // Baseline: passing null textCache (the default) must not throw and processes all pages.
+        var doc = MakeDocument(3);
+
+        var result = await _sut.RecognizeDocumentAsync(doc, Fp, new OcrOptions(), null, default);
+
+        result.Should().HaveCount(3);
+    }
 }

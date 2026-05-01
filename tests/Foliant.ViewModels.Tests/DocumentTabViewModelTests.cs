@@ -1518,4 +1518,82 @@ public sealed class DocumentTabViewModelTests
 
         history.DidNotReceive().Add(Arg.Any<string>());
     }
+
+    // ───── S7/E: IsCurrentPageBookmarked ─────
+
+    [Fact]
+    public async Task IsCurrentPageBookmarked_False_WhenNoBookmarks()
+    {
+        var vm = CreateVm();
+        await vm.LoadBookmarksAsync(CancellationToken.None);
+
+        vm.IsCurrentPageBookmarked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IsCurrentPageBookmarked_True_WhenBookmarkOnCurrentPage()
+    {
+        var bm = Bookmark.Create(0, "First", DateTimeOffset.UtcNow);
+        var bookmarkSvc = Substitute.For<IBookmarkService>();
+        bookmarkSvc.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                   .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([bm]));
+        var vm = CreateVm(bookmarks: bookmarkSvc);
+        await vm.LoadBookmarksAsync(CancellationToken.None);
+
+        vm.CurrentPageIndex = 0;
+
+        vm.IsCurrentPageBookmarked.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsCurrentPageBookmarked_False_WhenBookmarkOnOtherPage()
+    {
+        var bm = Bookmark.Create(5, "Chapter 2", DateTimeOffset.UtcNow);
+        var bookmarkSvc = Substitute.For<IBookmarkService>();
+        bookmarkSvc.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                   .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([bm]));
+        var vm = CreateVm(bookmarks: bookmarkSvc);
+        await vm.LoadBookmarksAsync(CancellationToken.None);
+
+        vm.CurrentPageIndex = 0;   // page 0, bookmark is on page 5
+
+        vm.IsCurrentPageBookmarked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IsCurrentPageBookmarked_UpdatesWhenPageChanges()
+    {
+        var bm = Bookmark.Create(3, "Mid", DateTimeOffset.UtcNow);
+        var bookmarkSvc = Substitute.For<IBookmarkService>();
+        bookmarkSvc.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                   .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([bm]));
+        var vm = CreateVm(bookmarks: bookmarkSvc);
+        await vm.LoadBookmarksAsync(CancellationToken.None);
+
+        vm.CurrentPageIndex = 0;
+        vm.IsCurrentPageBookmarked.Should().BeFalse();
+
+        vm.CurrentPageIndex = 3;
+        vm.IsCurrentPageBookmarked.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsCurrentPageBookmarked_UpdatesWhenBookmarkAdded()
+    {
+        var bookmarkSvc = Substitute.For<IBookmarkService>();
+        bookmarkSvc.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                   .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
+
+        var newBm = Bookmark.Create(0, "New", DateTimeOffset.UtcNow);
+        bookmarkSvc.ToggleAsync(Arg.Any<string>(), 0, Arg.Any<string>(), Arg.Any<CancellationToken>())
+                   .Returns(newBm);
+
+        var vm = CreateVm(bookmarks: bookmarkSvc);
+        await vm.LoadBookmarksAsync(CancellationToken.None);
+        vm.CurrentPageIndex = 0;
+
+        vm.IsCurrentPageBookmarked.Should().BeFalse();
+        await vm.ToggleBookmarkCommand.ExecuteAsync(null);
+        vm.IsCurrentPageBookmarked.Should().BeTrue();
+    }
 }

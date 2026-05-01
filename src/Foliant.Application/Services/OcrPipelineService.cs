@@ -20,7 +20,8 @@ public readonly record struct OcrProgress(int CompletedPages, int TotalPages);
 /// </summary>
 public sealed class OcrPipelineService(
     OcrPageUseCase pageUseCase,
-    ILogger<OcrPipelineService> log)
+    ILogger<OcrPipelineService> log,
+    ITextLayerCache? textCache = null)
 {
     /// <summary>
     /// Распознаёт все страницы <paramref name="document"/>, возвращает список
@@ -53,6 +54,15 @@ public sealed class OcrPipelineService(
         {
             ct.ThrowIfCancellationRequested();
 
+            // L2 in-memory cache hit: skip render + engine entirely.
+            if (textCache is not null && textCache.TryGet(i, out TextLayer cached))
+            {
+                log.LogDebug("OcrPipeline: in-memory cache hit for {Fp} page {Page}.", docFingerprint, i);
+                results[i] = cached;
+                progress?.Report(new OcrProgress(i + 1, total));
+                continue;
+            }
+
             IPageRender render;
             try
             {
@@ -69,8 +79,10 @@ public sealed class OcrPipelineService(
 
             try
             {
-                results[i] = await pageUseCase.ExecuteAsync(render, docFingerprint, i, options, ct)
+                var layer = await pageUseCase.ExecuteAsync(render, docFingerprint, i, options, ct)
                     .ConfigureAwait(false);
+                results[i] = layer;
+                textCache?.Put(i, layer);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
