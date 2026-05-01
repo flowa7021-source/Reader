@@ -200,6 +200,31 @@ public sealed partial class MainViewModel : ObservableObject
         await RefreshRecentsAsync(CancellationToken.None);
     }
 
+    /// <summary>
+    /// Просканировать MRU и удалить все записи, для которых файл не существует
+    /// на диске (был удалён / переименован / на отключённом сетевом диске).
+    /// Можно дёргать вручную («File → Open Recent → Clean missing») или
+    /// автоматически после <see cref="InitializeAsync"/>.
+    /// </summary>
+    [RelayCommand]
+    private async Task RemoveMissingRecentsAsync()
+    {
+        IReadOnlyList<string> snapshot = await _recents.GetAsync(CancellationToken.None);
+        bool removedAny = false;
+        foreach (string p in snapshot)
+        {
+            if (!File.Exists(p))
+            {
+                await _recents.RemoveAsync(p, CancellationToken.None);
+                removedAny = true;
+            }
+        }
+        if (removedAny)
+        {
+            await RefreshRecentsAsync(CancellationToken.None);
+        }
+    }
+
     private async Task RefreshRecentsAsync(CancellationToken ct)
     {
         IReadOnlyList<string> items = await _recents.GetAsync(ct);

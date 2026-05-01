@@ -342,6 +342,67 @@ public sealed class MainViewModelTests
         await recents.DidNotReceive().RemoveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
+    // ───── RemoveMissingRecents (S11/Y) ─────
+
+    [Fact]
+    public async Task RemoveMissingRecentsCommand_DropsNonexistentPaths_KeepsExisting()
+    {
+        var existing = Path.Combine(Path.GetTempPath(), $"foliant-rmr-{Guid.NewGuid():N}.pdf");
+        await File.WriteAllTextAsync(existing, string.Empty);
+        try
+        {
+            var missing = "/definitely/not/here-" + Guid.NewGuid().ToString("N") + ".pdf";
+            var recents = Substitute.For<IRecentsService>();
+            recents.GetAsync(Arg.Any<CancellationToken>()).Returns(new[] { existing, missing });
+            var vm = CreateVm(recents);
+
+            await vm.RemoveMissingRecentsCommand.ExecuteAsync(null);
+
+            await recents.Received(1).RemoveAsync(missing, Arg.Any<CancellationToken>());
+            await recents.DidNotReceive().RemoveAsync(existing, Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            File.Delete(existing);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveMissingRecentsCommand_AllExist_NoRemovalCalled()
+    {
+        var f1 = Path.Combine(Path.GetTempPath(), $"foliant-rmr-{Guid.NewGuid():N}.pdf");
+        var f2 = Path.Combine(Path.GetTempPath(), $"foliant-rmr-{Guid.NewGuid():N}.pdf");
+        await File.WriteAllTextAsync(f1, string.Empty);
+        await File.WriteAllTextAsync(f2, string.Empty);
+        try
+        {
+            var recents = Substitute.For<IRecentsService>();
+            recents.GetAsync(Arg.Any<CancellationToken>()).Returns(new[] { f1, f2 });
+            var vm = CreateVm(recents);
+
+            await vm.RemoveMissingRecentsCommand.ExecuteAsync(null);
+
+            await recents.DidNotReceive().RemoveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            File.Delete(f1);
+            File.Delete(f2);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveMissingRecentsCommand_EmptyMru_NoOp()
+    {
+        var recents = Substitute.For<IRecentsService>();
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        var vm = CreateVm(recents);
+
+        await vm.RemoveMissingRecentsCommand.ExecuteAsync(null);
+
+        await recents.DidNotReceive().RemoveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
     // ───── Dedupe-on-open (S11/W) ─────
 
     [Fact]
