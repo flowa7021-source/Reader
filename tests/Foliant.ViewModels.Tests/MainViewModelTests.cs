@@ -272,6 +272,44 @@ public sealed class MainViewModelTests
         vm.SelectedTab.Should().BeSameAs(t);
     }
 
+    // ───── TabsCount + HasOpenTab (S11/O) ─────
+
+    [Fact]
+    public void TabsCount_FollowsTabsCollection()
+    {
+        var vm = CreateVm();
+        vm.TabsCount.Should().Be(0);
+        vm.HasOpenTab.Should().BeFalse();
+
+        vm.Tabs.Add(MakeTabStub());
+        vm.TabsCount.Should().Be(1);
+        vm.HasOpenTab.Should().BeTrue();
+
+        vm.Tabs.Add(MakeTabStub());
+        vm.Tabs.Add(MakeTabStub());
+        vm.TabsCount.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task TabsCount_FiresPropertyChanged_OnAddRemove()
+    {
+        var vm = CreateVm();
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        var t = MakeTabStub();
+        vm.Tabs.Add(t);
+        fired.Should().Contain(nameof(MainViewModel.TabsCount));
+        fired.Should().Contain(nameof(MainViewModel.HasOpenTab));
+
+        fired.Clear();
+        vm.SelectedTab = t;
+        await vm.CloseCurrentTabCommand.ExecuteAsync(null);
+
+        fired.Should().Contain(nameof(MainViewModel.TabsCount));
+        fired.Should().Contain(nameof(MainViewModel.HasOpenTab));
+    }
+
     private static DocumentTabViewModel MakeTabStub()
     {
         var doc = Substitute.For<IDocument>();

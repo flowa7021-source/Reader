@@ -34,6 +34,13 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<string> RecentFiles { get; } = [];
 
+    /// <summary>Сколько вкладок открыто. Биндится в статус-бар / меню.</summary>
+    public int TabsCount => Tabs.Count;
+
+    /// <summary>True если открыта хотя бы одна вкладка. Меню «File → Close All Tabs»
+    /// и подобные команды могут отключаться при <c>HasOpenTab == false</c>.</summary>
+    public bool HasOpenTab => Tabs.Count > 0;
+
     public MainViewModel(
         OpenDocumentUseCase openUseCase,
         Func<IDocument, string, DocumentTabViewModel> tabFactory,
@@ -58,6 +65,13 @@ public sealed partial class MainViewModel : ObservableObject
         _localization = localization;
         _indexer = indexer;
         _logger = logger;
+
+        // Tabs.Count → PropertyChanged for TabsCount + HasOpenTab.
+        Tabs.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(TabsCount));
+            OnPropertyChanged(nameof(HasOpenTab));
+        };
     }
 
     public async Task InitializeAsync(CancellationToken ct)
