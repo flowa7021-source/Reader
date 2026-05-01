@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Foliant.Application.Services;
 using Foliant.Domain;
 
 namespace Foliant.ViewModels;
@@ -13,11 +14,19 @@ namespace Foliant.ViewModels;
 public sealed partial class AnnotationsDocumentViewModel : ObservableObject
 {
     private readonly Action<int> _onJumpToPage;
+    private readonly IAnnotationExporter? _exporter;
     private IReadOnlyList<Annotation> _source = Array.Empty<Annotation>();
+
+    /// <summary>Результат последнего успешного экспорта аннотаций. Пустая строка
+    /// если экспортёр не задан или список пуст. UI может показать диалог сохранения
+    /// файла или скопировать в буфер при изменении этого свойства.</summary>
+    [ObservableProperty]
+    private string _exportedText = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]
     [NotifyPropertyChangedFor(nameof(TotalCount))]
+    [NotifyPropertyChangedFor(nameof(CanExport))]
     private int _refreshTick;
 
     /// <summary>Фильтр сайдбара: какие kind'ы аннотаций показывать. Default — All.
@@ -47,11 +56,18 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
 
     public bool IsEmpty => TotalCount == 0;
 
-    public AnnotationsDocumentViewModel(Action<int> onJumpToPage)
+    public AnnotationsDocumentViewModel(
+        Action<int> onJumpToPage,
+        IAnnotationExporter? exporter = null)
     {
         ArgumentNullException.ThrowIfNull(onJumpToPage);
         _onJumpToPage = onJumpToPage;
+        _exporter = exporter;
     }
+
+    /// <summary>True если экспортёр зарегистрирован и есть хотя бы одна аннотация.
+    /// Биндится к IsEnabled кнопки «Export» в сайдбаре.</summary>
+    public bool CanExport => _exporter is not null && !IsEmpty;
 
     /// <summary>Перестроить группы по новому списку аннотаций. Группирует по PageIndex,
     /// сортирует группы по странице, аннотации внутри группы — по CreatedAt.
@@ -124,6 +140,22 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
             return;
         }
         _onJumpToPage(annotation.PageIndex);
+    }
+
+    /// <summary>Экспортировать все отфильтрованные (current view) аннотации через
+    /// зарегистрированный <see cref="IAnnotationExporter"/>. Результат записывается в
+    /// <see cref="ExportedText"/> для обработки в View (сохранение файла / clipboard).
+    /// No-op если экспортёр не задан или список аннотаций пуст.</summary>
+    [RelayCommand]
+    private void ExportAnnotations()
+    {
+        if (_exporter is null)
+        {
+            return;
+        }
+
+        var flat = Groups.SelectMany(g => g.Annotations).ToList();
+        ExportedText = flat.Count == 0 ? string.Empty : _exporter.Export(flat);
     }
 }
 

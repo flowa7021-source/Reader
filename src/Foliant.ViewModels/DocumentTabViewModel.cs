@@ -561,6 +561,34 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         Bookmarks.Insert(insertAt, bm);
     }
 
+    /// <summary>Переименовать закладку. <paramref name="request"/> содержит оригинальную
+    /// закладку и новый текст метки. Пустой/null запрос или пустая метка — no-op.</summary>
+    [RelayCommand]
+    private async Task RenameBookmarkAsync(RenameBookmarkRequest? request)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.NewLabel))
+        {
+            return;
+        }
+
+        var updated = await _bookmarkService.RenameAsync(
+            _filePath, request.Bookmark.Id, request.NewLabel.Trim(), CancellationToken.None);
+
+        if (updated is null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < Bookmarks.Count; i++)
+        {
+            if (Bookmarks[i].Id == updated.Id)
+            {
+                Bookmarks[i] = updated;
+                break;
+            }
+        }
+    }
+
     [RelayCommand]
     private void JumpToBookmark(Bookmark? bookmark)
     {
@@ -759,3 +787,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         await _document.DisposeAsync();
     }
 }
+
+/// <summary>Запрос переименования закладки, передаваемый в
+/// <see cref="DocumentTabViewModel.RenameBookmarkCommand"/>.</summary>
+public sealed record RenameBookmarkRequest(Bookmark Bookmark, string NewLabel);

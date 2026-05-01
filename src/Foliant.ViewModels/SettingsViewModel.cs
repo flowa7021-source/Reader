@@ -48,6 +48,14 @@ public sealed partial class SettingsViewModel : ObservableObject
         IsSaved = false;
     }
 
+    partial void OnSelectedThemeChanged(string value) => IsSaved = false;
+
+    partial void OnSelectedLanguageChanged(string value) => IsSaved = false;
+
+    partial void OnDiskCacheLimitGbChanged(double value) => IsSaved = false;
+
+    partial void OnClearCacheOnExitChanged(bool value) => IsSaved = false;
+
     [RelayCommand]
     private async Task SaveAsync()
     {
@@ -71,5 +79,18 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
 
         IsSaved = true;
+    }
+
+    /// <summary>Сбросить все поля к заводским настройкам (<see cref="AppSettings.Default"/>).
+    /// Не сохраняет немедленно — пользователь должен нажать Save, чтобы изменения
+    /// попали на диск. <see cref="IsSaved"/> сбрасывается автоматически через хуки.</summary>
+    [RelayCommand]
+    private void ResetToDefaults()
+    {
+        var defaults = AppSettings.Default;
+        SelectedTheme = defaults.Theme;
+        SelectedLanguage = defaults.Language;
+        DiskCacheLimitGb = defaults.Cache.DiskLimitBytes / (1024.0 * 1024 * 1024);
+        ClearCacheOnExit = defaults.Cache.ClearOnExit;
     }
 }

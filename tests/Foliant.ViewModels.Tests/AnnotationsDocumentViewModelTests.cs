@@ -1,6 +1,8 @@
 using FluentAssertions;
+using Foliant.Application.Services;
 using Foliant.Domain;
 using Foliant.ViewModels;
+using NSubstitute;
 using Xunit;
 
 namespace Foliant.ViewModels.Tests;
@@ -372,5 +374,106 @@ public sealed class AnnotationsDocumentViewModelTests
         fired.Should().Contain(nameof(AnnotationsDocumentViewModel.FilterMode));
         fired.Should().Contain(nameof(AnnotationsDocumentViewModel.TotalCount));
         fired.Should().Contain(nameof(AnnotationsDocumentViewModel.IsEmpty));
+    }
+
+    // ───── ExportAnnotationsCommand (S10/K) ─────
+
+    [Fact]
+    public void CanExport_NoExporter_IsFalse()
+    {
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow)]);
+
+        vm.CanExport.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanExport_WithExporter_EmptyList_IsFalse()
+    {
+        var exporter = Substitute.For<IAnnotationExporter>();
+        var vm = new AnnotationsDocumentViewModel(_ => { }, exporter);
+
+        vm.CanExport.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanExport_WithExporterAndAnnotations_IsTrue()
+    {
+        var exporter = Substitute.For<IAnnotationExporter>();
+        var vm = new AnnotationsDocumentViewModel(_ => { }, exporter);
+        vm.Rebuild([Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow)]);
+
+        vm.CanExport.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ExportAnnotationsCommand_NoExporter_ExportedTextRemainsEmpty()
+    {
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow)]);
+
+        vm.ExportAnnotationsCommand.Execute(null);
+
+        vm.ExportedText.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ExportAnnotationsCommand_WithExporter_SetsExportedText()
+    {
+        var exporter = Substitute.For<IAnnotationExporter>();
+        exporter.Export(Arg.Any<IReadOnlyList<Annotation>>()).Returns("[{\"id\":\"...\"}]");
+        var vm = new AnnotationsDocumentViewModel(_ => { }, exporter);
+        vm.Rebuild([Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow)]);
+
+        vm.ExportAnnotationsCommand.Execute(null);
+
+        vm.ExportedText.Should().Be("[{\"id\":\"...\"}]");
+    }
+
+    [Fact]
+    public void ExportAnnotationsCommand_ExportsOnlyCurrentlyVisibleGroups()
+    {
+        // Filter to Notes only; export should contain only the note, not the highlight.
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "note", "#000", DateTimeOffset.UtcNow);
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+
+        IReadOnlyList<Annotation>? capturedList = null;
+        var exporter = Substitute.For<IAnnotationExporter>();
+        exporter.Export(Arg.Do<IReadOnlyList<Annotation>>(a => capturedList = a)).Returns("ok");
+        var vm = new AnnotationsDocumentViewModel(_ => { }, exporter);
+        vm.Rebuild([note, hl]);
+        vm.FilterMode = AnnotationFilterMode.Notes;
+
+        vm.ExportAnnotationsCommand.Execute(null);
+
+        capturedList.Should().ContainSingle().Which.Kind.Should().Be(AnnotationKind.StickyNote);
+    }
+
+    [Fact]
+    public void ExportAnnotationsCommand_EmptyAfterFilter_SetsEmptyExportedText()
+    {
+        var exporter = Substitute.For<IAnnotationExporter>();
+        var vm = new AnnotationsDocumentViewModel(_ => { }, exporter);
+        vm.Rebuild([Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow)]);
+        vm.FilterMode = AnnotationFilterMode.Notes; // highlight doesn't match → empty
+
+        vm.ExportAnnotationsCommand.Execute(null);
+
+        vm.ExportedText.Should().BeEmpty();
+        exporter.DidNotReceive().Export(Arg.Any<IReadOnlyList<Annotation>>());
+    }
+
+    [Fact]
+    public void CanExport_FiresPropertyChanged_WhenAnnotationsAdded()
+    {
+        var exporter = Substitute.For<IAnnotationExporter>();
+        var vm = new AnnotationsDocumentViewModel(_ => { }, exporter);
+
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.Rebuild([Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow)]);
+
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.CanExport));
     }
 }

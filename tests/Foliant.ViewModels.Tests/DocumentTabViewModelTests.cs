@@ -1352,4 +1352,87 @@ public sealed class DocumentTabViewModelTests
 
         await act.Should().NotThrowAsync();
     }
+
+    // ───── RenameBookmarkCommand (S7/C) ─────
+
+    [Fact]
+    public async Task RenameBookmarkCommand_UpdatesLabelInCollection()
+    {
+        var original = Bookmark.Create(3, "old label", DateTimeOffset.UtcNow);
+        var renamed = original with { Label = "new label" };
+        var bm = Substitute.For<IBookmarkService>();
+        bm.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([original]));
+        bm.RenameAsync(Arg.Any<string>(), original.Id, "new label", Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<Bookmark?>(renamed));
+        var vm = CreateVm(bookmarks: bm);
+        await vm.LoadBookmarksAsync(default);
+
+        await vm.RenameBookmarkCommand.ExecuteAsync(new RenameBookmarkRequest(original, "new label"));
+
+        vm.Bookmarks.Should().ContainSingle().Which.Label.Should().Be("new label");
+    }
+
+    [Fact]
+    public async Task RenameBookmarkCommand_ServiceReturnsNull_LeavesCollectionUnchanged()
+    {
+        var original = Bookmark.Create(2, "keep", DateTimeOffset.UtcNow);
+        var bm = Substitute.For<IBookmarkService>();
+        bm.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([original]));
+        bm.RenameAsync(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<Bookmark?>(null));
+        var vm = CreateVm(bookmarks: bm);
+        await vm.LoadBookmarksAsync(default);
+
+        await vm.RenameBookmarkCommand.ExecuteAsync(new RenameBookmarkRequest(original, "fail"));
+
+        vm.Bookmarks.Should().ContainSingle().Which.Label.Should().Be("keep");
+    }
+
+    [Fact]
+    public async Task RenameBookmarkCommand_NullRequest_IsNoOp()
+    {
+        var bm = Substitute.For<IBookmarkService>();
+        var vm = CreateVm(bookmarks: bm);
+
+        await vm.RenameBookmarkCommand.ExecuteAsync(null);
+
+        await bm.DidNotReceive().RenameAsync(
+            Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task RenameBookmarkCommand_EmptyOrWhitespaceLabel_IsNoOp(string newLabel)
+    {
+        var bm = Substitute.For<IBookmarkService>();
+        var original = Bookmark.Create(0, "x", DateTimeOffset.UtcNow);
+        var vm = CreateVm(bookmarks: bm);
+
+        await vm.RenameBookmarkCommand.ExecuteAsync(new RenameBookmarkRequest(original, newLabel));
+
+        await bm.DidNotReceive().RenameAsync(
+            Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RenameBookmarkCommand_TrimsWhitespace_PassesTrimmedLabel()
+    {
+        var original = Bookmark.Create(0, "x", DateTimeOffset.UtcNow);
+        var renamed = original with { Label = "trimmed" };
+        var bm = Substitute.For<IBookmarkService>();
+        bm.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([original]));
+        bm.RenameAsync(Arg.Any<string>(), original.Id, "trimmed", Arg.Any<CancellationToken>())
+          .Returns(Task.FromResult<Bookmark?>(renamed));
+        var vm = CreateVm(bookmarks: bm);
+        await vm.LoadBookmarksAsync(default);
+
+        await vm.RenameBookmarkCommand.ExecuteAsync(new RenameBookmarkRequest(original, "  trimmed  "));
+
+        await bm.Received(1).RenameAsync(
+            Arg.Any<string>(), original.Id, "trimmed", Arg.Any<CancellationToken>());
+    }
 }
