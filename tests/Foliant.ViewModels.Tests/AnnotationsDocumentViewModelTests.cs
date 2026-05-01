@@ -266,6 +266,98 @@ public sealed class AnnotationsDocumentViewModelTests
         fired.Should().Contain(nameof(AnnotationsDocumentViewModel.IsEmpty));
     }
 
+    // ───── Sort modes (S10/I) ─────
+
+    [Fact]
+    public void SortPageDescending_ReversesGroupOrder()
+    {
+        var p1 = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var p3 = Annotation.Highlight(2, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var p7 = Annotation.Highlight(6, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([p1, p3, p7]);
+
+        vm.SortPageDescending = true;
+
+        vm.Groups.Select(g => g.PageIndex).Should().Equal([6, 2, 0]);
+    }
+
+    [Fact]
+    public void SortWithinGroupNewestFirst_ReversesAnnotationOrder()
+    {
+        var older = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000",
+            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var newer = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000",
+            new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero));
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([older, newer]);
+
+        vm.SortWithinGroupNewestFirst = true;
+
+        var group = vm.Groups.Single();
+        group.Annotations.Select(a => a.Id).Should().Equal([newer.Id, older.Id]);
+    }
+
+    [Fact]
+    public void Sort_BothFlagsSet_OrdersAccordingly()
+    {
+        var p0a = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000",
+            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var p0b = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000",
+            new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero));
+        var p5 = Annotation.Highlight(5, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([p0a, p0b, p5]);
+
+        vm.SortPageDescending = true;
+        vm.SortWithinGroupNewestFirst = true;
+
+        vm.Groups.Select(g => g.PageIndex).Should().Equal([5, 0]);
+        vm.Groups.Last().Annotations.Select(a => a.Id).Should().Equal([p0b.Id, p0a.Id]);
+    }
+
+    [Fact]
+    public void Sort_DefaultsAreAscending()
+    {
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+
+        vm.SortPageDescending.Should().BeFalse();
+        vm.SortWithinGroupNewestFirst.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Sort_TogglingBack_RestoresOriginalOrder()
+    {
+        var p1 = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var p3 = Annotation.Highlight(2, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([p1, p3]);
+
+        vm.SortPageDescending = true;
+        vm.Groups.Select(g => g.PageIndex).Should().Equal([2, 0]);
+
+        vm.SortPageDescending = false;
+        vm.Groups.Select(g => g.PageIndex).Should().Equal([0, 2]);
+    }
+
+    [Fact]
+    public void Sort_Change_RaisesPropertyChanged()
+    {
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "x", "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([note]);
+
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.SortPageDescending = true;
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.SortPageDescending));
+
+        fired.Clear();
+        vm.SortWithinGroupNewestFirst = true;
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.SortWithinGroupNewestFirst));
+    }
+
     [Fact]
     public void FilterMode_Change_RaisesPropertyChanged()
     {

@@ -31,6 +31,16 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
     [ObservableProperty]
     private string _searchText = string.Empty;
 
+    /// <summary>Если true, группы страниц перечисляются от последней к первой.
+    /// Default false (страница 1 сверху).</summary>
+    [ObservableProperty]
+    private bool _sortPageDescending;
+
+    /// <summary>Если true, аннотации внутри группы идут от самой свежей к самой старой.
+    /// Default false (старые сверху, как в журнале).</summary>
+    [ObservableProperty]
+    private bool _sortWithinGroupNewestFirst;
+
     public ObservableCollection<AnnotationPageGroup> Groups { get; } = [];
 
     public int TotalCount => Groups.Sum(g => g.Annotations.Count);
@@ -63,6 +73,16 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
         RebuildGroups();
     }
 
+    partial void OnSortPageDescendingChanged(bool value)
+    {
+        RebuildGroups();
+    }
+
+    partial void OnSortWithinGroupNewestFirstChanged(bool value)
+    {
+        RebuildGroups();
+    }
+
     private void RebuildGroups()
     {
         Groups.Clear();
@@ -81,11 +101,17 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
                 a.Text is { } t && t.Contains(needle, StringComparison.OrdinalIgnoreCase));
         }
 
-        foreach (var group in filtered.GroupBy(a => a.PageIndex).OrderBy(g => g.Key))
+        var grouped = filtered.GroupBy(a => a.PageIndex);
+        var orderedGroups = SortPageDescending
+            ? grouped.OrderByDescending(g => g.Key)
+            : grouped.OrderBy(g => g.Key);
+
+        foreach (var group in orderedGroups)
         {
-            Groups.Add(new AnnotationPageGroup(
-                group.Key,
-                [.. group.OrderBy(a => a.CreatedAt)]));
+            IEnumerable<Annotation> annotations = SortWithinGroupNewestFirst
+                ? group.OrderByDescending(a => a.CreatedAt)
+                : group.OrderBy(a => a.CreatedAt);
+            Groups.Add(new AnnotationPageGroup(group.Key, [.. annotations]));
         }
         RefreshTick++;
     }
