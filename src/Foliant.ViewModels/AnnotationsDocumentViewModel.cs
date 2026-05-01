@@ -25,6 +25,12 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
     [ObservableProperty]
     private AnnotationFilterMode _filterMode = AnnotationFilterMode.All;
 
+    /// <summary>Поисковая строка для фильтрации заметок по содержимому (case-insensitive).
+    /// Пусто/whitespace → фильтр не применяется. Не-null Text аннотации должен содержать
+    /// подстроку — это автоматически исключает Highlight/Freehand (у них Text=null).</summary>
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
     public ObservableCollection<AnnotationPageGroup> Groups { get; } = [];
 
     public int TotalCount => Groups.Sum(g => g.Annotations.Count);
@@ -52,6 +58,11 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
         RebuildGroups();
     }
 
+    partial void OnSearchTextChanged(string value)
+    {
+        RebuildGroups();
+    }
+
     private void RebuildGroups()
     {
         Groups.Clear();
@@ -62,6 +73,14 @@ public sealed partial class AnnotationsDocumentViewModel : ObservableObject
             AnnotationFilterMode.Freehand => _source.Where(a => a.Kind == AnnotationKind.Freehand),
             _ => _source,
         };
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            string needle = SearchText;
+            filtered = filtered.Where(a =>
+                a.Text is { } t && t.Contains(needle, StringComparison.OrdinalIgnoreCase));
+        }
+
         foreach (var group in filtered.GroupBy(a => a.PageIndex).OrderBy(g => g.Key))
         {
             Groups.Add(new AnnotationPageGroup(

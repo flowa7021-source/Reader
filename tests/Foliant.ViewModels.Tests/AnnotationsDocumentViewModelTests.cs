@@ -174,6 +174,98 @@ public sealed class AnnotationsDocumentViewModelTests
         vm.TotalCount.Should().Be(2);
     }
 
+    // ───── SearchText filter (S10/H) ─────
+
+    [Fact]
+    public void SearchText_DefaultEmpty_NoFilterApplied()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "anything", "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([hl, note]);
+
+        vm.SearchText.Should().Be(string.Empty);
+        vm.TotalCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void SearchText_NonEmpty_FiltersByNoteText_CaseInsensitive()
+    {
+        var t = DateTimeOffset.UtcNow;
+        var n1 = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "TODO: investigate", "#000", t);
+        var n2 = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "leave me", "#000", t);
+        var n3 = Annotation.StickyNote(1, new AnnotationRect(0, 0, 1, 1), "another todo here", "#000", t);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([n1, n2, n3]);
+
+        vm.SearchText = "todo";
+
+        vm.TotalCount.Should().Be(2);
+        vm.Groups.SelectMany(g => g.Annotations).Select(a => a.Id)
+            .Should().BeEquivalentTo(new[] { n1.Id, n3.Id });
+    }
+
+    [Fact]
+    public void SearchText_NonEmpty_ExcludesAnnotationsWithoutText()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "search-me", "#000", DateTimeOffset.UtcNow);
+        var fh = Annotation.Freehand(0, [new AnnotationPoint(0, 0)], "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([hl, note, fh]);
+
+        vm.SearchText = "search";
+
+        vm.TotalCount.Should().Be(1);
+        vm.Groups.Single().Annotations.Single().Id.Should().Be(note.Id);
+    }
+
+    [Fact]
+    public void SearchText_Whitespace_TreatedAsEmpty()
+    {
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "x", "#000", DateTimeOffset.UtcNow);
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([note, hl]);
+
+        vm.SearchText = "    ";
+
+        vm.TotalCount.Should().Be(2);
+    }
+
+    [Fact]
+    public void SearchText_AndFilterMode_AppliedTogether()
+    {
+        var t = DateTimeOffset.UtcNow;
+        var n1 = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "find-me note", "#000", t);
+        var n2 = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "different", "#000", t);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([n1, n2]);
+
+        vm.FilterMode = AnnotationFilterMode.Notes;
+        vm.SearchText = "find";
+
+        vm.TotalCount.Should().Be(1);
+        vm.Groups.Single().Annotations.Single().Id.Should().Be(n1.Id);
+    }
+
+    [Fact]
+    public void SearchText_Change_RaisesPropertyChanged()
+    {
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 1, 1), "x", "#000", DateTimeOffset.UtcNow);
+        var vm = new AnnotationsDocumentViewModel(_ => { });
+        vm.Rebuild([note]);
+
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.SearchText = "y";
+
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.SearchText));
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.TotalCount));
+        fired.Should().Contain(nameof(AnnotationsDocumentViewModel.IsEmpty));
+    }
+
     [Fact]
     public void FilterMode_Change_RaisesPropertyChanged()
     {
