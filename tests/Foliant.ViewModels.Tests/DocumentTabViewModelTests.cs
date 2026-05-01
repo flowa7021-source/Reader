@@ -1158,4 +1158,109 @@ public sealed class DocumentTabViewModelTests
 
         vm.CurrentPageAnnotations.Should().HaveCount(2);
     }
+
+    // ───── Search «n of m» indicator (S11/X) ─────
+
+    [Fact]
+    public void SearchHitInfo_NoSearch_IsEmpty()
+    {
+        var vm = CreateVm();
+
+        vm.SearchHitCount.Should().Be(0);
+        vm.SelectedSearchHitOneBasedIndex.Should().Be(0);
+        vm.SearchHitInfo.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SearchHitInfo_AfterRunSearch_ShowsCountWithoutSelection()
+    {
+        var hits = new SearchHit[]
+        {
+            new("", "/x.pdf", 1, "a", 1.0),
+            new("", "/x.pdf", 2, "b", 1.0),
+            new("", "/x.pdf", 3, "c", 1.0),
+        };
+        var search = Substitute.For<ISearchService>();
+        search
+            .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<SearchHit>>(hits));
+        var vm = CreateVm(search: search);
+        vm.SearchText = "foo";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.SearchHitCount.Should().Be(3);
+        // Без явного SelectedSearchHit индекс = 0 → отображение «0/3».
+        vm.SelectedSearchHitOneBasedIndex.Should().Be(0);
+        vm.SearchHitInfo.Should().Be("0/3");
+    }
+
+    [Fact]
+    public async Task SearchHitInfo_SelectingHit_UpdatesIndex()
+    {
+        var hits = new SearchHit[]
+        {
+            new("", "/x.pdf", 1, "a", 1.0),
+            new("", "/x.pdf", 2, "b", 1.0),
+            new("", "/x.pdf", 3, "c", 1.0),
+        };
+        var search = Substitute.For<ISearchService>();
+        search
+            .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<SearchHit>>(hits));
+        var vm = CreateVm(search: search);
+        vm.SearchText = "foo";
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.SelectedSearchHit = vm.SearchResults[1];
+
+        vm.SelectedSearchHitOneBasedIndex.Should().Be(2);
+        vm.SearchHitInfo.Should().Be("2/3");
+    }
+
+    [Fact]
+    public async Task SearchHitInfo_NextSearchHit_AdvancesIndex()
+    {
+        var hits = new SearchHit[]
+        {
+            new("", "/x.pdf", 1, "a", 1.0),
+            new("", "/x.pdf", 2, "b", 1.0),
+        };
+        var search = Substitute.For<ISearchService>();
+        search
+            .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<SearchHit>>(hits));
+        var vm = CreateVm(search: search);
+        vm.SearchText = "foo";
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.NextSearchHitCommand.Execute(null);
+        vm.SearchHitInfo.Should().Be("1/2");
+
+        vm.NextSearchHitCommand.Execute(null);
+        vm.SearchHitInfo.Should().Be("2/2");
+    }
+
+    [Fact]
+    public async Task SearchResults_PropertyChanged_FiresForCountAndInfo()
+    {
+        var hits = new SearchHit[]
+        {
+            new("", "/x.pdf", 1, "a", 1.0),
+        };
+        var search = Substitute.For<ISearchService>();
+        search
+            .SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<SearchHit>>(hits));
+        var vm = CreateVm(search: search);
+        vm.SearchText = "foo";
+
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        fired.Should().Contain(nameof(DocumentTabViewModel.SearchHitCount));
+        fired.Should().Contain(nameof(DocumentTabViewModel.SearchHitInfo));
+    }
 }

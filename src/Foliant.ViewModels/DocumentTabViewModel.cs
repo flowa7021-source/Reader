@@ -85,6 +85,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private bool _isSearching;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedSearchHitOneBasedIndex))]
+    [NotifyPropertyChangedFor(nameof(SearchHitInfo))]
     private SearchHit? _selectedSearchHit;
 
     public ObservableCollection<SearchHit> SearchResults { get; } = [];
@@ -153,6 +155,38 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// <summary>Число закладок в документе.</summary>
     public int BookmarksCount => Bookmarks.Count;
 
+    /// <summary>Сколько хитов в текущем поисковом результате. Биндится в статус-бар
+    /// (рядом с PageInfo / ZoomPercent) и индикатор search-sidebar.</summary>
+    public int SearchHitCount => SearchResults.Count;
+
+    /// <summary>1-based индекс выбранного хита в <see cref="SearchResults"/>; 0 если ничего не выбрано
+    /// или коллекция пуста. Удобен для XAML-биндинга в стиле «3 / 12».</summary>
+    public int SelectedSearchHitOneBasedIndex
+    {
+        get
+        {
+            if (SelectedSearchHit is null || SearchResults.Count == 0)
+            {
+                return 0;
+            }
+            int idx = SearchResults.IndexOf(SelectedSearchHit);
+            return idx < 0 ? 0 : idx + 1;
+        }
+    }
+
+    /// <summary>Строка вида «3/12» (или пустая, если поиска не было). Локаль-агностичная.</summary>
+    public string SearchHitInfo
+    {
+        get
+        {
+            if (SearchResults.Count == 0)
+            {
+                return string.Empty;
+            }
+            return $"{SelectedSearchHitOneBasedIndex}/{SearchResults.Count}";
+        }
+    }
+
     /// <summary>Read-only обёртка над <see cref="IDocument.Metadata"/> для info-диалога.
     /// Создаётся лениво — пока пользователь не открыл «Document Info», VM не строится.</summary>
     public DocumentMetadataViewModel Metadata => _metadataLazy.Value;
@@ -195,6 +229,12 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
             OnPropertyChanged(nameof(CurrentPageAnnotationsCount));
         Bookmarks.CollectionChanged += (_, _) =>
             OnPropertyChanged(nameof(BookmarksCount));
+        SearchResults.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(SearchHitCount));
+            OnPropertyChanged(nameof(SelectedSearchHitOneBasedIndex));
+            OnPropertyChanged(nameof(SearchHitInfo));
+        };
     }
 
     partial void OnCurrentPageIndexChanged(int oldValue, int newValue)
