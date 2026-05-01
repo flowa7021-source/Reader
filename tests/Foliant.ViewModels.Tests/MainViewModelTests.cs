@@ -312,6 +312,74 @@ public sealed class MainViewModelTests
         fired.Should().Contain(nameof(MainViewModel.HasOpenTab));
     }
 
+    // ───── RemoveRecent (S11/V) ─────
+
+    [Fact]
+    public async Task RemoveRecentCommand_DelegatesToService_AndRefreshes()
+    {
+        var recents = Substitute.For<IRecentsService>();
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        var vm = CreateVm(recents);
+
+        await vm.RemoveRecentCommand.ExecuteAsync("a.pdf");
+
+        await recents.Received(1).RemoveAsync("a.pdf", Arg.Any<CancellationToken>());
+        await recents.Received().GetAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task RemoveRecentCommand_NullOrWhitespace_NoOp(string? input)
+    {
+        var recents = Substitute.For<IRecentsService>();
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        var vm = CreateVm(recents);
+
+        await vm.RemoveRecentCommand.ExecuteAsync(input);
+
+        await recents.DidNotReceive().RemoveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    // ───── Dedupe-on-open (S11/W) ─────
+
+    [Fact]
+    public async Task OpenDocumentFromPath_AlreadyOpen_FocusesExistingTab()
+    {
+        var recents = Substitute.For<IRecentsService>();
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        var vm = CreateVm(recents);
+        var t1 = MakeTabStub("/tmp/a.pdf");
+        var t2 = MakeTabStub("/tmp/b.pdf");
+        vm.Tabs.Add(t1);
+        vm.Tabs.Add(t2);
+        vm.SelectedTab = t2;
+
+        await vm.OpenDocumentFromPathAsync("/tmp/a.pdf", default);
+
+        // Существующий таб сфокусирован, новый не создан.
+        vm.SelectedTab.Should().BeSameAs(t1);
+        vm.Tabs.Should().HaveCount(2);
+        // MRU всё равно обновился — пользователь явно «открывал» этот файл.
+        await recents.Received(1).AddAsync("/tmp/a.pdf", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task OpenDocumentFromPath_AlreadyOpen_CaseInsensitive()
+    {
+        var recents = Substitute.For<IRecentsService>();
+        recents.GetAsync(Arg.Any<CancellationToken>()).Returns(Array.Empty<string>());
+        var vm = CreateVm(recents);
+        var t = MakeTabStub("/tmp/A.PDF");
+        vm.Tabs.Add(t);
+
+        await vm.OpenDocumentFromPathAsync("/tmp/a.pdf", default);
+
+        vm.SelectedTab.Should().BeSameAs(t);
+        vm.Tabs.Should().HaveCount(1);
+    }
+
     // ───── HasRecentFiles (S11/U) ─────
 
     [Fact]
@@ -434,7 +502,7 @@ public sealed class MainViewModelTests
         vm.Tabs.Should().BeEmpty();
     }
 
-    private static DocumentTabViewModel MakeTabStub()
+    private static DocumentTabViewModel MakeTabStub(string filePath = "/tmp/x.pdf")
     {
         var doc = Substitute.For<IDocument>();
         doc.PageCount.Returns(1);
@@ -447,6 +515,6 @@ public sealed class MainViewModelTests
         var bm = Substitute.For<IBookmarkService>();
         bm.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
           .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
-        return new DocumentTabViewModel(doc, "/tmp/x.pdf", search, ann, bm, NullLogger<DocumentTabViewModel>.Instance);
+        return new DocumentTabViewModel(doc, filePath, search, ann, bm, NullLogger<DocumentTabViewModel>.Instance);
     }
 }

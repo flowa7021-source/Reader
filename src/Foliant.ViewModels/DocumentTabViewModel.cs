@@ -157,6 +157,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// Создаётся лениво — пока пользователь не открыл «Document Info», VM не строится.</summary>
     public DocumentMetadataViewModel Metadata => _metadataLazy.Value;
 
+    /// <summary>Путь к открытому файлу, как был передан в конструктор. Используется для
+    /// dedupe-on-open в <see cref="MainViewModel"/> и для отладочных сообщений.</summary>
+    public string FilePath => _filePath;
+
     private readonly Lazy<DocumentMetadataViewModel> _metadataLazy;
 
     public DocumentTabViewModel(

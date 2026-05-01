@@ -130,6 +130,18 @@ public sealed partial class MainViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(path);
 
+        // Dedupe: если этот файл уже открыт в одной из вкладок — фокусируем
+        // её и обновляем MRU. Use-case не дёргается → нет повторного открытия
+        // PdfDocument'а / повторного индексирования.
+        DocumentTabViewModel? existing = FindTabByPath(path);
+        if (existing is not null)
+        {
+            SelectedTab = existing;
+            await _recents.AddAsync(path, ct);
+            await RefreshRecentsAsync(ct);
+            return;
+        }
+
         try
         {
             IDocument document = await _openUseCase.ExecuteAsync(path, ct);
@@ -173,6 +185,21 @@ public sealed partial class MainViewModel : ObservableObject
         await RefreshRecentsAsync(CancellationToken.None);
     }
 
+    /// <summary>
+    /// Удалить одиночную запись из MRU (контекстное меню «Remove from list» в
+    /// подменю File → Open Recent). Пустой/null путь — no-op.
+    /// </summary>
+    [RelayCommand]
+    private async Task RemoveRecentAsync(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+        await _recents.RemoveAsync(path, CancellationToken.None);
+        await RefreshRecentsAsync(CancellationToken.None);
+    }
+
     private async Task RefreshRecentsAsync(CancellationToken ct)
     {
         IReadOnlyList<string> items = await _recents.GetAsync(ct);
@@ -181,6 +208,22 @@ public sealed partial class MainViewModel : ObservableObject
         {
             RecentFiles.Add(p);
         }
+    }
+
+    /// <summary>Найти вкладку с тем же файлом, что и переданный <paramref name="path"/>.
+    /// Сравнение регистро-нечувствительное — это совместимо с <see cref="IRecentsService"/>
+    /// и работает на Windows; на Linux пользователь, открывающий файл с разным регистром,
+    /// получит «уже открыто», что разумно (один и тот же файл).</summary>
+    private DocumentTabViewModel? FindTabByPath(string path)
+    {
+        foreach (DocumentTabViewModel tab in Tabs)
+        {
+            if (string.Equals(tab.FilePath, path, StringComparison.OrdinalIgnoreCase))
+            {
+                return tab;
+            }
+        }
+        return null;
     }
 
     [RelayCommand]
