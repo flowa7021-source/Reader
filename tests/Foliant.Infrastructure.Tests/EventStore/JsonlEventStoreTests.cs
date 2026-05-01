@@ -211,4 +211,53 @@ public sealed class JsonlEventStoreTests : IDisposable
 
         (await _sut.ListPendingFingerprintsAsync(default)).Should().NotContain(Fp);
     }
+
+    // ───── GetEventCountAsync (S12/C) ─────
+
+    [Fact]
+    public async Task GetEventCount_NoFile_ReturnsZero()
+    {
+        var n = await _sut.GetEventCountAsync(Fp, default);
+        n.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetEventCount_AfterAppends_ReturnsCorrectCount()
+    {
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("A", "{}"), default);
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("B", "{}"), default);
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("C", "{}"), default);
+
+        (await _sut.GetEventCountAsync(Fp, default)).Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetEventCount_BlankLines_AreSkipped()
+    {
+        // Подкладываем файл вручную с пустыми строками между событиями.
+        var docDir = Path.Combine(_tmp.Path, Fp);
+        Directory.CreateDirectory(docDir);
+        var path = Path.Combine(docDir, "events.jsonl");
+        await File.WriteAllTextAsync(
+            path,
+            """
+            {"Kind":"A","PayloadJson":"{}"}
+
+            {"Kind":"B","PayloadJson":"{}"}
+
+            {"Kind":"C","PayloadJson":"{}"}
+            """,
+            default);
+
+        (await _sut.GetEventCountAsync(Fp, default)).Should().Be(3);
+    }
+
+    [Fact]
+    public async Task GetEventCount_AfterClear_ReturnsZero()
+    {
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("X", "{}"), default);
+        await _sut.ClearAsync(Fp, default);
+
+        (await _sut.GetEventCountAsync(Fp, default)).Should().Be(0);
+    }
 }

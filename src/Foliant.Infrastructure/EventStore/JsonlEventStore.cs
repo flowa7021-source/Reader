@@ -107,6 +107,31 @@ public sealed class JsonlEventStore : IEventStore, IDisposable
         return Task.CompletedTask;
     }
 
+    public async Task<int> GetEventCountAsync(string docFingerprint, CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(docFingerprint);
+
+        var path = StreamPath(docFingerprint);
+        if (!File.Exists(path))
+        {
+            return 0;
+        }
+
+        int count = 0;
+        await using var stream = File.OpenRead(path);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        while (!reader.EndOfStream)
+        {
+            ct.ThrowIfCancellationRequested();
+            var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
     public Task<IReadOnlyList<string>> ListPendingFingerprintsAsync(CancellationToken ct)
     {
         if (!Directory.Exists(_rootDir))

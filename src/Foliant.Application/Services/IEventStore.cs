@@ -24,4 +24,10 @@ public interface IEventStore
     /// Используется при старте приложения для crash recovery: «у вас есть несохранённые
     /// действия для документов X, Y, Z». Пустые / отсутствующие файлы пропускаются.</summary>
     Task<IReadOnlyList<string>> ListPendingFingerprintsAsync(CancellationToken ct);
+
+    /// <summary>Сколько событий в <c>events.jsonl</c> у документа. 0 для отсутствующего файла.
+    /// Подсчитывает только non-blank строки — JSON содержимое не парсится. Дёшево
+    /// относительно <see cref="ReadAllAsync"/>: достаточно для UI-индикатора
+    /// «12 unsaved actions» в crash-recovery диалоге.</summary>
+    Task<int> GetEventCountAsync(string docFingerprint, CancellationToken ct);
 }
