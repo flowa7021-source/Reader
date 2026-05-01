@@ -16,6 +16,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ISettingsService _settings;
     private readonly ILocalizationService _localization;
     private readonly IDocumentIndexer _indexer;
+    private readonly ILicenseManager? _licenseManager;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -29,6 +30,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string _currentTheme = "Light";
+
+    /// <summary>Текущий статус лицензии. Обновляется при <see cref="InitializeAsync"/> и при
+    /// явном <see cref="RefreshLicenseStatusCommand"/>. <c>null</c> если license-manager
+    /// не зарегистрирован (dev-сборка / отсутствие S13/D-импла на момент init).</summary>
+    [ObservableProperty]
+    private LicenseValidationResult? _licenseStatus;
 
     public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
 
@@ -48,7 +55,8 @@ public sealed partial class MainViewModel : ObservableObject
         ISettingsService settings,
         ILocalizationService localization,
         IDocumentIndexer indexer,
-        ILogger<MainViewModel> logger)
+        ILogger<MainViewModel> logger,
+        ILicenseManager? licenseManager = null)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
@@ -64,6 +72,7 @@ public sealed partial class MainViewModel : ObservableObject
         _settings = settings;
         _localization = localization;
         _indexer = indexer;
+        _licenseManager = licenseManager;
         _logger = logger;
 
         // Tabs.Count → PropertyChanged for TabsCount + HasOpenTab.
@@ -80,6 +89,29 @@ public sealed partial class MainViewModel : ObservableObject
         CurrentTheme = _settings.Current.Theme == "Auto" ? "Light" : _settings.Current.Theme;
         _localization.SetCulture(_settings.Current.Language);
         await RefreshRecentsAsync(ct);
+        await RefreshLicenseStatusInternalAsync(ct);
+    }
+
+    [RelayCommand]
+    private Task RefreshLicenseStatusAsync() => RefreshLicenseStatusInternalAsync(CancellationToken.None);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "License read failure must not crash the app — falls back to Missing.")]
+    private async Task RefreshLicenseStatusInternalAsync(CancellationToken ct)
+    {
+        if (_licenseManager is null)
+        {
+            return;
+        }
+        try
+        {
+            LicenseStatus = await _licenseManager.CurrentAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "License status refresh failed; falling back to Missing.");
+            LicenseStatus = LicenseValidationResult.Missing;
+        }
     }
 
     public async Task OpenDocumentFromPathAsync(string path, CancellationToken ct)

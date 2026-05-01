@@ -15,7 +15,8 @@ public sealed class MainViewModelTests
         IRecentsService? recents = null,
         ISettingsService? settings = null,
         ILocalizationService? localization = null,
-        IDocumentIndexer? indexer = null)
+        IDocumentIndexer? indexer = null,
+        ILicenseManager? licenseManager = null)
     {
         var useCase = new OpenDocumentUseCase([], NullLogger<OpenDocumentUseCase>.Instance);
         Func<IDocument, string, DocumentTabViewModel> factory = (_, _) => throw new NotSupportedException();
@@ -37,7 +38,8 @@ public sealed class MainViewModelTests
         localization ??= Substitute.For<ILocalizationService>();
         indexer ??= Substitute.For<IDocumentIndexer>();
 
-        return new MainViewModel(useCase, factory, recents, settings, localization, indexer, NullLogger<MainViewModel>.Instance);
+        return new MainViewModel(useCase, factory, recents, settings, localization, indexer,
+            NullLogger<MainViewModel>.Instance, licenseManager);
     }
 
     [Fact]
@@ -308,6 +310,65 @@ public sealed class MainViewModelTests
 
         fired.Should().Contain(nameof(MainViewModel.TabsCount));
         fired.Should().Contain(nameof(MainViewModel.HasOpenTab));
+    }
+
+    // ───── License status (S13/E) ─────
+
+    [Fact]
+    public async Task LicenseStatus_NoLicenseManager_StaysNull()
+    {
+        var vm = CreateVm(licenseManager: null);
+
+        await vm.InitializeAsync(default);
+
+        vm.LicenseStatus.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task LicenseStatus_AfterInitialize_ReflectsManagerVerdict()
+    {
+        var lm = Substitute.For<ILicenseManager>();
+        var lic = new License("alice", "Pro", DateTimeOffset.UtcNow.AddDays(180), ["editor"]);
+        lm.CurrentAsync(Arg.Any<CancellationToken>())
+          .Returns(LicenseValidationResult.Valid(lic));
+        var vm = CreateVm(licenseManager: lm);
+
+        await vm.InitializeAsync(default);
+
+        vm.LicenseStatus!.Status.Should().Be(LicenseStatus.Valid);
+        vm.LicenseStatus.License!.User.Should().Be("alice");
+    }
+
+    [Fact]
+    public async Task RefreshLicenseStatus_ReReads_FromManager()
+    {
+        var lm = Substitute.For<ILicenseManager>();
+        var first = LicenseValidationResult.Missing;
+        var second = LicenseValidationResult.Valid(new License("u", "Pro", DateTimeOffset.UtcNow.AddYears(1), []));
+        var sequence = new Queue<LicenseValidationResult>([first, second]);
+        lm.CurrentAsync(Arg.Any<CancellationToken>())
+          .Returns(_ => sequence.Dequeue());
+        var vm = CreateVm(licenseManager: lm);
+
+        await vm.InitializeAsync(default);
+        vm.LicenseStatus.Should().BeSameAs(first);
+
+        await vm.RefreshLicenseStatusCommand.ExecuteAsync(null);
+        vm.LicenseStatus.Should().BeSameAs(second);
+    }
+
+    [Fact]
+    public async Task LicenseStatus_ManagerThrows_FallsBackToMissing_DoesNotPropagate()
+    {
+        var lm = Substitute.For<ILicenseManager>();
+        lm.CurrentAsync(Arg.Any<CancellationToken>())
+          .Returns(Task.FromException<LicenseValidationResult>(new IOException("disk")));
+        var vm = CreateVm(licenseManager: lm);
+
+        var act = async () => await vm.InitializeAsync(default);
+
+        await act.Should().NotThrowAsync();
+        vm.LicenseStatus!.Status.Should().Be(LicenseStatus.Missing);
     }
 
     private static DocumentTabViewModel MakeTabStub()

@@ -119,7 +119,18 @@ internal static class AppHostBuilder
                 sp.GetRequiredService<IBookmarkService>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
 
-        services.AddTransient<MainViewModel>();
+        // ILicenseManager — optional: dev-сборка может не регистрировать его
+        // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис
+        // не зарегистрирован — MainViewModel это допустимо.
+        services.AddTransient(sp => new MainViewModel(
+            sp.GetRequiredService<OpenDocumentUseCase>(),
+            sp.GetRequiredService<Func<IDocument, string, DocumentTabViewModel>>(),
+            sp.GetRequiredService<IRecentsService>(),
+            sp.GetRequiredService<ISettingsService>(),
+            sp.GetRequiredService<ILocalizationService>(),
+            sp.GetRequiredService<IDocumentIndexer>(),
+            sp.GetRequiredService<ILoggerFactory>().CreateLogger<MainViewModel>(),
+            sp.GetService<ILicenseManager>()));
         services.AddTransient<SettingsViewModel>();
 
         // Views
