@@ -312,6 +312,40 @@ public sealed class MainViewModelTests
         fired.Should().Contain(nameof(MainViewModel.HasOpenTab));
     }
 
+    // ───── HasRecentFiles (S11/U) ─────
+
+    [Fact]
+    public void HasRecentFiles_FollowsCollection()
+    {
+        var vm = CreateVm();
+
+        vm.HasRecentFiles.Should().BeFalse();
+
+        vm.RecentFiles.Add("a.pdf");
+        vm.HasRecentFiles.Should().BeTrue();
+
+        vm.RecentFiles.Add("b.pdf");
+        vm.HasRecentFiles.Should().BeTrue();
+
+        vm.RecentFiles.Clear();
+        vm.HasRecentFiles.Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasRecentFiles_FiresPropertyChanged_OnAddRemove()
+    {
+        var vm = CreateVm();
+        var fired = new List<string?>();
+        vm.PropertyChanged += (_, e) => fired.Add(e.PropertyName);
+
+        vm.RecentFiles.Add("x.pdf");
+        fired.Should().Contain(nameof(MainViewModel.HasRecentFiles));
+
+        fired.Clear();
+        vm.RecentFiles.Clear();
+        fired.Should().Contain(nameof(MainViewModel.HasRecentFiles));
+    }
+
     // ───── License status (S13/E) ─────
 
     [Fact]

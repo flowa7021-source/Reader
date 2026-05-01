@@ -48,6 +48,11 @@ public sealed partial class MainViewModel : ObservableObject
     /// и подобные команды могут отключаться при <c>HasOpenTab == false</c>.</summary>
     public bool HasOpenTab => Tabs.Count > 0;
 
+    /// <summary>True если в MRU-списке есть хотя бы один файл. Подменю «File →
+    /// Open Recent» / кнопка «Clear Recents» биндятся на это свойство для
+    /// отключения при пустом списке.</summary>
+    public bool HasRecentFiles => RecentFiles.Count > 0;
+
     public MainViewModel(
         OpenDocumentUseCase openUseCase,
         Func<IDocument, string, DocumentTabViewModel> tabFactory,
@@ -80,6 +85,13 @@ public sealed partial class MainViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(TabsCount));
             OnPropertyChanged(nameof(HasOpenTab));
+        };
+
+        // RecentFiles.Count → PropertyChanged for HasRecentFiles
+        // (меню «File → Open Recent» гасится при пустом MRU).
+        RecentFiles.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasRecentFiles));
         };
     }
 
