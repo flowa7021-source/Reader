@@ -67,6 +67,14 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [ObservableProperty]
     private string _searchText = string.Empty;
 
+    /// <summary>Case-sensitive поиск; default false. Биндится к чекбоксу в search-sidebar.</summary>
+    [ObservableProperty]
+    private bool _searchMatchCase;
+
+    /// <summary>Whole-word поиск; default false. Биндится к чекбоксу в search-sidebar.</summary>
+    [ObservableProperty]
+    private bool _searchMatchWholeWord;
+
     [ObservableProperty]
     private AnnotationFilterMode _annotationFilter = AnnotationFilterMode.All;
 
@@ -577,7 +585,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         string trimmed = SearchText.Trim();
         try
         {
-            var query = new SearchQuery(trimmed);
+            var query = new SearchQuery(
+                trimmed,
+                MatchCase: SearchMatchCase,
+                MatchWholeWord: SearchMatchWholeWord);
             IReadOnlyList<SearchHit> hits = await _searchService
                 .SearchInDocumentAsync(_document, _filePath, query, CancellationToken.None);
 

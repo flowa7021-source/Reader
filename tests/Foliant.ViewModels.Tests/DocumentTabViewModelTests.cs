@@ -791,6 +791,52 @@ public sealed class DocumentTabViewModelTests
         vm.CanGoForward.Should().BeFalse();
     }
 
+    // ───── Search options on VM (S6/C) ─────
+
+    [Fact]
+    public async Task RunSearch_PassesMatchCaseAndWholeWord_To_SearchQuery()
+    {
+        SearchQuery? captured = null;
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(call =>
+              {
+                  captured = (SearchQuery)call[2];
+                  return Task.FromResult<IReadOnlyList<SearchHit>>([]);
+              });
+        var vm = CreateVm(search: search);
+        vm.SearchMatchCase = true;
+        vm.SearchMatchWholeWord = true;
+        vm.SearchText = "Foo";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        captured.Should().NotBeNull();
+        captured!.MatchCase.Should().BeTrue();
+        captured.MatchWholeWord.Should().BeTrue();
+        captured.Text.Should().Be("Foo");
+    }
+
+    [Fact]
+    public async Task RunSearch_DefaultOptions_AreFalse()
+    {
+        SearchQuery? captured = null;
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(call =>
+              {
+                  captured = (SearchQuery)call[2];
+                  return Task.FromResult<IReadOnlyList<SearchHit>>([]);
+              });
+        var vm = CreateVm(search: search);
+        vm.SearchText = "x";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        captured!.MatchCase.Should().BeFalse();
+        captured.MatchWholeWord.Should().BeFalse();
+    }
+
     // ───── Next/Previous bookmark (S11/K) ─────
 
     [Fact]
