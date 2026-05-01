@@ -107,6 +107,44 @@ public sealed class JsonlEventStore : IEventStore, IDisposable
         return Task.CompletedTask;
     }
 
+    public async Task CompactAsync(
+        string docFingerprint,
+        IReadOnlyList<DocumentCommandRecord> retained,
+        CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(docFingerprint);
+        ArgumentNullException.ThrowIfNull(retained);
+
+        var gate = GetGate(docFingerprint);
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var path = StreamPath(docFingerprint);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            var tmp = path + ".tmp";
+
+            // Сериализуем в .tmp + atomically Move, чтобы крэш посередине не оставил
+            // полу-записанный файл (классический паттерн как в JsonSettingsStore).
+            await using (var stream = File.Create(tmp))
+            await using (var writer = new StreamWriter(stream, Encoding.UTF8))
+            {
+                foreach (var rec in retained)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var line = JsonSerializer.Serialize(rec, EventStoreJsonContext.Default.DocumentCommandRecord);
+                    await writer.WriteAsync(line.AsMemory(), ct).ConfigureAwait(false);
+                    await writer.WriteAsync('\n').ConfigureAwait(false);
+                }
+            }
+
+            File.Move(tmp, path, overwrite: true);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
     public async Task<int> GetEventCountAsync(string docFingerprint, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(docFingerprint);

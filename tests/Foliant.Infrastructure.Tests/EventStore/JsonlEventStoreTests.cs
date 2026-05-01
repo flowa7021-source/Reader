@@ -260,4 +260,79 @@ public sealed class JsonlEventStoreTests : IDisposable
 
         (await _sut.GetEventCountAsync(Fp, default)).Should().Be(0);
     }
+
+    // ───── CompactAsync (S12/D) ─────
+
+    [Fact]
+    public async Task Compact_ReplacesContents_WithRetainedSet()
+    {
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("Old1", "{}"), default);
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("Old2", "{}"), default);
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("Old3", "{}"), default);
+
+        var retained = new[]
+        {
+            new DocumentCommandRecord("Tail1", """{"x":1}"""),
+            new DocumentCommandRecord("Tail2", """{"x":2}"""),
+        };
+
+        await _sut.CompactAsync(Fp, retained, default);
+
+        var collected = new List<DocumentCommandRecord>();
+        await foreach (var r in _sut.ReadAllAsync(Fp, default))
+        {
+            collected.Add(r);
+        }
+        collected.Select(r => r.Kind).Should().Equal(["Tail1", "Tail2"]);
+        collected[0].PayloadJson.Should().Be("""{"x":1}""");
+    }
+
+    [Fact]
+    public async Task Compact_EmptyRetained_TruncatesFileToZero()
+    {
+        await _sut.AppendAsync(Fp, new DocumentCommandRecord("X", "{}"), default);
+
+        await _sut.CompactAsync(Fp, [], default);
+
+        (await _sut.GetEventCountAsync(Fp, default)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Compact_NoExistingFile_CreatesFileWithRetained()
+    {
+        var retained = new[] { new DocumentCommandRecord("Fresh", "{}") };
+
+        await _sut.CompactAsync("brand-new-doc", retained, default);
+
+        (await _sut.GetEventCountAsync("brand-new-doc", default)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Compact_PreservesOrder_AndCyrillic()
+    {
+        var retained = new[]
+        {
+            new DocumentCommandRecord("First", """{"text":"Привет"}"""),
+            new DocumentCommandRecord("Second", """{"text":"мир"}"""),
+        };
+
+        await _sut.CompactAsync(Fp, retained, default);
+
+        var collected = new List<DocumentCommandRecord>();
+        await foreach (var r in _sut.ReadAllAsync(Fp, default))
+        {
+            collected.Add(r);
+        }
+        collected.Select(r => r.Kind).Should().Equal(["First", "Second"]);
+        collected[0].PayloadJson.Should().Contain("Привет");
+    }
+
+    [Fact]
+    public async Task Compact_LeavesNoTmpFileBehind()
+    {
+        await _sut.CompactAsync(Fp, [new DocumentCommandRecord("X", "{}")], default);
+
+        var docDir = Path.Combine(_tmp.Path, Fp);
+        Directory.GetFiles(docDir, "*.tmp").Should().BeEmpty();
+    }
 }

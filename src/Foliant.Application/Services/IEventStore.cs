@@ -30,4 +30,12 @@ public interface IEventStore
     /// относительно <see cref="ReadAllAsync"/>: достаточно для UI-индикатора
     /// «12 unsaved actions» в crash-recovery диалоге.</summary>
     Task<int> GetEventCountAsync(string docFingerprint, CancellationToken ct);
+
+    /// <summary>Атомарно перезаписать <c>events.jsonl</c> новым набором записей.
+    /// Используется после snapshot'а: replay-материал применён к снимку → старые
+    /// события можно дропнуть, оставив только хвост, нужный для следующей сессии.
+    /// Семантика: запись во временный файл + <c>File.Move(overwrite: true)</c> →
+    /// при крэше посередине либо старый файл цел, либо новый цел. Пустой
+    /// <paramref name="retained"/> очищает файл (но папка остаётся).</summary>
+    Task CompactAsync(string docFingerprint, IReadOnlyList<DocumentCommandRecord> retained, CancellationToken ct);
 }
