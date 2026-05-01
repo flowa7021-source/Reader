@@ -222,6 +222,20 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         OnPropertyChanged(nameof(CanGoForward));
     }
 
+    /// <summary>Очистить back/forward стеки. UI: «Reset navigation history».</summary>
+    [RelayCommand]
+    private void ClearNavigationHistory()
+    {
+        if (_navBack.Count == 0 && _navForward.Count == 0)
+        {
+            return;
+        }
+        _navBack.Clear();
+        _navForward.Clear();
+        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanGoForward));
+    }
+
     partial void OnZoomChanged(double value)
     {
         double clamped = Math.Clamp(value, MinZoom, MaxZoom);

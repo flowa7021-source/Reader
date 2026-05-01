@@ -762,6 +762,35 @@ public sealed class DocumentTabViewModelTests
         vm.CurrentPageIndex.Should().Be(5);
     }
 
+    [Fact]
+    public void ClearNavigationHistoryCommand_DropsBothStacks()
+    {
+        var vm = CreateVm();
+        vm.CurrentPageIndex = 3;
+        vm.CurrentPageIndex = 7;
+        vm.GoBackCommand.Execute(null);   // back=[0], forward=[7]
+
+        vm.CanGoBack.Should().BeTrue();
+        vm.CanGoForward.Should().BeTrue();
+
+        vm.ClearNavigationHistoryCommand.Execute(null);
+
+        vm.CanGoBack.Should().BeFalse();
+        vm.CanGoForward.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearNavigationHistoryCommand_EmptyStacks_NoOp()
+    {
+        var vm = CreateVm();
+
+        var act = () => vm.ClearNavigationHistoryCommand.Execute(null);
+
+        act.Should().NotThrow();
+        vm.CanGoBack.Should().BeFalse();
+        vm.CanGoForward.Should().BeFalse();
+    }
+
     // ───── Next/Previous bookmark (S11/K) ─────
 
     [Fact]

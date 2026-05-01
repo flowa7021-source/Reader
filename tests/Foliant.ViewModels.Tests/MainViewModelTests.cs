@@ -371,6 +371,35 @@ public sealed class MainViewModelTests
         vm.LicenseStatus!.Status.Should().Be(LicenseStatus.Missing);
     }
 
+    // ───── CloseAllTabs (S11/Q) ─────
+
+    [Fact]
+    public async Task CloseAllTabsCommand_RemovesAllAndClearsSelection()
+    {
+        var vm = CreateVm();
+        vm.Tabs.Add(MakeTabStub());
+        vm.Tabs.Add(MakeTabStub());
+        vm.Tabs.Add(MakeTabStub());
+        vm.SelectedTab = vm.Tabs[1];
+
+        await vm.CloseAllTabsCommand.ExecuteAsync(null);
+
+        vm.Tabs.Should().BeEmpty();
+        vm.SelectedTab.Should().BeNull();
+        vm.HasOpenTab.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CloseAllTabsCommand_NoTabs_NoOp()
+    {
+        var vm = CreateVm();
+
+        var act = async () => await vm.CloseAllTabsCommand.ExecuteAsync(null);
+
+        await act.Should().NotThrowAsync();
+        vm.Tabs.Should().BeEmpty();
+    }
+
     private static DocumentTabViewModel MakeTabStub()
     {
         var doc = Substitute.For<IDocument>();

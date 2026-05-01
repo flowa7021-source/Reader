@@ -202,6 +202,19 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private Task CloseCurrentTabAsync() => CloseTabAsync(SelectedTab);
 
+    /// <summary>Закрыть все открытые вкладки. Каждая корректно диспозится.</summary>
+    [RelayCommand]
+    private async Task CloseAllTabsAsync()
+    {
+        var snapshot = Tabs.ToList();
+        Tabs.Clear();
+        SelectedTab = null;
+        foreach (var tab in snapshot)
+        {
+            await tab.DisposeAsync();
+        }
+    }
+
     [RelayCommand]
     private void NextTab()
     {
