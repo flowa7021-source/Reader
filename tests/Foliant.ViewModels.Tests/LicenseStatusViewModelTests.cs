@@ -159,6 +159,56 @@ public sealed class LicenseStatusViewModelTests
         act.Should().Throw<ArgumentOutOfRangeException>();
     }
 
+    // ───── HasFeature (S13/I) ─────
+
+    [Fact]
+    public void HasFeature_Valid_License_DelegatesToDomain()
+    {
+        var lic = new License("u", "Pro", Now.AddYears(1), ["editor", "OCR"]);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now);
+
+        vm.HasFeature("editor").Should().BeTrue();
+        vm.HasFeature("EDITOR").Should().BeTrue();      // case-insensitive
+        vm.HasFeature("ocr").Should().BeTrue();
+        vm.HasFeature("watermark").Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasFeature_Expired_AlwaysReturnsFalse()
+    {
+        var lic = new License("u", "Pro", Now.AddDays(-1), ["editor"]);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Expired(lic), Now);
+
+        vm.HasFeature("editor").Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasFeature_Invalid_AlwaysReturnsFalse()
+    {
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Invalid("bad"), Now);
+
+        vm.HasFeature("anything").Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasFeature_Missing_AlwaysReturnsFalse()
+    {
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Missing, Now);
+
+        vm.HasFeature("editor").Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasFeature_NullArg_Throws()
+    {
+        var lic = new License("u", "Pro", Now.AddYears(1), ["editor"]);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now);
+
+        var act = () => vm.HasFeature(null!);
+
+        act.Should().Throw<ArgumentNullException>();
+    }
+
     [Fact]
     public void Status_FlagsAreMutuallyExclusive()
     {

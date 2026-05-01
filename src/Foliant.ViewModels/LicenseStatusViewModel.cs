@@ -73,6 +73,16 @@ public sealed class LicenseStatusViewModel
     public bool IsExpiringSoon =>
         IsValid && DaysUntilExpiry is { } d && d >= 0 && d <= ExpiringSoonDays;
 
+    /// <summary>True если лицензия валидна и в её фичах есть <paramref name="featureCode"/>
+    /// (case-insensitive, проброс в <see cref="License.HasFeature"/>). Истёкшие /
+    /// невалидные лицензии всегда возвращают false — UI должен прятать Pro-функции
+    /// до явного продления / активации.</summary>
+    public bool HasFeature(string featureCode)
+    {
+        ArgumentNullException.ThrowIfNull(featureCode);
+        return IsValid && Result?.License is { } lic && lic.HasFeature(featureCode);
+    }
+
     /// <summary>Готовая к показу в статус-баре строка. Специально не локализуется
     /// (Sku, User уже идут как есть), форматирование числа — invariant для
     /// предсказуемого CI-сравнения.</summary>
