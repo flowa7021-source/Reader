@@ -85,6 +85,80 @@ public sealed class LicenseStatusViewModelTests
         vm.DisplayText.Should().Be("Invalid: bad signature");
     }
 
+    // ───── IsExpiringSoon (S13/H) ─────
+
+    [Fact]
+    public void IsExpiringSoon_FarFromExpiry_False()
+    {
+        var lic = MakeLicense(180);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now);
+
+        vm.IsExpiringSoon.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsExpiringSoon_WithinDefaultThreshold_True()
+    {
+        var lic = MakeLicense(15);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now);
+
+        vm.IsExpiringSoon.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsExpiringSoon_AtBoundary_True()
+    {
+        var lic = MakeLicense(30);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now);
+
+        vm.IsExpiringSoon.Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsExpiringSoon_OneDayPastBoundary_False()
+    {
+        var lic = MakeLicense(31);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now);
+
+        vm.IsExpiringSoon.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsExpiringSoon_ExpiredLicense_False()
+    {
+        var lic = MakeLicense(-1);
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Expired(lic), Now);
+
+        vm.IsExpiringSoon.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsExpiringSoon_Missing_False()
+    {
+        var vm = new LicenseStatusViewModel(LicenseValidationResult.Missing, Now);
+
+        vm.IsExpiringSoon.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsExpiringSoon_CustomThreshold_AppliesTo7Days()
+    {
+        var lic = MakeLicense(10);
+        var withDefault = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now);
+        var withSeven = new LicenseStatusViewModel(LicenseValidationResult.Valid(lic), Now, expiringSoonDays: 7);
+
+        withDefault.IsExpiringSoon.Should().BeTrue();
+        withSeven.IsExpiringSoon.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Constructor_NegativeExpiringSoonDays_Throws()
+    {
+        var act = () => new LicenseStatusViewModel(LicenseValidationResult.Missing, Now, expiringSoonDays: -1);
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
     [Fact]
     public void Status_FlagsAreMutuallyExclusive()
     {

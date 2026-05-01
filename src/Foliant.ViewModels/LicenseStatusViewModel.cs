@@ -12,15 +12,30 @@ namespace Foliant.ViewModels;
 /// </summary>
 public sealed class LicenseStatusViewModel
 {
-    public LicenseStatusViewModel(LicenseValidationResult? result, DateTimeOffset now)
+    /// <summary>Порог по умолчанию для <see cref="IsExpiringSoon"/>: 30 дней до истечения.
+    /// Соответствует UX-ожиданию подсветки лицензии оранжевым в статус-баре.</summary>
+    public const int DefaultExpiringSoonDays = 30;
+
+    public LicenseStatusViewModel(
+        LicenseValidationResult? result,
+        DateTimeOffset now,
+        int expiringSoonDays = DefaultExpiringSoonDays)
     {
+        if (expiringSoonDays < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(expiringSoonDays), expiringSoonDays, "Must be non-negative.");
+        }
         Result = result;
         Now = now;
+        ExpiringSoonDays = expiringSoonDays;
     }
 
     public LicenseValidationResult? Result { get; }
 
     public DateTimeOffset Now { get; }
+
+    /// <summary>Сколько дней до истечения считается «скоро истекает». Default: 30.</summary>
+    public int ExpiringSoonDays { get; }
 
     public bool HasResult => Result is not null;
 
@@ -52,6 +67,11 @@ public sealed class LicenseStatusViewModel
     public int? DaysUntilExpiry => ExpiresAt is { } at
         ? (int)Math.Floor((at - Now).TotalDays)
         : null;
+
+    /// <summary>True если лицензия валидна, но истекает в пределах <see cref="ExpiringSoonDays"/>
+    /// (включительно). Просрочка / Invalid / Missing → false (для них есть отдельные флаги).</summary>
+    public bool IsExpiringSoon =>
+        IsValid && DaysUntilExpiry is { } d && d >= 0 && d <= ExpiringSoonDays;
 
     /// <summary>Готовая к показу в статус-баре строка. Специально не локализуется
     /// (Sku, User уже идут как есть), форматирование числа — invariant для
