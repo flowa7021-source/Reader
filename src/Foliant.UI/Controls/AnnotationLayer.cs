@@ -30,13 +30,26 @@ internal sealed class AnnotationLayer : FrameworkElement
         new FrameworkPropertyMetadata(null,
             FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.AffectsMeasure));
 
+    public static readonly DependencyProperty SearchHighlightsProperty = DependencyProperty.Register(
+        nameof(SearchHighlights), typeof(IEnumerable<AnnotationRect>), typeof(AnnotationLayer),
+        new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender, OnSearchHighlightsChanged));
+
     public static readonly DependencyProperty CreateNoteCommandProperty = DependencyProperty.Register(
         nameof(CreateNoteCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
+
+    private static readonly SolidColorBrush SearchHighlightBrush = CreateSearchHighlightBrush();
 
     public IEnumerable<Annotation>? Annotations
     {
         get => (IEnumerable<Annotation>?)GetValue(AnnotationsProperty);
         set => SetValue(AnnotationsProperty, value);
+    }
+
+    /// <summary>Прямоугольники (PDF-точки) подсветки поиска на текущей странице.</summary>
+    public IEnumerable<AnnotationRect>? SearchHighlights
+    {
+        get => (IEnumerable<AnnotationRect>?)GetValue(SearchHighlightsProperty);
+        set => SetValue(SearchHighlightsProperty, value);
     }
 
     public IPageRender? PageRender
@@ -65,7 +78,28 @@ internal sealed class AnnotationLayer : FrameworkElement
         }
     }
 
+    private static void OnSearchHighlightsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var layer = (AnnotationLayer)d;
+        if (e.OldValue is INotifyCollectionChanged oldCol)
+        {
+            oldCol.CollectionChanged -= layer.OnCollectionChanged;
+        }
+
+        if (e.NewValue is INotifyCollectionChanged newCol)
+        {
+            newCol.CollectionChanged += layer.OnCollectionChanged;
+        }
+    }
+
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => InvalidateVisual();
+
+    private static SolidColorBrush CreateSearchHighlightBrush()
+    {
+        var brush = new SolidColorBrush(Color.FromArgb(0x66, 0xFF, 0xD5, 0x4F)); // translucent amber
+        brush.Freeze();
+        return brush;
+    }
 
     protected override Size MeasureOverride(Size availableSize) =>
         PageRender is { } r ? new Size(r.WidthPx, r.HeightPx) : base.MeasureOverride(availableSize);
@@ -81,16 +115,30 @@ internal sealed class AnnotationLayer : FrameworkElement
         // Transparent fill makes the whole overlay hit-testable (for the double-click handler).
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(RenderSize));
 
-        if (Annotations is null)
+        PageSize page = render.PageSize;
+        double zoom = EffectiveZoom(render);
+
+        DrawSearchHighlights(dc, page, zoom);
+
+        if (Annotations is not null)
+        {
+            foreach (Annotation a in Annotations)
+            {
+                Draw(dc, a, page, zoom);
+            }
+        }
+    }
+
+    private void DrawSearchHighlights(DrawingContext dc, PageSize page, double zoom)
+    {
+        if (SearchHighlights is not { } highlights)
         {
             return;
         }
 
-        PageSize page = render.PageSize;
-        double zoom = EffectiveZoom(render);
-        foreach (Annotation a in Annotations)
+        foreach (AnnotationRect rect in highlights)
         {
-            Draw(dc, a, page, zoom);
+            dc.DrawRectangle(SearchHighlightBrush, null, ToRect(rect, page, zoom));
         }
     }
 

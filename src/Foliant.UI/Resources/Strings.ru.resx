@@ -133,6 +133,15 @@
   <data name="MenuViewAnnotations" xml:space="preserve">
     <value>_Все аннотации</value>
   </data>
+  <data name="MenuViewFitWidth" xml:space="preserve">
+    <value>По _ширине</value>
+  </data>
+  <data name="MenuViewFitPage" xml:space="preserve">
+    <value>_Страница целиком</value>
+  </data>
+  <data name="MenuViewActualSize" xml:space="preserve">
+    <value>_Реальный размер (100%)</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Светлая</value>
   </data>

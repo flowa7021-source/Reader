@@ -144,4 +144,13 @@ public partial class MainWindow : Window
     {
         System.Windows.Application.Current.Shutdown();
     }
+
+    // Reports the page viewport size to the active tab so Fit Width / Fit Page can compute zoom.
+    private void OnPageAreaSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: DocumentTabViewModel tab })
+        {
+            tab.SetViewport(e.NewSize.Width, e.NewSize.Height);
+        }
+    }
 }

@@ -194,6 +194,13 @@
         </MenuItem>
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewAnnotations]}"
                   Command="{Binding SelectedTab.ToggleAnnotationsCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewFitWidth]}"
+                  Command="{Binding SelectedTab.FitWidthCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewFitPage]}"
+                  Command="{Binding SelectedTab.FitPageCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewActualSize]}"
+                  Command="{Binding SelectedTab.ActualSizeCommand}" />
       </MenuItem>
     </Menu>
 
@@ -219,12 +226,14 @@
             <!-- Page surface -->
             <Grid Grid.Column="0">
               <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                            VerticalScrollBarVisibility="Auto">
+                            VerticalScrollBarVisibility="Auto"
+                            SizeChanged="OnPageAreaSizeChanged">
                 <Grid HorizontalAlignment="Center"
                       VerticalAlignment="Top">
                   <ui:PageSurface PageRender="{Binding CurrentRender}" />
                   <ui:AnnotationLayer PageRender="{Binding CurrentRender}"
                                       Annotations="{Binding CurrentPageAnnotations}"
+                                      SearchHighlights="{Binding CurrentPageSearchHighlights}"
                                       CreateNoteCommand="{Binding AddNoteAtCommand}" />
                 </Grid>
               </ScrollViewer>
