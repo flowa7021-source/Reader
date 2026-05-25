@@ -130,6 +130,9 @@
   <data name="MenuViewTheme" xml:space="preserve">
     <value>_Theme</value>
   </data>
+  <data name="MenuViewAnnotations" xml:space="preserve">
+    <value>_All Annotations</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Light</value>
   </data>

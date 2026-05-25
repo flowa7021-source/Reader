@@ -68,6 +68,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// dedupe-on-open в <see cref="MainViewModel"/> и для отладочных сообщений.</summary>
     public string FilePath => _filePath;
 
+    /// <summary>Сайдбар «All Annotations» текущего документа: все аннотации, сгруппированные
+    /// по странице, с фильтрами/экспортом. Перестраивается при каждой мутации списка.</summary>
+    public AnnotationsDocumentViewModel AnnotationsDocument { get; }
+
     private readonly Lazy<DocumentMetadataViewModel> _metadataLazy;
 
     public DocumentTabViewModel(
@@ -83,7 +87,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IDocumentIndexer? indexer = null,
         IPageEditService? pageEdit = null,
         OpenDocumentUseCase? openUseCase = null,
-        ISettingsService? settings = null)
+        ISettingsService? settings = null,
+        IAnnotationExporter? annotationExporter = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -107,6 +112,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
+        AnnotationsDocument = new AnnotationsDocumentViewModel(
+            pageIndex => CurrentPageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, PageCount - 1)),
+            annotationExporter);
         _metadataLazy = new Lazy<DocumentMetadataViewModel>(
             () => new DocumentMetadataViewModel(_document.Metadata, _filePath, PageCount));
 

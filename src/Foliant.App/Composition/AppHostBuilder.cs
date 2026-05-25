@@ -130,6 +130,9 @@ internal static class AppHostBuilder
         services.AddSingleton<IDocumentExportService, PlainTextDocumentExportService>();
         services.AddSingleton<IDocumentExportService, DocxDocumentExportService>();
 
+        // Annotation export (JSON) — для сайдбара «All Annotations».
+        services.AddSingleton<IAnnotationExporter, JsonAnnotationExporter>();
+
         // Licensing storage + trial (Windows-only persistence: DPAPI + HKCU + marker).
         // ILicenseManager (требует публичный ключ верификатора) подключается на UI-этапе.
         services.AddSingleton(TimeProvider.System);
@@ -151,7 +154,8 @@ internal static class AppHostBuilder
                 indexer: sp.GetService<IDocumentIndexer>(),
                 pageEdit: sp.GetService<IPageEditService>(),
                 openUseCase: sp.GetService<OpenDocumentUseCase>(),
-                settings: sp.GetService<ISettingsService>()));
+                settings: sp.GetService<ISettingsService>(),
+                annotationExporter: sp.GetService<IAnnotationExporter>()));
 
         // ILicenseManager — optional: dev-сборка может не регистрировать его
         // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис
