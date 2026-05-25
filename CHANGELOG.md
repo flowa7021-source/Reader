@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+### Changed
+- **OCR-движок: Tesseract → PaddleOCR (in-process через Sdcb.PaddleOCR)**. Реализован `PaddleOcrEngine : IOcrEngine` в `Foliant.Engines.Ocr` (растр BGRA32 → OpenCvSharp `Mat` → PaddleOCR; каждая распознанная строка → `TextRun` с bounding-box в пикселях рендера; `SemaphoreSlim`-сериализация, т.к. `PaddleOcrAll` не потокобезопасен; модели оффлайн из `native/paddleocr/`). Чистый маппинг языков `OcrLanguageMap` (Tesseract-стиль `"eng+rus"` → набор моделей latin/cyrillic). Порты `IOcrEngine`/`OcrPageUseCase`/`OcrPipelineService`/`OcrDiskCache` не менялись. Весь OCR-конвейер дорегистрирован в DI (`AppHostBuilder`). Пакеты: убран `Tesseract`, добавлены `Sdcb.PaddleOCR`/`Sdcb.PaddleInference`/`Sdcb.PaddleInference.runtime.win64.mkl`/`OpenCvSharp4`(+runtime.win). `tools/fetch-natives.ps1` качает модели PaddleOCR по скриптам/tier'ам. Обновлены `PROJECT_BOARD.md`, `IMPLEMENTATION_PLAN.md` (S8, §5.3), `README.md`, `NOTICE.md`. Тесты: `OcrLanguageMapTests` + guard-тесты `PaddleOcrEngineTests`. Замечание: версии пакетов/имена моделей и сборку проверить на Windows-стенде (нет .NET SDK в текущем окружении).
+
 ### Added
 - `PROJECT_BOARD.md` — концепт проекта, 68 закрытых решений, фазы, риски.
 - `IMPLEMENTATION_PLAN.md` — детальный план реализации Phase 0/1, контракт качества кода, контракты Domain.

@@ -9,7 +9,7 @@
 
 ## Статус
 
-**Phase 0 — Подготовка.** Альфа (v0.1) — цель Q3 2026. Подробный roadmap в [`PROJECT_BOARD.md`](PROJECT_BOARD.md), детальный план реализации в [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
+**Phase 1 — Альфа, в работе.** Базовая инфраструктура готова (просмотр PDF на PDFium, 5-слойный кэш, FTS5-поиск, настройки/локализация/recents); «несущие» интеграции (OCR-движок, DjVu-плагин, реальное управление страницами, редактор/DOCX, визуальный слой аннотаций, хранилище лицензий, инсталлятор) — ещё впереди. Срез готовности по спринтам S1–S13 — в [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) (раздел 4.0). Альфа (v0.1) — цель Q3 2026. Roadmap в [`PROJECT_BOARD.md`](PROJECT_BOARD.md).
 
 ## Документы проекта
 
@@ -25,7 +25,7 @@
 ## Стек
 
 - **C# / .NET 10 LTS** + **WPF + MVVM** (CommunityToolkit.Mvvm)
-- **PDFium** (рендер) + **PdfPig** (модификация структуры) + **Tesseract LSTM** (OCR)
+- **PDFium** (рендер) + **PdfPig** (модификация структуры) + **PaddleOCR** через Sdcb (OCR, in-process)
 - **DjVu** через опциональный out-of-process плагин (DjVuLibre)
 - **SQLite + FTS5** для поиска
 - **Inno Setup** для инсталлятора

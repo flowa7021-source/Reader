@@ -95,8 +95,9 @@
 |---|---|---|---|
 | **PDFium** (основной PDF движок) | BSD-3 | Native в основной поставке | Да |
 | **PdfPig** (резервный .NET PDF) | Apache-2.0 | NuGet, основная поставка | Да |
-| **Tesseract 5.x LSTM** | Apache-2.0 | Native в основной поставке | Да |
-| **OCRmyPDF** (PDF+OCR конвейер) | MPL-2.0 | CLI, основная поставка | Да |
+| **PaddleOCR** (распознавание) + **Sdcb.PaddleOCR** (.NET-обёртка) | Apache-2.0 / MIT | NuGet + native в основной поставке | Да |
+| **PaddleInference** runtime (win64.mkl) | Apache-2.0 | Native в основной поставке | Да |
+| **OpenCvSharp4** (+ native OpenCV) для OCR | Apache-2.0 / BSD-3 | NuGet + native | Да |
 | **DocumentFormat.OpenXml** | MIT | NuGet, для DOCX/XLSX | Да |
 | **BouncyCastle.NET** (крипто, подписи) | MIT-style | NuGet | Да |
 | **ImageSharp / Magick.NET** | Apache-2.0 | NuGet | Да |
@@ -156,7 +157,7 @@
 | Резервный PDF (специальные случаи) | **PdfPig** | Основной | 0.5 |
 | Манипуляция структурой PDF | **QPDF** | Основной | (с PDFium) |
 | Низкоуровневое создание/правка PDF | **PdfSharpCore** + custom | Основной | (с editor) |
-| OCR | **Tesseract 5.x LSTM** (рус+eng в базе) | Основной | 2-3 |
+| OCR | **PaddleOCR** через Sdcb.PaddleOCR (in-process), детектор + распознаватель по скриптам (latin/cyrillic в базе) | Основной | 2-3 |
 | Inpainting для качественных «заплаток» в сканах | **OpenCV** (Telea/Navier-Stokes) | Основной | (с editor) |
 | Чтение/запись DOCX/XLSX | **DocumentFormat.OpenXml** | Основной | (с конвертерами) |
 | Криптография PDF, подписи | **BouncyCastle.NET** | Основной | (с подписями) |
@@ -306,9 +307,9 @@ UI и ViewModel **не знают**, читают они PDF, DjVu или EPUB. 
 | Языки в базовом инсталляторе | Рус + eng (~30 МБ) | Q-F20 |
 | Языки в Standard инсталляторе | + СНГ + базовая Европа (укр, бел, каз, deu, fra, spa, ita) | (multi-tier) |
 | Языки в Full инсталляторе | + CJK + арабский + иврит | (multi-tier) |
-| Тип моделей | Только LSTM (точнее, ~30 МБ/язык) | Q-F21 |
-| OCR-конвейер | Препроцессинг (deskew, despeckle, бинаризация) → Tesseract → постпроцессинг → встраивание текстового слоя | — |
-| OCR в DjVu | Извлечение растра через `ddjvu` → Tesseract → запись слоя обратно через `djvused` | Q-F10 |
+| Тип моделей | PaddleOCR (детектор DBNet + распознаватель CRNN/SVTR), модели по скриптам (latin/cyrillic/…) | Q-F21 |
+| OCR-конвейер | Рендер страницы → PaddleOCR (детект строк + распознавание, со своим препроцессингом) → строки с боксами → встраивание текстового слоя | — |
+| OCR в DjVu | Извлечение растра через `ddjvu` → PaddleOCR → запись слоя обратно через `djvused` | Q-F10 |
 
 ### 5.6. Формы и подписи
 

@@ -3,19 +3,26 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>Foliant.Engines.Ocr</RootNamespace>
-    <Description>Tesseract LSTM adapter + препроцессинг через ImageSharp.</Description>
+    <Description>PaddleOCR adapter (Sdcb.PaddleOCR, in-process) → IOcrEngine.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tesseract" />
-    <!-- SixLabors.ImageSharp подключим в S8 (OCR pipeline). Сейчас не используется
-         в placeholder-коде, а 3.1.x всё ещё имеет открытую CVE (NU1902). -->
+    <PackageReference Include="Sdcb.PaddleOCR" />
+    <PackageReference Include="Sdcb.PaddleInference" />
+    <PackageReference Include="Sdcb.PaddleInference.runtime.win64.mkl" />
+    <PackageReference Include="OpenCvSharp4" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Foliant.Application\Foliant.Application.csproj" />
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
     <ProjectReference Include="..\Foliant.Plugins.Contracts\Foliant.Plugins.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Foliant.Engines.Ocr.Tests" />
   </ItemGroup>
 
 </Project>

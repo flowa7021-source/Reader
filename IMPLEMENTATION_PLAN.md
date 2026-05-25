@@ -55,7 +55,7 @@ Foliant.sln
 │  ├─ Foliant.Infrastructure/     # Cache (5 слоёв), Serilog, Settings, EventStore, FileFingerprint,
 │  │                              #   SqliteIndex, ProcessRunner (для out-of-process плагинов).
 │  ├─ Foliant.Engines.Pdf/        # PDFium adapter → IDocument, IPageRender.
-│  ├─ Foliant.Engines.Ocr/        # Tesseract adapter → IOcrEngine.
+│  ├─ Foliant.Engines.Ocr/        # PaddleOCR adapter (Sdcb) → IOcrEngine.
 │  ├─ Foliant.Plugins.Contracts/  # Интерфейсы для MEF: IEnginePlugin, IConverterPlugin, ...
 │  ├─ Foliant.UI/                 # WPF Views, custom controls, converters, behaviors.
 │  ├─ Foliant.ViewModels/         # MVVM (CommunityToolkit.Mvvm). Без ссылок на UI/PresentationFramework.
@@ -67,7 +67,7 @@ Foliant.sln
 │  ├─ Foliant.Application.Tests/
 │  ├─ Foliant.Infrastructure.Tests/
 │  ├─ Foliant.Engines.Pdf.Tests/  # Integration: реальный PDFium + эталонные PDF.
-│  ├─ Foliant.Engines.Ocr.Tests/  # Integration: реальный Tesseract + эталонные сканы.
+│  ├─ Foliant.Engines.Ocr.Tests/  # Integration: реальный PaddleOCR + эталонные сканы.
 │  ├─ Foliant.ViewModels.Tests/
 │  ├─ Foliant.E2E/                # WinAppDriver + эталонные сценарии (Phase 1 финал).
 │  ├─ Foliant.Performance/        # BenchmarkDotNet.
@@ -75,7 +75,7 @@ Foliant.sln
 ├─ installer/
 │  └─ Foliant.Installer.InnoSetup/
 ├─ tools/
-│  ├─ fetch-natives.ps1           # Скачивает PDFium, Tesseract, проверяет SHA256.
+│  ├─ fetch-natives.ps1           # Скачивает модели PaddleOCR, проверяет SHA256.
 │  └─ third-party/                # Пин-список версий + URL + SHA256.
 ├─ docs/                          # MkDocs Material источник.
 └─ .github/
@@ -242,12 +242,37 @@ Acceptance: окно открывает выбранный PDF, скроллит
 | **S5** | 2 нед | Локализация RU/EN + Settings dialog + Recents | `IStringLocalizer<T>` + `Foliant.UI/Resources/*.resx` + `SettingsWindow` + `RecentsService` | Полное переключение UI RU↔EN без перезапуска. Settings сохраняются. Recents показывает последние 20 файлов. |
 | **S6** | 2 нед | Текстовый слой + поиск in-document (Ctrl+F) | `PdfDocument.GetTextLayerAsync`, `SearchService`, sidebar результатов | На 500-стр документе поиск слова, есть в 100 местах: ≤ 1 с холодно, ≤ 100 мс тепло. |
 | **S7** | 2 нед | Persistent search index (слой 5) — SQLite FTS5 | `SqliteFtsIndex`, фоновая индексация | Поиск по 10 индексированным документам: ≤ 500 мс. |
-| **S8** | 2 нед | OCR pipeline: Tesseract LSTM (рус+eng) | `TesseractOcrEngine`, `OcrPipeline` (deskew → despeckle → OCR → text-layer attach) | OCR 10-стр скана ≤ 30 с. Поиск по результату работает. Кэш OCR (слой 4) переиспользуется. |
+| **S8** | 2 нед | OCR pipeline: PaddleOCR (latin+cyrillic) | `PaddleOcrEngine`, `OcrPipelineService` (рендер → PaddleOCR → строки с боксами → text-layer) | OCR 10-стр скана ≤ 30 с. Поиск по результату работает. Кэш OCR (слой 4) переиспользуется. |
 | **S9** | 2 нед | Out-of-process DjVu плагин | `Foliant.Plugin.DjVu` (CLI wrapper над `ddjvu`/`djvused`), `DjvuDocument` | Открыть DjVu, отрендерить страницы, запустить OCR, получить текстовый слой. |
 | **S10** | 2 нед | Аннотации базовые (highlight / sticky note / freehand) + рендер поверх страницы | `AnnotationLayer`, `IAnnotationService`, persist через PdfPig | Поставить highlight, закрыть, открыть — аннотация на месте. |
 | **S11** | 2 нед | Page management: rotate / delete / insert / reorder + thumbs-strip drag | `PageManagementService` (через QPDF), `ThumbStrip` control | Реорганизовать 100-стр документ, сохранить, открыть в Acrobat — структура корректна. |
 | **S12** | 2 нед | Простой text editor (без reflow): replace single line + add text box | `SimpleTextEditor`, базовый PDF→DOCX (текст по позициям через OpenXml) | Заменить 5 строк, экспорт в DOCX, открыть в Word — текст распознан. |
 | **S13** | 2 нед | License manager + 30-day триал + anti-tamper + Inno Setup installer + EV-подпись | `LicenseManager`, `TrialAntiTamper`, `installer/Foliant.iss`, signed `Foliant-Setup.exe` | Чистая Win10 21H2 VM: установить → запустить → триал активен 30 дней → ввести лицензию → активировано. Uninstall чистый. |
+
+### 4.0. Статус реализации Phase 1 (срез на 2026-05-25, после мерджа PR #14)
+
+> Легенда: ✅ готово · 🟡 частично (есть «скелет», но acceptance-критерий ещё не достигается) · ⛔ не начато.
+> Замечание о методе: оценка сделана **чтением кода** (в окружении нет .NET SDK — `dotnet build`/`dotnet test` запустить нельзя). Цифры производительности из acceptance **не верифицированы**.
+
+| № | Тема | Статус | Что сделано | Что осталось до acceptance |
+|---|---|---|---|---|
+| **S1** | Domain + PDFium | ✅ | `IDocument`/`PdfDocument` на PDFiumCore: рендер в BGRA32, размеры, metadata, извлечение текста. | Перцентили рендера не замерены (нет SDK + golden-набора в LFS). |
+| **S2** | UI shell + темы | 🟡 | MDI-табы (`TabControl`), `ThemeManager`, 3 словаря тем, меню, статус-бар, Per-Monitor V2 manifest. | Dark/HC = наивная инверсия BGR (см. TODO в `PdfDocument`); нет «обложки отдельно», 2-страничного и непрерывного режимов. |
+| **S3** | In-memory кэш (1–3) | ✅ | `LruCache`, `MemoryPageCache` (sticky ±N), `ThumbnailCache`, `TextStructureCache`. | Бенчмарк «повторный рендер ≤ 5 мс» не замерен. |
+| **S4** | Disk-кэш (4) + fingerprint | ✅ | `SqliteDiskCache` (WAL, атомарная запись, LRU, restart-survival), `FileFingerprint`, `CacheKey`, `CacheJanitor`. | — (нужен прогон perf/integration на Windows). |
+| **S5** | Локализация + Settings + Recents | ✅ | RU/EN hot-switch, `SettingsWindow`, `RecentsService` (MRU=20), миграции настроек. | — |
+| **S6** | Текстовый слой + поиск Ctrl+F | 🟡 | `SearchService` (подстрока по слоям), sidebar результатов со снипетами, переход на страницу. | **Текстовый слой — один `TextRun` на всю страницу** (нет координат слов) ⇒ нет подсветки попадания на странице, нет точного выделения/копирования. |
+| **S7** | FTS5 persistent index (5) | ✅ | `SqliteFtsIndex` (bm25, snippet, diacritics-insensitive), фоновый `DocumentIndexingService` через `Channel`. | Бенчмарк «≤ 500 мс по 10 докам» не замерен. |
+| **S8** | OCR PaddleOCR | 🟡 | Обвязка (`OcrPageUseCase`, `OcrPipelineService`, `OcrDiskCache`) + **реализация `IOcrEngine` = `PaddleOcrEngine`** (Sdcb.PaddleOCR, in-process; строки→`TextRun` с боксами) + DI-регистрация всего конвейера + маппинг языков. | Сборка/прогон только на Windows (нет .NET SDK в окружении); нужны оффлайн-модели в `native/paddleocr/` (`fetch-natives.ps1` + checksums.json) и UI-команда запуска OCR. CER не замерен (нет golden-набора). |
+| **S9** | DjVu out-of-process плагин | ⛔ | Только `plugins/Foliant.Plugin.DjVu/README.md`. | Весь плагин: wrapper над `ddjvu`/`djvused`, `DjvuDocument`, MEF-экспорт, инсталлятор плагина. |
+| **S10** | Аннотации (highlight/note/freehand) | 🟡 | Domain-модель, sidecar-персист (`JsonAnnotationStore`), VM с фильтрами/сортировкой/экспортом (JSON/Markdown). | **Нет визуального слоя в UI** (нет `AnnotationLayer`/Canvas/hit-testing/инструментов рисования) — аннотации существуют как данные, но их нельзя поставить/увидеть на странице. Персист в sidecar, а **не в PDF через PdfPig**, как требует acceptance. |
+| **S11** | Page management (rotate/delete/insert/reorder) | 🟡 | На уровне VM: навигация, zoom, закладки, recents, мульти-таб. `ViewRotation` (value-объект). | **Нет реальной манипуляции страницами** (нет `PageManagementService` через QPDF/PdfPig), **нет `ThumbStrip`**-контрола с drag-and-drop, нет сохранения изменённой структуры. |
+| **S12** | Простой text editor + PDF→DOCX | 🟡 | Обвязка event-sourcing: `IEventStore`/`JsonlEventStore`, `CrashRecoveryViewModel`, `DocumentCommandRecord`. Экспорт `PlainTextDocumentExportService` (**только .txt**). | **Нет редактирования текста** (нет `SimpleTextEditor`, replace-line/add-textbox), **нет PDF→DOCX** (OpenXml не подключён). |
+| **S13** | License + триал + installer + EV-подпись | 🟡 | `EcdsaLicenseVerifier` (P-256), `TrialAntiTamperService` (чистая логика), VM импорта/статуса лицензии. | Хранилище лицензии — **`InMemoryLicenseStorage`** (нет DPAPI-файла + дублей в реестре + marker). `Foliant.iss` — **заготовка 68 строк** (нет `[Files]`/нативки/компонентов/multi-tier). Нет EV-подписи. |
+
+**Сводно:** ✅ полностью — **S1, S3, S4, S5, S7** (5 из 13, вся базовая инфраструктура «просмотр + кэш + поиск-индекс + настройки»). 🟡 частично — **S2, S6, S8, S10, S11, S12, S13** (есть архитектура/порты/VM, но нет «несущих» интеграций). ⛔ не начато — **S9**.
+
+**Корневое наблюдение:** разработка шла «вширь» — построены чистая архитектура, DI, порты, ViewModels и unit-тесты почти для всех спринтов с высокой дисциплиной (KISS/YAGNI/NRT/тесты). Но самые дорогие и рискованные части — **нативные движки (PaddleOCR — закодирован через Sdcb, но не собран/не проверен без Windows-нативки и моделей; DjVu — не начат), реальная мутация PDF (страницы, аннотации в PDF, текст-редактор, DOCX) и интерактивный UI поверх рендера** — пока отсутствуют или не верифицированы. Именно они дают 80 % пользовательской ценности альфы и 80 % оставшегося риска.
 
 ### 4.1. Заморозка scope для альфы
 
@@ -323,15 +348,16 @@ public sealed record CacheKey(
 ### 5.3. OCR pipeline
 
 ```
-RawBitmap → Deskew (Hough) → Despeckle (median 3×3) → Binarize (Otsu)
-         → Tesseract (LSTM) → PostProcess (склейка дефисов на переносах)
+RenderedPage (BGRA32) → OpenCvSharp Mat (BGR) → PaddleOcrAll.Run
+         → строки {текст, bbox, score} → TextRun на строку (координаты в px рендера)
          → TextLayer attached to page
          → Cache write (JSON.gz)
 ```
 
-- Препроцессинг — через `ImageSharp` (не нужно подключать OpenCV в Phase 1; добавим в Phase 3, когда нужен inpainting).
-- Tesseract — пакет [Tesseract](https://www.nuget.org/packages/Tesseract) (Apache-2.0). Tessdata-LSTM модели грузятся из `native/tesseract/tessdata`.
-- Параллелизм: страница за страницей, не больше `min(4, CPU/2)` одновременно.
+- Движок — [Sdcb.PaddleOCR](https://www.nuget.org/packages/Sdcb.PaddleOCR) (MIT-обёртка над PaddleOCR, Apache-2.0), in-process. CPU-рантайм `Sdcb.PaddleInference.runtime.win64.mkl`; ввод/вывод изображений — `OpenCvSharp4`.
+- Детектор+классификатор поворота PaddleOCR сами делают препроцессинг и сегментацию строк, поэтому ручные deskew/despeckle/binarize в Phase 1 не нужны (ImageSharp — опционально).
+- Модели грузятся оффлайн из `native/paddleocr/` (`det/`, `cls/`, `rec/<script>/`), кладёт `tools/fetch-natives.ps1`. Распознаватель по скриптам: latin + cyrillic в базе.
+- `PaddleOcrAll` не потокобезопасен — `PaddleOcrEngine` (синглтон) сериализует вызовы через `SemaphoreSlim`; в Phase 1 OCR идёт страница за страницей.
 - UI: progress per page + cancel в любой момент.
 - Тесты: 5 эталонных сканов с известным «правильным» текстом → CER (character error rate) ≤ 2 % для рус, ≤ 1 % для eng. Регрессия CER > +0.5 п.п. — блокер.
 
