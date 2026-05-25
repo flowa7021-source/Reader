@@ -220,7 +220,6 @@
                   <ui:PageSurface PageRender="{Binding CurrentRender}" />
                   <ui:AnnotationLayer PageRender="{Binding CurrentRender}"
                                       Annotations="{Binding CurrentPageAnnotations}"
-                                      Zoom="{Binding Zoom}"
                                       CreateNoteCommand="{Binding AddNoteAtCommand}" />
                 </Grid>
               </ScrollViewer>

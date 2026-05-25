@@ -11,8 +11,10 @@ namespace Foliant.UI.Controls;
 /// <summary>
 /// Прозрачный оверлей поверх <see cref="PageSurface"/>, рисующий аннотации текущей страницы.
 /// Геометрия аннотаций хранится в PDF-точках (origin внизу-слева); слой конвертирует её в
-/// пиксели рендера через <see cref="PageGeometry"/>, выводя размер страницы из размеров
-/// текущего рендера и zoom — поэтому оверлей всегда совпадает с картинкой страницы.
+/// пиксели рендера через <see cref="PageGeometry"/>. Масштаб и размер страницы берутся из
+/// самого рендера (<see cref="IPageRender.PageSize"/> и <see cref="IPageRender.WidthPx"/>),
+/// а не из текущего zoom UI — иначе во время асинхронной перерисовки после смены zoom
+/// оверлей рисовался бы (и создавал заметки) по рассинхронизированным координатам.
 /// Двойной клик создаёт sticky-note через <see cref="CreateNoteCommand"/>.
 /// </summary>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
@@ -28,10 +30,6 @@ internal sealed class AnnotationLayer : FrameworkElement
         new FrameworkPropertyMetadata(null,
             FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.AffectsMeasure));
 
-    public static readonly DependencyProperty ZoomProperty = DependencyProperty.Register(
-        nameof(Zoom), typeof(double), typeof(AnnotationLayer),
-        new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
-
     public static readonly DependencyProperty CreateNoteCommandProperty = DependencyProperty.Register(
         nameof(CreateNoteCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
 
@@ -45,12 +43,6 @@ internal sealed class AnnotationLayer : FrameworkElement
     {
         get => (IPageRender?)GetValue(PageRenderProperty);
         set => SetValue(PageRenderProperty, value);
-    }
-
-    public double Zoom
-    {
-        get => (double)GetValue(ZoomProperty);
-        set => SetValue(ZoomProperty, value);
     }
 
     public ICommand? CreateNoteCommand
@@ -94,26 +86,27 @@ internal sealed class AnnotationLayer : FrameworkElement
             return;
         }
 
-        var page = PageOf(render);
+        PageSize page = render.PageSize;
+        double zoom = EffectiveZoom(render);
         foreach (Annotation a in Annotations)
         {
-            Draw(dc, a, page);
+            Draw(dc, a, page, zoom);
         }
     }
 
-    private void Draw(DrawingContext dc, Annotation a, PageSize page)
+    private static void Draw(DrawingContext dc, Annotation a, PageSize page, double zoom)
     {
         Color color = ParseColor(a.ColorHex);
         switch (a.Kind)
         {
             case AnnotationKind.Highlight when a.Bounds is { } b:
-                dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x60, color.R, color.G, color.B)), null, ToRect(b, page));
+                dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x60, color.R, color.G, color.B)), null, ToRect(b, page, zoom));
                 break;
             case AnnotationKind.StickyNote when a.Bounds is { } b:
-                DrawNote(dc, ToRect(b, page), color);
+                DrawNote(dc, ToRect(b, page, zoom), color);
                 break;
             case AnnotationKind.Freehand when a.InkPoints is { Count: > 1 }:
-                DrawInk(dc, a.InkPoints, page, color);
+                DrawInk(dc, a.InkPoints, page, zoom, color);
                 break;
             default:
                 break;
@@ -127,16 +120,16 @@ internal sealed class AnnotationLayer : FrameworkElement
         dc.DrawRectangle(brush, pen, r);
     }
 
-    private void DrawInk(DrawingContext dc, IReadOnlyList<AnnotationPoint> points, PageSize page, Color color)
+    private static void DrawInk(DrawingContext dc, IReadOnlyList<AnnotationPoint> points, PageSize page, double zoom, Color color)
     {
         var pen = new Pen(new SolidColorBrush(color), 2) { LineJoin = PenLineJoin.Round };
         var geometry = new StreamGeometry();
         using (StreamGeometryContext ctx = geometry.Open())
         {
-            ctx.BeginFigure(ToPoint(points[0], page), isFilled: false, isClosed: false);
+            ctx.BeginFigure(ToPoint(points[0], page, zoom), isFilled: false, isClosed: false);
             for (int i = 1; i < points.Count; i++)
             {
-                ctx.LineTo(ToPoint(points[i], page), isStroked: true, isSmoothJoin: true);
+                ctx.LineTo(ToPoint(points[i], page, zoom), isStroked: true, isSmoothJoin: true);
             }
         }
 
@@ -144,22 +137,31 @@ internal sealed class AnnotationLayer : FrameworkElement
         dc.DrawGeometry(null, pen, geometry);
     }
 
-    private Rect ToRect(AnnotationRect b, PageSize page)
+    private static Rect ToRect(AnnotationRect b, PageSize page, double zoom)
     {
-        PixelRect p = PageGeometry.ToPixels(b, page, Zoom);
+        PixelRect p = PageGeometry.ToPixels(b, page, zoom);
         return new Rect(p.X, p.Y, p.Width, p.Height);
     }
 
-    private Point ToPoint(AnnotationPoint pt, PageSize page)
+    private static Point ToPoint(AnnotationPoint pt, PageSize page, double zoom)
     {
-        (double x, double y) = PageGeometry.PointToPixel(pt.X, pt.Y, page, Zoom);
+        (double x, double y) = PageGeometry.PointToPixel(pt.X, pt.Y, page, zoom);
         return new Point(x, y);
     }
 
-    private PageSize PageOf(IPageRender render)
+    /// <summary>
+    /// Zoom, эквивалентный фактическому масштабу рендера: подбираем такое значение, чтобы
+    /// <see cref="PageGeometry.PixelsPerPoint"/> совпал с <c>WidthPx / PageSize.WidthPt</c>.
+    /// </summary>
+    private static double EffectiveZoom(IPageRender render)
     {
-        double scale = PageGeometry.PixelsPerPoint(Zoom);
-        return new PageSize(render.WidthPx / scale, render.HeightPx / scale);
+        double widthPt = render.PageSize.WidthPt;
+        if (widthPt <= 0)
+        {
+            return 1.0;
+        }
+        double pixelsPerPoint = render.WidthPx / widthPt;
+        return pixelsPerPoint * 72.0 / 96.0;
     }
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
@@ -173,8 +175,8 @@ internal sealed class AnnotationLayer : FrameworkElement
         }
 
         Point px = e.GetPosition(this);
-        PageSize page = PageOf(render);
-        (double xPt, double yPt) = PageGeometry.PixelToPoint(px.X, px.Y, page, Zoom);
+        PageSize page = render.PageSize;
+        (double xPt, double yPt) = PageGeometry.PixelToPoint(px.X, px.Y, page, EffectiveZoom(render));
         var location = new AnnotationPoint(xPt, yPt);
         if (CreateNoteCommand.CanExecute(location))
         {

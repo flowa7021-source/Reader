@@ -158,7 +158,7 @@ internal sealed partial class PdfDocument : IDocument
                         InvertBgr(bytes);
                     }
 
-                    return new PdfPageRender(wPx, hPx, stride, bytes);
+                    return new PdfPageRender(wPx, hPx, stride, bytes, new PageSize(wPt, hPt));
                 }
                 finally
                 {

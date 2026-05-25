@@ -11,6 +11,7 @@ internal sealed class FakePageRender(int width, int height) : IPageRender
     public int HeightPx => height;
     public int Stride => width * 4;
     public ReadOnlyMemory<byte> Bgra32 => new byte[Stride * HeightPx];
+    public PageSize PageSize => new(width, height);
     public bool IsDisposed => _disposed;
 
     public void Dispose() => _disposed = true;

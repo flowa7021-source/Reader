@@ -64,7 +64,11 @@ internal sealed class DjvuDocument : IDocument
             InvertBgr(MemoryMarshal.AsMemory(img.Bgra32).Span);
         }
 
-        return new DjvuPageRender(img.Width, img.Height, img.Stride, img.Bgra32);
+        // ddjvu renders at native_size * zoom (see BuildRenderArgsAsync), so the zoom-independent
+        // page size — the basis for annotation pixel↔page mapping — is recovered by dividing back.
+        double zoom = opts.Zoom <= 0 ? 1.0 : opts.Zoom;
+        var pageSize = new PageSize(img.Width / zoom, img.Height / zoom);
+        return new DjvuPageRender(img.Width, img.Height, img.Stride, img.Bgra32, pageSize);
     }
 
     public async Task<TextLayer?> GetTextLayerAsync(int pageIndex, CancellationToken ct)
