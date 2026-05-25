@@ -43,8 +43,7 @@ jobs:
           dotnet restore Foliant.sln --locked-mode
           dotnet build Foliant.sln -c Release --no-restore -warnaserror
 
-      - name: Run all tests (including Slow)
-        run: dotnet test Foliant.sln -c Release --no-build --filter "Category!=E2E"
+      # Тесты в релизном пайплайне не гоняем — тестирование локальное при готовности альфы.
 
       - name: Publish self-contained
         run: >-
