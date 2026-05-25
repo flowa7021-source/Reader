@@ -1,3 +1,4 @@
+using Foliant.Application.Services;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
 using PDFiumCore;
@@ -6,9 +7,15 @@ namespace Foliant.Engines.Pdf;
 
 /// <summary>
 /// Распознаёт PDF по расширению И/ИЛИ заголовку <c>%PDF-</c>.
-/// LoadAsync — заглушка для S1. Реальная реализация через PDFiumCore — там же.
+/// LoadAsync открывает документ через PDFiumCore и пробрасывает зависимости,
+/// нужные редактору (event store + fingerprint), чтобы <see cref="IDocument.GetEditor"/>
+/// мог лениво построить <c>PdfDocumentEditor</c>. Зависимости опциональны: если DI их
+/// не предоставил (или это unit-тест), документ открывается read-only (GetEditor → null).
 /// </summary>
-public sealed class PdfDocumentLoader(ILogger<PdfDocumentLoader> log) : IDocumentLoader
+public sealed class PdfDocumentLoader(
+    ILogger<PdfDocumentLoader> log,
+    IEventStore? eventStore = null,
+    IFileFingerprint? fingerprint = null) : IDocumentLoader
 {
     private static readonly byte[] Magic = "%PDF-"u8.ToArray();
 
@@ -29,10 +36,17 @@ public sealed class PdfDocumentLoader(ILogger<PdfDocumentLoader> log) : IDocumen
         return HasPdfMagic(path);
     }
 
-    public Task<IDocument> LoadAsync(string path, CancellationToken ct)
+    public async Task<IDocument> LoadAsync(string path, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(path);
-        return Task.Run<IDocument>(() =>
+
+        // Fingerprint считаем здесь (async), чтобы синхронный GetEditor() не делал
+        // sync-over-async мост к ComputeAsync (контракт качества §0).
+        string? fingerprintHex = fingerprint is null
+            ? null
+            : await fingerprint.ComputeAsync(path, ct).ConfigureAwait(false);
+
+        return await Task.Run<IDocument>(() =>
         {
             PdfLibrary.EnsureInitialized();
             var doc = fpdfview.FPDF_LoadDocument(path, null);
@@ -43,8 +57,8 @@ public sealed class PdfDocumentLoader(ILogger<PdfDocumentLoader> log) : IDocumen
             }
 
             log.LogDebug("Loaded PDF '{Path}' via PDFium", path);
-            return new PdfDocument(doc);
-        }, ct);
+            return new PdfDocument(doc, path, fingerprintHex, eventStore);
+        }, ct).ConfigureAwait(false);
     }
 
     private static bool HasPdfMagic(string path)

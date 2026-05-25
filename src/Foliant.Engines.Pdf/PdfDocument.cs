@@ -1,25 +1,38 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using Foliant.Application.Services;
 using Foliant.Domain;
+using Foliant.Engines.Pdf.Editing;
 using PDFiumCore;
 
 namespace Foliant.Engines.Pdf;
 
-internal sealed class PdfDocument : IDocument
+internal sealed partial class PdfDocument : IDocument
 {
     private readonly FpdfDocumentT _doc;
     private readonly Lock _gate = new();
+    private readonly string? _path;
+    private readonly string? _fingerprintHex;
+    private readonly IEventStore? _eventStore;
+    private PdfDocumentEditor? _editor;
     private bool _disposed;
 
     public DocumentKind Kind => DocumentKind.Pdf;
     public int PageCount { get; }
     public DocumentMetadata Metadata { get; }
 
-    public PdfDocument(FpdfDocumentT doc)
+    public PdfDocument(
+        FpdfDocumentT doc,
+        string? path = null,
+        string? fingerprintHex = null,
+        IEventStore? eventStore = null)
     {
         ArgumentNullException.ThrowIfNull(doc);
         _doc = doc;
+        _path = path;
+        _fingerprintHex = fingerprintHex;
+        _eventStore = eventStore;
 
         lock (_gate)
         {
@@ -56,7 +69,20 @@ internal sealed class PdfDocument : IDocument
     public Task<TextLayer?> GetTextLayerAsync(int pageIndex, CancellationToken ct) =>
         Task.Run<TextLayer?>(() => GetTextLayerCore(pageIndex), ct);
 
-    public IDocumentEditor? GetEditor() => null;
+    public IDocumentEditor? GetEditor()
+    {
+        // Null-safe: старые call-sites/тесты могут не передать path/store/fingerprint —
+        // тогда документ read-only и редактор недоступен.
+        if (_path is null || _fingerprintHex is null || _eventStore is null)
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            return _editor ??= BuildEditor(_path, _fingerprintHex, _eventStore);
+        }
+    }
 
     public IFormController? GetForms() => null;
 
@@ -81,13 +107,19 @@ internal sealed class PdfDocument : IDocument
             }
             catch (Exception ex)
             {
-                // Native FPDF_CloseDocument failure during DisposeAsync — nothing actionable,
-                // but trace so the failure is not invisible during debugging.
                 Debug.WriteLine($"PdfDocument.DisposeAsync: FPDF_CloseDocument threw: {ex}");
             }
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    private static PdfDocumentEditor BuildEditor(string path, string fingerprintHex, IEventStore eventStore)
+    {
+        // FRAGILE: IO — базовый снимок = байты файла на момент открытия редактора.
+        // Fingerprint предвычислен в loader'е (async), здесь sync-over-async моста нет.
+        byte[] baseBytes = File.ReadAllBytes(path);
+        return new PdfDocumentEditor(baseBytes, fingerprintHex, eventStore, path);
     }
 
     private PdfPageRender RenderPageCore(int pageIndex, RenderOptions opts)
@@ -105,8 +137,7 @@ internal sealed class PdfDocument : IDocument
                 int wPx = ComputePixels(wPt, opts.Zoom, opts.MaxWidthPx);
                 int hPx = ComputePixels(hPt, opts.Zoom, opts.MaxHeightPx);
 
-                // PDFiumCore 146.x dropped the underscore between `FPDFBitmap` and the verb
-                // (FPDFBitmap_CreateEx → FPDFBitmapCreateEx); FPDF_DWORD args are now `ulong`.
+                // FRAGILE: PDFiumCore 146.x dropped the underscore (FPDFBitmap_CreateEx → FPDFBitmapCreateEx); FPDF_DWORD is now `ulong`.
                 var bmp = fpdfview.FPDFBitmapCreateEx(wPx, hPx, 4, IntPtr.Zero, 0);
                 try
                 {
@@ -123,8 +154,7 @@ internal sealed class PdfDocument : IDocument
 
                     if (opts.Theme == RenderTheme.Dark || opts.Theme == RenderTheme.HighContrast)
                     {
-                        // TODO (S6): HighContrast — implement proper high-contrast palette.
-                        // Phase 1: invert B, G, R; leave alpha intact.
+                        // TODO (S6): HighContrast palette; Phase 1 inverts B,G,R, alpha intact.
                         InvertBgr(bytes);
                     }
 
@@ -133,56 +163,6 @@ internal sealed class PdfDocument : IDocument
                 finally
                 {
                     fpdfview.FPDFBitmapDestroy(bmp);
-                }
-            }
-            finally
-            {
-                fpdfview.FPDF_ClosePage(page);
-            }
-        }
-    }
-
-    private TextLayer? GetTextLayerCore(int pageIndex)
-    {
-        lock (_gate)
-        {
-            if (_disposed)
-            {
-                return null;
-            }
-
-            var page = fpdfview.FPDF_LoadPage(_doc, pageIndex);
-            try
-            {
-                float wPt = fpdfview.FPDF_GetPageWidthF(page);
-                float hPt = fpdfview.FPDF_GetPageHeightF(page);
-
-                // PDFiumCore 146.x: `FPDFText_LoadPage` → `FPDFTextLoadPage`, etc.
-                var tp = fpdf_text.FPDFTextLoadPage(page);
-                try
-                {
-                    int count = fpdf_text.FPDFTextCountChars(tp);
-                    if (count <= 0)
-                    {
-                        return TextLayer.Empty(pageIndex);
-                    }
-
-                    // PDFium uses UTF-16LE; the new binding takes a `ref ushort` and pins it
-                    // for the duration of the call, so we use a managed ushort[] and
-                    // re-interpret it as Span<char> for the string ctor (zero-copy).
-                    ushort[] buffer = new ushort[count + 1];
-                    fpdf_text.FPDFTextGetText(tp, 0, count, ref buffer[0]);
-                    ReadOnlySpan<char> chars = MemoryMarshal.Cast<ushort, char>(buffer.AsSpan(0, count));
-                    string text = new(chars);
-
-                    // Phase 1 simplification: one TextRun covering the whole page.
-                    // Detailed word positions deferred to S6.
-                    var run = new TextRun(text, 0, 0, wPt, hPt);
-                    return new TextLayer(pageIndex, [run]);
-                }
-                finally
-                {
-                    fpdf_text.FPDFTextClosePage(tp);
                 }
             }
             finally
@@ -205,8 +185,7 @@ internal sealed class PdfDocument : IDocument
 
     private static string? GetMeta(FpdfDocumentT doc, string tag)
     {
-        // FPDF_GetMetaText writes UTF-16LE to a void* buffer; length is in bytes including null.
-        // PDFiumCore 146.x widened FPDF_DWORD to ulong (uint64).
+        // FRAGILE: FPDF_GetMetaText writes UTF-16LE; len is bytes incl. NUL; FPDF_DWORD is ulong.
         const int BufBytes = 1024;
         IntPtr buf = Marshal.AllocHGlobal(BufBytes);
         try
@@ -233,9 +212,8 @@ internal sealed class PdfDocument : IDocument
             return null;
         }
 
-        // Strip leading "D:" prefix if present.
         ReadOnlySpan<char> s = raw.AsSpan();
-        if (s.StartsWith("D:", StringComparison.Ordinal))
+        if (s.StartsWith("D:", StringComparison.Ordinal)) // strip optional "D:" prefix
         {
             s = s[2..];
         }
@@ -257,8 +235,7 @@ internal sealed class PdfDocument : IDocument
 
     private static int ComputePixels(float points, double zoom, int? maxPx)
     {
-        // 72 PDF points = 1 inch; standard screen = 96 DPI → multiply by 96/72.
-        double px = points * zoom * 96.0 / 72.0;
+        double px = points * zoom * 96.0 / 72.0; // 72 pt = 1 inch; screen 96 DPI
         if (maxPx.HasValue && px > maxPx.Value)
         {
             px = maxPx.Value;
@@ -273,8 +250,7 @@ internal sealed class PdfDocument : IDocument
         {
             bytes[i] = (byte)(255 - bytes[i]);         // B
             bytes[i + 1] = (byte)(255 - bytes[i + 1]); // G
-            bytes[i + 2] = (byte)(255 - bytes[i + 2]); // R
-            // bytes[i + 3] = alpha — leave unchanged
+            bytes[i + 2] = (byte)(255 - bytes[i + 2]); // R; bytes[i + 3] = alpha, unchanged
         }
     }
 }

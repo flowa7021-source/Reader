@@ -33,6 +33,8 @@ public static class AppPaths
 
     public static string TrialFile => Path.Combine(RoamingAppData, "trial.dat");
 
+    public static string TrialMarkerFile => Path.Combine(Autosave, ".trial-marker");
+
     public static string BookmarksDb => Path.Combine(RoamingAppData, "bookmarks.db");
 
     private static string EnsureExists(string path)

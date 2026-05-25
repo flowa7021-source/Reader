@@ -16,8 +16,8 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
 jobs:
-  build-test:
-    name: Build & Test (Windows)
+  build:
+    name: Build (Windows)
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -56,34 +56,5 @@ jobs:
       - name: Build
         run: dotnet build Foliant.sln -c Release --no-restore -warnaserror
 
-      - name: Test (fast)
-        run: >-
-          dotnet test Foliant.sln
-          -c Release
-          --no-build
-          --collect:"XPlat Code Coverage"
-          --filter "Category!=Slow&Category!=E2E"
-          --logger "trx;LogFileName=test-results.trx"
-          --results-directory ./TestResults
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: ./TestResults
-          retention-days: 7
-
-      - name: Upload coverage to Codecov
-        if: github.event_name == 'pull_request'
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: false
-          files: ./TestResults/**/coverage.cobertura.xml
-
-      - name: Quick perf smoke
-        if: github.event_name == 'pull_request'
-        run: >-
-          dotnet run --project tests/Foliant.Performance -c Release --no-build --
-          --quick --filter "*"
-        continue-on-error: false
+      # CI намеренно build-only: тесты и бенчмарки гоняются локально при готовности альфы,
+      # не в автоматическом CI. См. план / решение по тестированию.

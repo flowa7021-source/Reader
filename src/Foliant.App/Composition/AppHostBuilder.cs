@@ -9,6 +9,9 @@ using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
+using Foliant.Infrastructure.EventStore;
+using Foliant.Infrastructure.Export;
+using Foliant.Infrastructure.Licensing;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
@@ -76,6 +79,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IDiskCache>(sp =>
             new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
         services.AddSingleton<IOcrCache, OcrDiskCache>();
+        services.AddSingleton<ThumbnailRenderer>();
 
         // OCR pipeline (PaddleOCR in-process). Движок — синглтон (держит загруженные модели,
         // сериализует вызовы). ITextLayerCache не зарегистрирован → pipeline получает null (ok).
@@ -108,6 +112,11 @@ internal static class AppHostBuilder
         services.AddSingleton<IDocumentIndexer>(sp => sp.GetRequiredService<DocumentIndexingService>());
         services.AddHostedService(sp => sp.GetRequiredService<DocumentIndexingService>());
 
+        // Event store (append-only JSONL в Autosave/{fingerprint}) — undo/redo + crash recovery.
+        // PdfDocumentLoader подхватит его опционально → IDocument.GetEditor() станет доступен.
+        services.AddSingleton<IEventStore>(sp =>
+            new JsonlEventStore(AppPaths.Autosave, sp.GetRequiredService<ILogger<JsonlEventStore>>()));
+
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
@@ -115,6 +124,17 @@ internal static class AppHostBuilder
         // Application
         services.AddSingleton<OpenDocumentUseCase>();
         services.AddSingleton<ISearchService, SearchService>();
+
+        // Document export — потребитель выбирает реализацию по CanExport(targetFormat).
+        services.AddSingleton<IDocumentExportService, PlainTextDocumentExportService>();
+        services.AddSingleton<IDocumentExportService, DocxDocumentExportService>();
+
+        // Licensing storage + trial (Windows-only persistence: DPAPI + HKCU + marker).
+        // ILicenseManager (требует публичный ключ верификатора) подключается на UI-этапе.
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<ILicenseStorage, DpapiLicenseStorage>();
+        services.AddSingleton<TrialStores>();
+        services.AddSingleton<ITrialService, TrialPersistenceService>();
 
         // ViewModels
         services.AddTransient<Func<IDocument, string, DocumentTabViewModel>>(sp =>
