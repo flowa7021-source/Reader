@@ -65,6 +65,35 @@ public static class PdfPageOps
         string inputPath, string outputPath, int index, ViewRotation rotation, CancellationToken ct) =>
         RunAsync(inputPath, outputPath, bytes => RotateCore(bytes, index, rotation), ct);
 
+    // Синхронные byte[]→byte[] трансформации для event-sourced редактора
+    // (PdfDocumentEditor.Dispatch). PdfPig — managed-код, поэтому операции синхронны;
+    // редактор сам выносит их в Task.Run и владеет IO/persist-границами.
+    public static byte[] DeletePage(byte[] input, int index)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return DeletePageCore(input, index);
+    }
+
+    public static byte[] ReorderPages(byte[] input, int[] newOrder)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(newOrder);
+        return ReorderCore(input, (int[])newOrder.Clone());
+    }
+
+    public static byte[] InsertPages(byte[] baseDoc, byte[] other, int atIndex)
+    {
+        ArgumentNullException.ThrowIfNull(baseDoc);
+        ArgumentNullException.ThrowIfNull(other);
+        return InsertCore(baseDoc, other, atIndex);
+    }
+
+    public static byte[] RotatePage(byte[] input, int index, ViewRotation rotation)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return RotateCore(input, index, rotation);
+    }
+
     private static byte[] DeletePageCore(byte[] input, int index)
     {
         int pageCount = CountPages(input);

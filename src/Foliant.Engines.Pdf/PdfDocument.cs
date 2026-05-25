@@ -1,25 +1,38 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using Foliant.Application.Services;
 using Foliant.Domain;
+using Foliant.Engines.Pdf.Editing;
 using PDFiumCore;
 
 namespace Foliant.Engines.Pdf;
 
-internal sealed class PdfDocument : IDocument
+internal sealed partial class PdfDocument : IDocument
 {
     private readonly FpdfDocumentT _doc;
     private readonly Lock _gate = new();
+    private readonly string? _path;
+    private readonly string? _fingerprintHex;
+    private readonly IEventStore? _eventStore;
+    private PdfDocumentEditor? _editor;
     private bool _disposed;
 
     public DocumentKind Kind => DocumentKind.Pdf;
     public int PageCount { get; }
     public DocumentMetadata Metadata { get; }
 
-    public PdfDocument(FpdfDocumentT doc)
+    public PdfDocument(
+        FpdfDocumentT doc,
+        string? path = null,
+        string? fingerprintHex = null,
+        IEventStore? eventStore = null)
     {
         ArgumentNullException.ThrowIfNull(doc);
         _doc = doc;
+        _path = path;
+        _fingerprintHex = fingerprintHex;
+        _eventStore = eventStore;
 
         lock (_gate)
         {
@@ -56,7 +69,20 @@ internal sealed class PdfDocument : IDocument
     public Task<TextLayer?> GetTextLayerAsync(int pageIndex, CancellationToken ct) =>
         Task.Run<TextLayer?>(() => GetTextLayerCore(pageIndex), ct);
 
-    public IDocumentEditor? GetEditor() => null;
+    public IDocumentEditor? GetEditor()
+    {
+        // Null-safe: старые call-sites/тесты могут не передать path/store/fingerprint —
+        // тогда документ read-only и редактор недоступен.
+        if (_path is null || _fingerprintHex is null || _eventStore is null)
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            return _editor ??= BuildEditor(_path, _fingerprintHex, _eventStore);
+        }
+    }
 
     public IFormController? GetForms() => null;
 
@@ -86,6 +112,14 @@ internal sealed class PdfDocument : IDocument
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    private static PdfDocumentEditor BuildEditor(string path, string fingerprintHex, IEventStore eventStore)
+    {
+        // FRAGILE: IO — базовый снимок = байты файла на момент открытия редактора.
+        // Fingerprint предвычислен в loader'е (async), здесь sync-over-async моста нет.
+        byte[] baseBytes = File.ReadAllBytes(path);
+        return new PdfDocumentEditor(baseBytes, fingerprintHex, eventStore, path);
     }
 
     private PdfPageRender RenderPageCore(int pageIndex, RenderOptions opts)
@@ -136,84 +170,6 @@ internal sealed class PdfDocument : IDocument
                 fpdfview.FPDF_ClosePage(page);
             }
         }
-    }
-
-    private TextLayer? GetTextLayerCore(int pageIndex)
-    {
-        lock (_gate)
-        {
-            if (_disposed)
-            {
-                return null;
-            }
-
-            // FRAGILE: native interop — FPDF_Load/ClosePage balanced in finally.
-            var page = fpdfview.FPDF_LoadPage(_doc, pageIndex);
-            try
-            {
-                return BuildTextLayer(pageIndex, page);
-            }
-            finally
-            {
-                fpdfview.FPDF_ClosePage(page);
-            }
-        }
-    }
-
-    private static TextLayer BuildTextLayer(int pageIndex, FpdfPageT page)
-    {
-        var tp = fpdf_text.FPDFTextLoadPage(page); // FRAGILE: native interop — paired with FPDFTextClosePage in finally
-        try
-        {
-            // FRAGILE: native interop — CountChars ≤0 ⇒ image-only page; CountRects(0,-1) merges chars into per-line boxes.
-            if (fpdf_text.FPDFTextCountChars(tp) <= 0)
-            {
-                return TextLayer.Empty(pageIndex);
-            }
-
-            int rectCount = fpdf_text.FPDFTextCountRects(tp, 0, -1);
-            var runs = new List<TextRun>(Math.Max(0, rectCount));
-            for (int i = 0; i < rectCount; i++)
-            {
-                if (ReadRectRun(tp, i) is { } run)
-                {
-                    runs.Add(run);
-                }
-            }
-            return runs.Count == 0 ? TextLayer.Empty(pageIndex) : new TextLayer(pageIndex, runs);
-        }
-        finally
-        {
-            fpdf_text.FPDFTextClosePage(tp);
-        }
-    }
-
-    private static TextRun? ReadRectRun(FpdfTextpageT tp, int rectIndex)
-    {
-        // FRAGILE: native interop — GetRect uses `ref double` (NOT out), returns int bool; coords PDF page space (pt, Y up, top > bottom).
-        double left = 0, top = 0, right = 0, bottom = 0;
-        if (fpdf_text.FPDFTextGetRect(tp, rectIndex, ref left, ref top, ref right, ref bottom) == 0)
-        {
-            return null;
-        }
-
-        // FRAGILE: native interop — GetBoundedText(buflen=0) returns UTF-16 count excl. NUL; buffer is `ref ushort` UTF-16LE.
-        ushort probe = 0;
-        int count = fpdf_text.FPDFTextGetBoundedText(tp, left, top, right, bottom, ref probe, 0);
-        if (count <= 0)
-        {
-            return null;
-        }
-
-        ushort[] buffer = new ushort[count + 1]; // +1 for terminating NUL
-        int written = fpdf_text.FPDFTextGetBoundedText(tp, left, top, right, bottom, ref buffer[0], buffer.Length);
-        int chars = Math.Clamp(written - 1, 0, count); // `written` includes NUL when space allowed
-        string text = new(MemoryMarshal.Cast<ushort, char>(buffer.AsSpan(0, chars)));
-
-        // Canonical TextRun (PageGeometry/Annotation): X=left, Y=bottom, Y up.
-        return string.IsNullOrWhiteSpace(text)
-            ? null
-            : new TextRun(text, X: left, Y: bottom, W: right - left, H: top - bottom);
     }
 
     private static DocumentMetadata ReadMetadata(FpdfDocumentT doc)

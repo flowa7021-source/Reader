@@ -17,12 +17,19 @@ public interface IDocumentEditor
     Task SaveAsync(string? path, CancellationToken ct);
 }
 
+/// <summary>
+/// Сериализуемое <b>намерение</b> редактирования (intent), а не действие над живым
+/// документом. Редактор сам решает, как применить запись к байтам PDF, и хранит её
+/// в event store для undo/redo (snapshot + replay) и crash recovery. Поэтому здесь
+/// нет ссылки на <see cref="IDocument"/> и нет обратной операции — отмена реализуется
+/// повторным проигрыванием журнала от исходного снимка.
+/// </summary>
 public interface IDocumentCommand
 {
-    /// <summary>Стабильный ID для журнала событий (event store).</summary>
-    string Id { get; }
+    /// <summary>Дискриминатор для журнала событий (event store): сопоставляется с
+    /// конкретным обработчиком при replay. Стабилен между версиями.</summary>
+    string Kind { get; }
 
-    Task ApplyAsync(IDocument document, CancellationToken ct);
-
-    Task InvertAsync(IDocument document, CancellationToken ct);
+    /// <summary>Сериализует намерение в wire-формат event store (Kind + JSON-payload).</summary>
+    DocumentCommandRecord ToRecord();
 }

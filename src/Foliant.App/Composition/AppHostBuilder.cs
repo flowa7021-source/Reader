@@ -9,6 +9,7 @@ using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
+using Foliant.Infrastructure.EventStore;
 using Foliant.Infrastructure.Export;
 using Foliant.Infrastructure.Licensing;
 using Foliant.Infrastructure.Search;
@@ -110,6 +111,11 @@ internal static class AppHostBuilder
         services.AddSingleton<DocumentIndexingService>();
         services.AddSingleton<IDocumentIndexer>(sp => sp.GetRequiredService<DocumentIndexingService>());
         services.AddHostedService(sp => sp.GetRequiredService<DocumentIndexingService>());
+
+        // Event store (append-only JSONL в Autosave/{fingerprint}) — undo/redo + crash recovery.
+        // PdfDocumentLoader подхватит его опционально → IDocument.GetEditor() станет доступен.
+        services.AddSingleton<IEventStore>(sp =>
+            new JsonlEventStore(AppPaths.Autosave, sp.GetRequiredService<ILogger<JsonlEventStore>>()));
 
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).

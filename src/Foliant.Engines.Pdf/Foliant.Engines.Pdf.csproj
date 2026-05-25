@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Foliant.Application\Foliant.Application.csproj" />
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
     <ProjectReference Include="..\Foliant.Plugins.Contracts\Foliant.Plugins.Contracts.csproj" />
   </ItemGroup>
