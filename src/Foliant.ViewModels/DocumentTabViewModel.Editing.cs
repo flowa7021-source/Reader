@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.Input;
 using Foliant.Domain;
+using Microsoft.Extensions.Logging;
 
 namespace Foliant.ViewModels;
 

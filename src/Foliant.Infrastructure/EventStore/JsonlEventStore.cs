@@ -68,10 +68,10 @@ public sealed class JsonlEventStore : IEventStore, IDisposable
         await using var stream = File.OpenRead(path);
         using var reader = new StreamReader(stream, Encoding.UTF8);
 
-        while (!reader.EndOfStream)
+        string? line;
+        while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) is not null)
         {
             ct.ThrowIfCancellationRequested();
-            var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(line))
             {
                 continue;
@@ -158,10 +158,10 @@ public sealed class JsonlEventStore : IEventStore, IDisposable
         int count = 0;
         await using var stream = File.OpenRead(path);
         using var reader = new StreamReader(stream, Encoding.UTF8);
-        while (!reader.EndOfStream)
+        string? line;
+        while ((line = await reader.ReadLineAsync(ct).ConfigureAwait(false)) is not null)
         {
             ct.ThrowIfCancellationRequested();
-            var line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(line))
             {
                 count++;

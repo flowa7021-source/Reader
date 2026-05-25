@@ -17,8 +17,9 @@ namespace Foliant.Infrastructure.Caching;
 /// (lock на словаре); двойной рендер при гонке безвреден — побеждает
 /// последний <c>Put</c>, оба дают идентичный результат.
 /// </summary>
-public sealed class ThumbnailRenderer(int maxWidthPx = DefaultMaxWidthPx)
+public sealed class ThumbnailRenderer(int maxWidthPx = 128)
 {
+    /// <summary>Дефолтная ширина миниатюры (px). Держать в синхроне с дефолтом конструктора (128).</summary>
     public const int DefaultMaxWidthPx = 128;
 
     private const int HeaderBytes = sizeof(int) * 3;

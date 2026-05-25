@@ -66,4 +66,11 @@ public sealed class BookmarkService(
         log.LogDebug("Bookmark toggled ON: {Path} page={Page}", documentPath, pageIndex);
         return bm;
     }
+
+    public async Task<bool> ContainsPageAsync(string documentPath, int pageIndex, CancellationToken ct)
+    {
+        var fp = await fingerprint.ComputeAsync(documentPath, ct).ConfigureAwait(false);
+        var existing = await store.ListAsync(fp, ct).ConfigureAwait(false);
+        return existing.Any(b => b.PageIndex == pageIndex);
+    }
 }

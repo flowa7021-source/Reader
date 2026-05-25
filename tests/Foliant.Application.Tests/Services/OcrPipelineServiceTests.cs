@@ -121,7 +121,7 @@ public sealed class OcrPipelineServiceTests
         var doc = MakeDocument(3);
         // Engine throws on page 1 only.
         _engine.RecognizeAsync(Arg.Any<IPageRender>(), 1, Arg.Any<OcrOptions>(), Arg.Any<CancellationToken>())
-               .Throws(new Exception("ocr boom"));
+               .Throws(new InvalidOperationException("ocr boom"));
 
         var result = await _sut.RecognizeDocumentAsync(doc, Fp, new OcrOptions(), null, default);
 

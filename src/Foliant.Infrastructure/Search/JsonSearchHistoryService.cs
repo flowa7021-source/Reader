@@ -129,6 +129,8 @@ public sealed class JsonSearchHistoryService : ISearchHistoryService
         ScheduleSave();
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Fire-and-forget background save must never crash the app; the failure is logged.")]
     private void ScheduleSave()
     {
         _ = Task.Run(async () =>
