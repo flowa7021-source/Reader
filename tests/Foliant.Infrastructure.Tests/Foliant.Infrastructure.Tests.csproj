@@ -16,6 +16,7 @@
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="FsCheck.Xunit" />
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
   </ItemGroup>
 
   <ItemGroup>

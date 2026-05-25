@@ -9,6 +9,7 @@ using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
+using Foliant.Infrastructure.Export;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
@@ -115,6 +116,10 @@ internal static class AppHostBuilder
         // Application
         services.AddSingleton<OpenDocumentUseCase>();
         services.AddSingleton<ISearchService, SearchService>();
+
+        // Document export — потребитель выбирает реализацию по CanExport(targetFormat).
+        services.AddSingleton<IDocumentExportService, PlainTextDocumentExportService>();
+        services.AddSingleton<IDocumentExportService, DocxDocumentExportService>();
 
         // ViewModels
         services.AddTransient<Func<IDocument, string, DocumentTabViewModel>>(sp =>
