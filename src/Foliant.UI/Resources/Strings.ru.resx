@@ -142,6 +142,27 @@
   <data name="ThemeHighContrast" xml:space="preserve">
     <value>_Высокая контрастность</value>
   </data>
+  <data name="MenuToolsImportLicense" xml:space="preserve">
+    <value>_Импорт лицензии…</value>
+  </data>
+  <data name="LicenseImportTitle" xml:space="preserve">
+    <value>Импорт лицензии</value>
+  </data>
+  <data name="LicenseImportJsonLabel" xml:space="preserve">
+    <value>JSON лицензии</value>
+  </data>
+  <data name="LicenseImportSignatureLabel" xml:space="preserve">
+    <value>Подпись (base64)</value>
+  </data>
+  <data name="LicenseImportButton" xml:space="preserve">
+    <value>Импорт</value>
+  </data>
+  <data name="LicenseClearButton" xml:space="preserve">
+    <value>Очистить</value>
+  </data>
+  <data name="LicenseCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
   <data name="OpenDocumentDialogTitle" xml:space="preserve">
     <value>Открыть документ</value>
   </data>

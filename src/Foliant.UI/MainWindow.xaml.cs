@@ -13,22 +13,26 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private readonly Func<SettingsWindow> _settingsWindowFactory;
     private readonly Func<CrashRecoveryWindow> _crashRecoveryWindowFactory;
+    private readonly Func<LicenseImportWindow> _licenseWindowFactory;
     private readonly ILogger<MainWindow> _logger;
 
     public MainWindow(
         MainViewModel vm,
         Func<SettingsWindow> settingsWindowFactory,
         Func<CrashRecoveryWindow> crashRecoveryWindowFactory,
+        Func<LicenseImportWindow> licenseWindowFactory,
         ILogger<MainWindow> logger)
     {
         ArgumentNullException.ThrowIfNull(vm);
         ArgumentNullException.ThrowIfNull(settingsWindowFactory);
         ArgumentNullException.ThrowIfNull(crashRecoveryWindowFactory);
+        ArgumentNullException.ThrowIfNull(licenseWindowFactory);
         ArgumentNullException.ThrowIfNull(logger);
 
         _vm = vm;
         _settingsWindowFactory = settingsWindowFactory;
         _crashRecoveryWindowFactory = crashRecoveryWindowFactory;
+        _licenseWindowFactory = licenseWindowFactory;
         _logger = logger;
 
         InitializeComponent();
@@ -127,6 +131,13 @@ public partial class MainWindow : Window
             // Theme may have changed — apply immediately.
             _vm.CurrentTheme = settingsWin.ViewModel.SelectedTheme;
         }
+    }
+
+    private void OnImportLicenseMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        var window = _licenseWindowFactory();
+        window.Owner = this;
+        window.ShowDialog();
     }
 
     private void OnExitMenuItemClick(object sender, RoutedEventArgs e)

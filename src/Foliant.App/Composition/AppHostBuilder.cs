@@ -134,11 +134,14 @@ internal static class AppHostBuilder
         services.AddSingleton<IAnnotationExporter, JsonAnnotationExporter>();
 
         // Licensing storage + trial (Windows-only persistence: DPAPI + HKCU + marker).
-        // ILicenseManager (требует публичный ключ верификатора) подключается на UI-этапе.
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ILicenseStorage, DpapiLicenseStorage>();
         services.AddSingleton<TrialStores>();
         services.AddSingleton<ITrialService, TrialPersistenceService>();
+
+        // License verification — ECDSA P-256 over the embedded public key (LicenseKeys.PublicKeyPem).
+        services.AddSingleton<ILicenseVerifier>(_ => new EcdsaLicenseVerifier(LicenseKeys.PublicKeyPem));
+        services.AddSingleton<ILicenseManager, LicenseManager>();
 
         // ViewModels
         services.AddTransient<Func<IDocument, string, DocumentTabViewModel>>(sp =>
@@ -157,9 +160,8 @@ internal static class AppHostBuilder
                 settings: sp.GetService<ISettingsService>(),
                 annotationExporter: sp.GetService<IAnnotationExporter>()));
 
-        // ILicenseManager — optional: dev-сборка может не регистрировать его
-        // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис
-        // не зарегистрирован — MainViewModel это допустимо.
+        // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
+        // unit-test composition (which omits them) keeps working.
         services.AddTransient(sp => new MainViewModel(
             sp.GetRequiredService<OpenDocumentUseCase>(),
             sp.GetRequiredService<Func<IDocument, string, DocumentTabViewModel>>(),
@@ -171,6 +173,7 @@ internal static class AppHostBuilder
             sp.GetService<ILicenseManager>(),
             sp.GetService<ITrialService>()));
         services.AddTransient<SettingsViewModel>();
+        services.AddTransient<LicenseImportViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
@@ -179,5 +182,7 @@ internal static class AppHostBuilder
         services.AddTransient<CrashRecoveryViewModel>();
         services.AddTransient<CrashRecoveryWindow>();
         services.AddTransient<Func<CrashRecoveryWindow>>(sp => () => sp.GetRequiredService<CrashRecoveryWindow>());
+        services.AddTransient<LicenseImportWindow>();
+        services.AddTransient<Func<LicenseImportWindow>>(sp => () => sp.GetRequiredService<LicenseImportWindow>());
     }
 }

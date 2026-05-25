@@ -164,6 +164,8 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsCancelOcr]}"
                   Command="{Binding SelectedTab.CancelOcrCommand}" />
         <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsImportLicense]}"
+                  Click="OnImportLicenseMenuItemClick" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsSettings]}"
                   Click="OnSettingsMenuItemClick" />
       </MenuItem>
