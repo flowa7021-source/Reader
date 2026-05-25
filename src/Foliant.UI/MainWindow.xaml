@@ -118,12 +118,23 @@
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
+    <!-- Trial banner -->
+    <Border Grid.Row="0"
+            Background="#FFF3CD"
+            Padding="8,4"
+            Visibility="{Binding IsTrialBannerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+      <TextBlock Text="{Binding TrialMessage}"
+                 HorizontalAlignment="Center"
+                 Foreground="#664D03" />
+    </Border>
+
     <!-- Menu -->
-    <Menu Grid.Row="0">
+    <Menu Grid.Row="1">
       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFile]}">
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileOpen]}"
                   Click="OnOpenMenuItemClick" />
@@ -148,8 +159,24 @@
                   Click="OnExitMenuItemClick" />
       </MenuItem>
       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuTools]}">
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsRunOcr]}"
+                  Command="{Binding SelectedTab.RunOcrCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsCancelOcr]}"
+                  Command="{Binding SelectedTab.CancelOcrCommand}" />
+        <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsSettings]}"
                   Click="OnSettingsMenuItemClick" />
+      </MenuItem>
+      <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEdit]}">
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditRotatePage]}"
+                  Command="{Binding SelectedTab.RotateCurrentPageCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditDeletePage]}"
+                  Command="{Binding SelectedTab.DeleteCurrentPageCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditMovePageUp]}"
+                  Command="{Binding SelectedTab.MovePageUpCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditMovePageDown]}"
+                  Command="{Binding SelectedTab.MovePageDownCommand}" />
       </MenuItem>
       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuView]}">
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTheme]}">
@@ -167,7 +194,7 @@
     </Menu>
 
     <!-- Tab Control -->
-    <TabControl Grid.Row="1"
+    <TabControl Grid.Row="2"
                 ItemsSource="{Binding Tabs}"
                 SelectedItem="{Binding SelectedTab}"
                 Background="{DynamicResource TabBackground}">
@@ -188,9 +215,14 @@
             <Grid Grid.Column="0">
               <ScrollViewer HorizontalScrollBarVisibility="Auto"
                             VerticalScrollBarVisibility="Auto">
-                <ui:PageSurface PageRender="{Binding CurrentRender}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Top" />
+                <Grid HorizontalAlignment="Center"
+                      VerticalAlignment="Top">
+                  <ui:PageSurface PageRender="{Binding CurrentRender}" />
+                  <ui:AnnotationLayer PageRender="{Binding CurrentRender}"
+                                      Annotations="{Binding CurrentPageAnnotations}"
+                                      Zoom="{Binding Zoom}"
+                                      CreateNoteCommand="{Binding AddNoteAtCommand}" />
+                </Grid>
               </ScrollViewer>
               <TextBlock Text="{Binding ErrorMessage}"
                          Foreground="Red"
@@ -261,7 +293,7 @@
     </TabControl>
 
     <!-- Status Bar -->
-    <StatusBar Grid.Row="2"
+    <StatusBar Grid.Row="3"
                Background="{DynamicResource StatusBarBackground}">
       <StatusBarItem>
         <TextBlock Text="{Binding StatusMessage}"
@@ -269,6 +301,9 @@
       </StatusBarItem>
       <StatusBarItem HorizontalAlignment="Right">
         <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{Binding SelectedTab.OcrStatus}"
+                     Foreground="{DynamicResource Foreground}"
+                     Margin="0,0,16,0" />
           <TextBlock Text="{Binding SelectedTab.PageInfo}"
                      Foreground="{DynamicResource Foreground}"
                      Margin="0,0,16,0" />

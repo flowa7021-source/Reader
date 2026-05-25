@@ -41,6 +41,13 @@ public sealed class DocumentIndexingService : BackgroundService, IDocumentIndexe
         _queue.Writer.TryWrite(new IndexRequest(document, path));
     }
 
+    public void EnqueueLayers(string path, IReadOnlyList<TextLayer> layers)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(layers);
+        _queue.Writer.TryWrite(new IndexRequest(null, path, layers));
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _log.LogInformation("DocumentIndexingService started");
@@ -60,8 +67,10 @@ public sealed class DocumentIndexingService : BackgroundService, IDocumentIndexe
         {
             ct.ThrowIfCancellationRequested();
             var fp = await _fingerprint.ComputeAsync(request.Path, ct).ConfigureAwait(false);
-            await _fts.IndexDocumentAsync(fp, request.Path, StreamPages(request.Document, ct), ct)
-                .ConfigureAwait(false);
+            var pages = request.Layers is { } layers
+                ? ToAsync(layers, ct)
+                : StreamPages(request.Document!, ct);
+            await _fts.IndexDocumentAsync(fp, request.Path, pages, ct).ConfigureAwait(false);
             _log.LogDebug("Indexed {Path}", request.Path);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -89,5 +98,18 @@ public sealed class DocumentIndexingService : BackgroundService, IDocumentIndexe
         }
     }
 
-    internal sealed record IndexRequest(IDocument Document, string Path);
+    private static async IAsyncEnumerable<TextLayer> ToAsync(
+        IReadOnlyList<TextLayer> layers,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        foreach (var layer in layers)
+        {
+            ct.ThrowIfCancellationRequested();
+            yield return layer;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    internal sealed record IndexRequest(IDocument? Document, string Path, IReadOnlyList<TextLayer>? Layers = null);
 }

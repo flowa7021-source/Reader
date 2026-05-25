@@ -85,7 +85,7 @@ internal static class AppHostBuilder
         // сериализует вызовы). ITextLayerCache не зарегистрирован → pipeline получает null (ok).
         services.AddSingleton<IOcrEngine, PaddleOcrEngine>();
         services.AddSingleton<OcrPageUseCase>();
-        services.AddSingleton<OcrPipelineService>();
+        services.AddSingleton<IOcrPipelineService, OcrPipelineService>();
 
         // Annotations — JSON sidecar (Phase 1). Phase 2: embed in PDF via PdfPig.
         services.AddSingleton<IAnnotationStore>(sp =>
@@ -120,6 +120,7 @@ internal static class AppHostBuilder
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
+        services.AddSingleton<IPageEditService, PdfPageEditService>();
 
         // Application
         services.AddSingleton<OpenDocumentUseCase>();
@@ -144,7 +145,12 @@ internal static class AppHostBuilder
                 sp.GetRequiredService<ISearchService>(),
                 sp.GetRequiredService<IAnnotationService>(),
                 sp.GetRequiredService<IBookmarkService>(),
-                sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
+                sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>(),
+                ocr: sp.GetService<IOcrPipelineService>(),
+                fingerprint: sp.GetService<IFileFingerprint>(),
+                indexer: sp.GetService<IDocumentIndexer>(),
+                pageEdit: sp.GetService<IPageEditService>(),
+                openUseCase: sp.GetService<OpenDocumentUseCase>()));
 
         // ILicenseManager — optional: dev-сборка может не регистрировать его
         // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис
@@ -157,12 +163,16 @@ internal static class AppHostBuilder
             sp.GetRequiredService<ILocalizationService>(),
             sp.GetRequiredService<IDocumentIndexer>(),
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<MainViewModel>(),
-            sp.GetService<ILicenseManager>()));
+            sp.GetService<ILicenseManager>(),
+            sp.GetService<ITrialService>()));
         services.AddTransient<SettingsViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
         services.AddTransient<SettingsWindow>();
         services.AddTransient<Func<SettingsWindow>>(sp => () => sp.GetRequiredService<SettingsWindow>());
+        services.AddTransient<CrashRecoveryViewModel>();
+        services.AddTransient<CrashRecoveryWindow>();
+        services.AddTransient<Func<CrashRecoveryWindow>>(sp => () => sp.GetRequiredService<CrashRecoveryWindow>());
     }
 }

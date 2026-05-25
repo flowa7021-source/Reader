@@ -37,11 +37,13 @@ public sealed partial class CrashRecoveryViewModel : ObservableObject
     {
         PendingDocuments.Clear();
 
-        var fingerprints = await _eventStore.ListPendingFingerprintsAsync(ct).ConfigureAwait(false);
+        // Без ConfigureAwait(false): продолжение остаётся на UI-потоке, т.к. ниже мутируется
+        // ObservableCollection, привязанная к диалогу (WPF запрещает cross-thread изменения).
+        var fingerprints = await _eventStore.ListPendingFingerprintsAsync(ct);
         foreach (var fp in fingerprints)
         {
             ct.ThrowIfCancellationRequested();
-            int count = await _eventStore.GetEventCountAsync(fp, ct).ConfigureAwait(false);
+            int count = await _eventStore.GetEventCountAsync(fp, ct);
             PendingDocuments.Add(new CrashRecoveryItem(fp, count));
         }
     }

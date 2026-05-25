@@ -12,16 +12,23 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
     private readonly Func<SettingsWindow> _settingsWindowFactory;
+    private readonly Func<CrashRecoveryWindow> _crashRecoveryWindowFactory;
     private readonly ILogger<MainWindow> _logger;
 
-    public MainWindow(MainViewModel vm, Func<SettingsWindow> settingsWindowFactory, ILogger<MainWindow> logger)
+    public MainWindow(
+        MainViewModel vm,
+        Func<SettingsWindow> settingsWindowFactory,
+        Func<CrashRecoveryWindow> crashRecoveryWindowFactory,
+        ILogger<MainWindow> logger)
     {
         ArgumentNullException.ThrowIfNull(vm);
         ArgumentNullException.ThrowIfNull(settingsWindowFactory);
+        ArgumentNullException.ThrowIfNull(crashRecoveryWindowFactory);
         ArgumentNullException.ThrowIfNull(logger);
 
         _vm = vm;
         _settingsWindowFactory = settingsWindowFactory;
+        _crashRecoveryWindowFactory = crashRecoveryWindowFactory;
         _logger = logger;
 
         InitializeComponent();
@@ -57,6 +64,27 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize main view model.");
+        }
+
+        await ShowCrashRecoveryIfNeededAsync();
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async Task ShowCrashRecoveryIfNeededAsync()
+    {
+        try
+        {
+            var window = _crashRecoveryWindowFactory();
+            await window.ViewModel.LoadAsync(CancellationToken.None);
+            if (window.ViewModel.HasPendingDocuments)
+            {
+                window.Owner = this;
+                window.ShowDialog();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Crash recovery check failed.");
         }
     }
 

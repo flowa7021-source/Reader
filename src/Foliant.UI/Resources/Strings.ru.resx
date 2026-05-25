@@ -79,6 +79,51 @@
   <data name="MenuToolsSettings" xml:space="preserve">
     <value>_Настройки...</value>
   </data>
+  <data name="MenuToolsRunOcr" xml:space="preserve">
+    <value>Распознать текст (_OCR)</value>
+  </data>
+  <data name="MenuToolsCancelOcr" xml:space="preserve">
+    <value>Отменить OCR</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>_Правка</value>
+  </data>
+  <data name="MenuEditRotatePage" xml:space="preserve">
+    <value>Повернуть страницу на 90°</value>
+  </data>
+  <data name="MenuEditDeletePage" xml:space="preserve">
+    <value>Удалить страницу</value>
+  </data>
+  <data name="MenuEditMovePageUp" xml:space="preserve">
+    <value>Переместить страницу вверх</value>
+  </data>
+  <data name="MenuEditMovePageDown" xml:space="preserve">
+    <value>Переместить страницу вниз</value>
+  </data>
+  <data name="CrashRecoveryTitle" xml:space="preserve">
+    <value>Восстановление после сбоя</value>
+  </data>
+  <data name="CrashRecoveryHeader" xml:space="preserve">
+    <value>Foliant обнаружил несохранённые действия из прошлой сессии. Сбросьте их или оставьте на потом.</value>
+  </data>
+  <data name="CrashRecoveryActions" xml:space="preserve">
+    <value>несохранённых действий</value>
+  </data>
+  <data name="CrashRecoveryDismiss" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="CrashRecoveryDismissAll" xml:space="preserve">
+    <value>Сбросить все</value>
+  </data>
+  <data name="CrashRecoveryClose" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="TrialActiveFormat" xml:space="preserve">
+    <value>Пробный период — осталось дней: {0}</value>
+  </data>
+  <data name="TrialExpired" xml:space="preserve">
+    <value>Пробный период истёк — Pro-функции заблокированы</value>
+  </data>
   <data name="MenuView" xml:space="preserve">
     <value>_Вид</value>
   </data>

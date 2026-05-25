@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Foliant.Application.Services;
+using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
 
@@ -7,12 +8,17 @@ namespace Foliant.ViewModels;
 
 public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
 {
-    private readonly IDocument _document;
+    private IDocument _document;
     private readonly string _filePath;
     private readonly ISearchService _searchService;
     private readonly IAnnotationService _annotationService;
     private readonly IBookmarkService _bookmarkService;
     private readonly ISearchHistoryService? _searchHistory;
+    private readonly IOcrPipelineService? _ocr;
+    private readonly IFileFingerprint? _fingerprint;
+    private readonly IDocumentIndexer? _indexer;
+    private readonly IPageEditService? _pageEdit;
+    private readonly OpenDocumentUseCase? _openUseCase;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -20,6 +26,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanDeleteCurrentPage))]
+    [NotifyPropertyChangedFor(nameof(CanMovePageDown))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCurrentPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MovePageDownCommand))]
     private int _pageCount;
 
     [ObservableProperty]
@@ -27,6 +37,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [NotifyPropertyChangedFor(nameof(CanGoBack))]
     [NotifyPropertyChangedFor(nameof(CanGoForward))]
     [NotifyPropertyChangedFor(nameof(IsCurrentPageBookmarked))]
+    [NotifyPropertyChangedFor(nameof(CanMovePageUp))]
+    [NotifyPropertyChangedFor(nameof(CanMovePageDown))]
+    [NotifyCanExecuteChangedFor(nameof(MovePageUpCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MovePageDownCommand))]
     private int _currentPageIndex;
 
     [ObservableProperty]
@@ -61,7 +75,12 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IAnnotationService annotationService,
         IBookmarkService bookmarkService,
         ILogger<DocumentTabViewModel> logger,
-        ISearchHistoryService? searchHistory = null)
+        ISearchHistoryService? searchHistory = null,
+        IOcrPipelineService? ocr = null,
+        IFileFingerprint? fingerprint = null,
+        IDocumentIndexer? indexer = null,
+        IPageEditService? pageEdit = null,
+        OpenDocumentUseCase? openUseCase = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -76,6 +95,11 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _annotationService = annotationService;
         _bookmarkService = bookmarkService;
         _searchHistory = searchHistory;
+        _ocr = ocr;
+        _fingerprint = fingerprint;
+        _indexer = indexer;
+        _pageEdit = pageEdit;
+        _openUseCase = openUseCase;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
