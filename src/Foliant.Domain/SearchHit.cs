@@ -10,7 +10,9 @@ public sealed record SearchHit(
 public sealed record SearchQuery(
     string Text,
     int MaxResults = 100,
-    string? RestrictToDocFingerprint = null)
+    string? RestrictToDocFingerprint = null,
+    bool MatchCase = false,
+    bool MatchWholeWord = false)
 {
     public bool IsEmpty => string.IsNullOrWhiteSpace(Text);
 }

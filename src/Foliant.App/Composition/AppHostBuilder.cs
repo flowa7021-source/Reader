@@ -6,6 +6,7 @@ using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
+using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
@@ -80,6 +81,11 @@ internal static class AppHostBuilder
             new JsonAnnotationStore(AppPaths.Annotations, sp.GetRequiredService<ILogger<JsonAnnotationStore>>()));
         services.AddSingleton<IAnnotationService, AnnotationService>();
 
+        // Bookmarks — JSON sidecar (parallel to annotations).
+        services.AddSingleton<IBookmarkStore>(sp =>
+            new JsonBookmarkStore(AppPaths.Bookmarks, sp.GetRequiredService<ILogger<JsonBookmarkStore>>()));
+        services.AddSingleton<IBookmarkService, BookmarkService>();
+
         // Cache janitor — фоновая эвикция.
         services.AddSingleton(new CacheJanitorOptions());
         services.AddHostedService<CacheJanitor>();
@@ -110,9 +116,21 @@ internal static class AppHostBuilder
                 path,
                 sp.GetRequiredService<ISearchService>(),
                 sp.GetRequiredService<IAnnotationService>(),
+                sp.GetRequiredService<IBookmarkService>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
 
-        services.AddTransient<MainViewModel>();
+        // ILicenseManager — optional: dev-сборка может не регистрировать его
+        // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис
+        // не зарегистрирован — MainViewModel это допустимо.
+        services.AddTransient(sp => new MainViewModel(
+            sp.GetRequiredService<OpenDocumentUseCase>(),
+            sp.GetRequiredService<Func<IDocument, string, DocumentTabViewModel>>(),
+            sp.GetRequiredService<IRecentsService>(),
+            sp.GetRequiredService<ISettingsService>(),
+            sp.GetRequiredService<ILocalizationService>(),
+            sp.GetRequiredService<IDocumentIndexer>(),
+            sp.GetRequiredService<ILoggerFactory>().CreateLogger<MainViewModel>(),
+            sp.GetService<ILicenseManager>()));
         services.AddTransient<SettingsViewModel>();
 
         // Views

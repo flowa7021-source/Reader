@@ -49,7 +49,7 @@ public sealed class SearchService : ISearchService
             }
 
             string pageText = layer.ToPlainText();
-            CollectMatches(pageText, needle, pageIndex, documentPath, query.MaxResults, hits);
+            CollectMatches(pageText, needle, pageIndex, documentPath, query, hits);
         }
 
         _log.LogDebug("Search '{Needle}' in '{Path}' returned {Count} hit(s) (capped at {Cap})",
@@ -62,7 +62,7 @@ public sealed class SearchService : ISearchService
         string needle,
         int pageIndex,
         string documentPath,
-        int maxResults,
+        SearchQuery query,
         List<SearchHit> hits)
     {
         if (string.IsNullOrEmpty(pageText))
@@ -70,25 +70,41 @@ public sealed class SearchService : ISearchService
             return;
         }
 
+        var comparison = query.MatchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
         int from = 0;
-        while (hits.Count < maxResults)
+        while (hits.Count < query.MaxResults)
         {
-            int pos = pageText.IndexOf(needle, from, StringComparison.OrdinalIgnoreCase);
+            int pos = pageText.IndexOf(needle, from, comparison);
             if (pos < 0)
             {
                 break;
             }
 
-            hits.Add(new SearchHit(
-                DocFingerprint: string.Empty,
-                Path: documentPath,
-                PageIndex: pageIndex,
-                Snippet: BuildSnippet(pageText, pos, needle.Length),
-                Rank: 1.0));
+            if (!query.MatchWholeWord || IsWholeWordMatch(pageText, pos, needle.Length))
+            {
+                hits.Add(new SearchHit(
+                    DocFingerprint: string.Empty,
+                    Path: documentPath,
+                    PageIndex: pageIndex,
+                    Snippet: BuildSnippet(pageText, pos, needle.Length),
+                    Rank: 1.0));
+            }
 
             from = pos + needle.Length;
         }
     }
+
+    /// <summary>Считаем «whole word» если соседние позиции либо вне строки, либо не letter/digit (Unicode-aware).</summary>
+    private static bool IsWholeWordMatch(string text, int start, int len)
+    {
+        bool leftOk = start == 0 || !IsWordChar(text[start - 1]);
+        int endIdx = start + len;
+        bool rightOk = endIdx == text.Length || !IsWordChar(text[endIdx]);
+        return leftOk && rightOk;
+    }
+
+    private static bool IsWordChar(char c) => char.IsLetterOrDigit(c) || c == '_';
 
     private static string BuildSnippet(string text, int matchStart, int matchLen)
     {
