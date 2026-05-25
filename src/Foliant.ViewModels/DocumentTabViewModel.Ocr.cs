@@ -45,6 +45,7 @@ public sealed partial class DocumentTabViewModel
             string fp = await _fingerprint.ComputeAsync(_filePath, _ocrCts.Token);
             var progress = new Progress<OcrProgress>(p => OcrStatus = $"{p.CompletedPages}/{p.TotalPages}");
             OcrLayers = await _ocr.RecognizeDocumentAsync(_document, fp, new OcrOptions(), progress, _ocrCts.Token);
+            _indexer?.EnqueueLayers(_filePath, OcrLayers);
             OcrStatus = $"OCR: {OcrLayers.Count} pages";
         }
         catch (OperationCanceledException)

@@ -12,7 +12,8 @@ public sealed class DocumentTabViewModelOcrTests
     private static DocumentTabViewModel CreateVm(
         IOcrPipelineService? ocr,
         IFileFingerprint? fingerprint,
-        int pageCount = 3)
+        int pageCount = 3,
+        IDocumentIndexer? indexer = null)
     {
         var doc = Substitute.For<IDocument>();
         doc.PageCount.Returns(pageCount);
@@ -25,7 +26,8 @@ public sealed class DocumentTabViewModelOcrTests
             Substitute.For<IBookmarkService>(),
             NullLogger<DocumentTabViewModel>.Instance,
             ocr: ocr,
-            fingerprint: fingerprint);
+            fingerprint: fingerprint,
+            indexer: indexer);
     }
 
     [Fact]
@@ -78,6 +80,25 @@ public sealed class DocumentTabViewModelOcrTests
         await ocr.Received(1).RecognizeDocumentAsync(
             Arg.Any<IDocument>(), "fp-123", Arg.Any<OcrOptions>(),
             Arg.Any<IProgress<OcrProgress>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunOcr_EnqueuesRecognizedLayersForIndexing()
+    {
+        var fingerprint = Substitute.For<IFileFingerprint>();
+        fingerprint.ComputeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("fp");
+        IReadOnlyList<TextLayer> layers = [TextLayer.Empty(0), TextLayer.Empty(1)];
+        var ocr = Substitute.For<IOcrPipelineService>();
+        ocr.RecognizeDocumentAsync(
+                Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<OcrOptions>(),
+                Arg.Any<IProgress<OcrProgress>>(), Arg.Any<CancellationToken>())
+            .Returns(layers);
+        var indexer = Substitute.For<IDocumentIndexer>();
+
+        var vm = CreateVm(ocr, fingerprint, indexer: indexer);
+        await vm.RunOcrCommand.ExecuteAsync(null);
+
+        indexer.Received(1).EnqueueLayers("/tmp/scan.pdf", layers);
     }
 
     [Fact]

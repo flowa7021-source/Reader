@@ -146,7 +146,8 @@ internal static class AppHostBuilder
                 sp.GetRequiredService<IBookmarkService>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>(),
                 ocr: sp.GetService<IOcrPipelineService>(),
-                fingerprint: sp.GetService<IFileFingerprint>()));
+                fingerprint: sp.GetService<IFileFingerprint>(),
+                indexer: sp.GetService<IDocumentIndexer>()));
 
         // ILicenseManager — optional: dev-сборка может не регистрировать его
         // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис

@@ -15,6 +15,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly ISearchHistoryService? _searchHistory;
     private readonly IOcrPipelineService? _ocr;
     private readonly IFileFingerprint? _fingerprint;
+    private readonly IDocumentIndexer? _indexer;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -65,7 +66,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         ILogger<DocumentTabViewModel> logger,
         ISearchHistoryService? searchHistory = null,
         IOcrPipelineService? ocr = null,
-        IFileFingerprint? fingerprint = null)
+        IFileFingerprint? fingerprint = null,
+        IDocumentIndexer? indexer = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -82,6 +84,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _searchHistory = searchHistory;
         _ocr = ocr;
         _fingerprint = fingerprint;
+        _indexer = indexer;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
