@@ -43,7 +43,7 @@ public sealed partial class DocumentTabViewModel
     }
 
     /// <summary>Хелпер: вызывается после любой мутации <c>_allAnnotations</c>; рейзит
-    /// <see cref="PropertyChanged"/> для всех зависимых count-property.</summary>
+    /// <c>PropertyChanged</c> для всех зависимых count-property.</summary>
     private void NotifyAnnotationCountsChanged()
     {
         OnPropertyChanged(nameof(TotalAnnotationsCount));
