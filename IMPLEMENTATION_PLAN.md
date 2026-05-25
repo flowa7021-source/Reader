@@ -249,6 +249,31 @@ Acceptance: окно открывает выбранный PDF, скроллит
 | **S12** | 2 нед | Простой text editor (без reflow): replace single line + add text box | `SimpleTextEditor`, базовый PDF→DOCX (текст по позициям через OpenXml) | Заменить 5 строк, экспорт в DOCX, открыть в Word — текст распознан. |
 | **S13** | 2 нед | License manager + 30-day триал + anti-tamper + Inno Setup installer + EV-подпись | `LicenseManager`, `TrialAntiTamper`, `installer/Foliant.iss`, signed `Foliant-Setup.exe` | Чистая Win10 21H2 VM: установить → запустить → триал активен 30 дней → ввести лицензию → активировано. Uninstall чистый. |
 
+### 4.0. Статус реализации Phase 1 (срез на 2026-05-25, после мерджа PR #14)
+
+> Легенда: ✅ готово · 🟡 частично (есть «скелет», но acceptance-критерий ещё не достигается) · ⛔ не начато.
+> Замечание о методе: оценка сделана **чтением кода** (в окружении нет .NET SDK — `dotnet build`/`dotnet test` запустить нельзя). Цифры производительности из acceptance **не верифицированы**.
+
+| № | Тема | Статус | Что сделано | Что осталось до acceptance |
+|---|---|---|---|---|
+| **S1** | Domain + PDFium | ✅ | `IDocument`/`PdfDocument` на PDFiumCore: рендер в BGRA32, размеры, metadata, извлечение текста. | Перцентили рендера не замерены (нет SDK + golden-набора в LFS). |
+| **S2** | UI shell + темы | 🟡 | MDI-табы (`TabControl`), `ThemeManager`, 3 словаря тем, меню, статус-бар, Per-Monitor V2 manifest. | Dark/HC = наивная инверсия BGR (см. TODO в `PdfDocument`); нет «обложки отдельно», 2-страничного и непрерывного режимов. |
+| **S3** | In-memory кэш (1–3) | ✅ | `LruCache`, `MemoryPageCache` (sticky ±N), `ThumbnailCache`, `TextStructureCache`. | Бенчмарк «повторный рендер ≤ 5 мс» не замерен. |
+| **S4** | Disk-кэш (4) + fingerprint | ✅ | `SqliteDiskCache` (WAL, атомарная запись, LRU, restart-survival), `FileFingerprint`, `CacheKey`, `CacheJanitor`. | — (нужен прогон perf/integration на Windows). |
+| **S5** | Локализация + Settings + Recents | ✅ | RU/EN hot-switch, `SettingsWindow`, `RecentsService` (MRU=20), миграции настроек. | — |
+| **S6** | Текстовый слой + поиск Ctrl+F | 🟡 | `SearchService` (подстрока по слоям), sidebar результатов со снипетами, переход на страницу. | **Текстовый слой — один `TextRun` на всю страницу** (нет координат слов) ⇒ нет подсветки попадания на странице, нет точного выделения/копирования. |
+| **S7** | FTS5 persistent index (5) | ✅ | `SqliteFtsIndex` (bm25, snippet, diacritics-insensitive), фоновый `DocumentIndexingService` через `Channel`. | Бенчмарк «≤ 500 мс по 10 докам» не замерен. |
+| **S8** | OCR Tesseract LSTM | 🟡 | Только обвязка: `OcrPageUseCase`, `OcrPipelineService` (оркестратор), `OcrDiskCache`, порты `IOcrEngine`/`IOcrCache`. | **Нет реализации `IOcrEngine`** (`Foliant.Engines.Ocr` = `Placeholder`). OCR фактически не работает: нет привязки Tesseract, нет препроцессинга (deskew/despeckle/binarize), нет attach text-layer. |
+| **S9** | DjVu out-of-process плагин | ⛔ | Только `plugins/Foliant.Plugin.DjVu/README.md`. | Весь плагин: wrapper над `ddjvu`/`djvused`, `DjvuDocument`, MEF-экспорт, инсталлятор плагина. |
+| **S10** | Аннотации (highlight/note/freehand) | 🟡 | Domain-модель, sidecar-персист (`JsonAnnotationStore`), VM с фильтрами/сортировкой/экспортом (JSON/Markdown). | **Нет визуального слоя в UI** (нет `AnnotationLayer`/Canvas/hit-testing/инструментов рисования) — аннотации существуют как данные, но их нельзя поставить/увидеть на странице. Персист в sidecar, а **не в PDF через PdfPig**, как требует acceptance. |
+| **S11** | Page management (rotate/delete/insert/reorder) | 🟡 | На уровне VM: навигация, zoom, закладки, recents, мульти-таб. `ViewRotation` (value-объект). | **Нет реальной манипуляции страницами** (нет `PageManagementService` через QPDF/PdfPig), **нет `ThumbStrip`**-контрола с drag-and-drop, нет сохранения изменённой структуры. |
+| **S12** | Простой text editor + PDF→DOCX | 🟡 | Обвязка event-sourcing: `IEventStore`/`JsonlEventStore`, `CrashRecoveryViewModel`, `DocumentCommandRecord`. Экспорт `PlainTextDocumentExportService` (**только .txt**). | **Нет редактирования текста** (нет `SimpleTextEditor`, replace-line/add-textbox), **нет PDF→DOCX** (OpenXml не подключён). |
+| **S13** | License + триал + installer + EV-подпись | 🟡 | `EcdsaLicenseVerifier` (P-256), `TrialAntiTamperService` (чистая логика), VM импорта/статуса лицензии. | Хранилище лицензии — **`InMemoryLicenseStorage`** (нет DPAPI-файла + дублей в реестре + marker). `Foliant.iss` — **заготовка 68 строк** (нет `[Files]`/нативки/компонентов/multi-tier). Нет EV-подписи. |
+
+**Сводно:** ✅ полностью — **S1, S3, S4, S5, S7** (5 из 13, вся базовая инфраструктура «просмотр + кэш + поиск-индекс + настройки»). 🟡 частично — **S2, S6, S8, S10, S11, S12, S13** (есть архитектура/порты/VM, но нет «несущих» интеграций). ⛔ не начато — **S9**.
+
+**Корневое наблюдение:** разработка шла «вширь» — построены чистая архитектура, DI, порты, ViewModels и unit-тесты почти для всех спринтов с высокой дисциплиной (KISS/YAGNI/NRT/тесты). Но самые дорогие и рискованные части — **нативные движки (Tesseract, DjVu), реальная мутация PDF (страницы, аннотации в PDF, текст-редактор, DOCX) и интерактивный UI поверх рендера** — пока отсутствуют. Именно они дают 80 % пользовательской ценности альфы и 80 % оставшегося риска.
+
 ### 4.1. Заморозка scope для альфы
 
 Что **точно НЕ** делаем в Phase 1 (даже если успели):
