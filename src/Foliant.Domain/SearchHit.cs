@@ -5,7 +5,11 @@ public sealed record SearchHit(
     string Path,
     int PageIndex,
     string Snippet,
-    double Rank);
+    double Rank)
+{
+    /// <summary>1-based page number for display; <see cref="PageIndex"/> is 0-based.</summary>
+    public int PageNumber => PageIndex + 1;
+}
 
 public sealed record SearchQuery(
     string Text,

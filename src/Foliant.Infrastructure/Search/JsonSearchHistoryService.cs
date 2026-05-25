@@ -20,6 +20,11 @@ public sealed class JsonSearchHistoryService : ISearchHistoryService
     private readonly List<string> _items = [];
     private readonly Lock _gate = new();
 
+    // Saves are serialized by chaining onto the previous one (guarded by _gate): two
+    // concurrent saves would otherwise race on the same ".tmp" path and could persist
+    // an older snapshot last (lost update).
+    private Task _saveTail = Task.CompletedTask;
+
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         TypeInfoResolver = SearchHistoryJsonContext.Default,
@@ -129,21 +134,30 @@ public sealed class JsonSearchHistoryService : ISearchHistoryService
         ScheduleSave();
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
-        Justification = "Fire-and-forget background save must never crash the app; the failure is logged.")]
     private void ScheduleSave()
     {
-        _ = Task.Run(async () =>
+        lock (_gate)
         {
-            try
-            {
-                await SaveCoreAsync(CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _log.LogWarning(ex, "Failed to persist search history to {Path}.", _filePath);
-            }
-        });
+            _saveTail = _saveTail.ContinueWith(
+                _ => SaveGuardedAsync(),
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default).Unwrap();
+        }
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Fire-and-forget background save must never crash the app; the failure is logged.")]
+    private async Task SaveGuardedAsync()
+    {
+        try
+        {
+            await SaveCoreAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed to persist search history to {Path}.", _filePath);
+        }
     }
 
     private async Task SaveCoreAsync(CancellationToken ct)

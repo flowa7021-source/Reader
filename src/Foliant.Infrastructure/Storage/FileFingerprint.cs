@@ -30,7 +30,7 @@ public sealed class FileFingerprint : IFileFingerprint
                 bufferSize: HeadBytes,
                 useAsync: true);
 
-            var read = await ReadFullyAsync(stream, buffer, ct).ConfigureAwait(false);
+            var read = await ReadFullyAsync(stream, buffer, HeadBytes, ct).ConfigureAwait(false);
 
             using var sha = SHA256.Create();
             sha.TransformBlock(buffer, 0, read, null, 0);
@@ -46,12 +46,14 @@ public sealed class FileFingerprint : IFileFingerprint
         }
     }
 
-    private static async Task<int> ReadFullyAsync(Stream stream, byte[] buffer, CancellationToken ct)
+    private static async Task<int> ReadFullyAsync(Stream stream, byte[] buffer, int maxBytes, CancellationToken ct)
     {
+        // ArrayPool.Rent may hand back a buffer larger than requested; hash a fixed window
+        // (maxBytes) so the fingerprint is independent of the rented array's size.
         var total = 0;
-        while (total < buffer.Length)
+        while (total < maxBytes)
         {
-            var n = await stream.ReadAsync(buffer.AsMemory(total), ct).ConfigureAwait(false);
+            var n = await stream.ReadAsync(buffer.AsMemory(total, maxBytes - total), ct).ConfigureAwait(false);
             if (n == 0)
             {
                 break;

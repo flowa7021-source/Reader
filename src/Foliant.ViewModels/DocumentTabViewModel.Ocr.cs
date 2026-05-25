@@ -44,7 +44,10 @@ public sealed partial class DocumentTabViewModel
         {
             string fp = await _fingerprint.ComputeAsync(_filePath, _ocrCts.Token);
             var progress = new Progress<OcrProgress>(p => OcrStatus = $"{p.CompletedPages}/{p.TotalPages}");
-            OcrLayers = await _ocr.RecognizeDocumentAsync(_document, fp, new OcrOptions(), progress, _ocrCts.Token);
+            var options = _settings is not null
+                ? new OcrOptions(_settings.Current.Ocr.DefaultLanguage)
+                : new OcrOptions();
+            OcrLayers = await _ocr.RecognizeDocumentAsync(_document, fp, options, progress, _ocrCts.Token);
             _indexer?.EnqueueLayers(_filePath, OcrLayers);
             OcrStatus = $"OCR: {OcrLayers.Count} pages";
         }
@@ -68,5 +71,15 @@ public sealed partial class DocumentTabViewModel
     private bool CanCancelOcr => IsOcrRunning;
 
     [RelayCommand(CanExecute = nameof(CanCancelOcr))]
-    private void CancelOcr() => _ocrCts?.Cancel();
+    private void CancelOcr()
+    {
+        try
+        {
+            _ocrCts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The run already completed and disposed its CTS between IsOcrRunning and here.
+        }
+    }
 }

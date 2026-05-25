@@ -19,6 +19,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IDocumentIndexer? _indexer;
     private readonly IPageEditService? _pageEdit;
     private readonly OpenDocumentUseCase? _openUseCase;
+    private readonly ISettingsService? _settings;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -30,6 +31,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [NotifyPropertyChangedFor(nameof(CanMovePageDown))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCurrentPageCommand))]
     [NotifyCanExecuteChangedFor(nameof(MovePageDownCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunOcrCommand))]
     private int _pageCount;
 
     [ObservableProperty]
@@ -80,7 +82,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IFileFingerprint? fingerprint = null,
         IDocumentIndexer? indexer = null,
         IPageEditService? pageEdit = null,
-        OpenDocumentUseCase? openUseCase = null)
+        OpenDocumentUseCase? openUseCase = null,
+        ISettingsService? settings = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -100,6 +103,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _indexer = indexer;
         _pageEdit = pageEdit;
         _openUseCase = openUseCase;
+        _settings = settings;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;

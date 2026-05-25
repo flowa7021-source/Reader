@@ -84,13 +84,25 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
         var path = Path.Combine(_pagesDir, fileName);
         var tmp = path + ".tmp";
 
-        await using (var stream = File.Create(tmp))
+        // File write + metadata upsert run under the same gate as InvalidateDocumentAsync,
+        // so a put can't re-create a file/row for a document that was just invalidated
+        // (which would resurface as a stale cache hit).
+        await _writeGate.WaitAsync(ct).ConfigureAwait(false);
+        try
         {
-            await stream.WriteAsync(bytes, ct).ConfigureAwait(false);
-        }
-        File.Move(tmp, path, overwrite: true);
+            await using (var stream = File.Create(tmp))
+            {
+                await stream.WriteAsync(bytes, ct).ConfigureAwait(false);
+            }
+            File.Move(tmp, path, overwrite: true);
 
-        await UpsertEntryAsync(fileName, bytes.Length, key.DocFingerprint, ct).ConfigureAwait(false);
+            using var conn = Open();
+            UpsertEntry(conn, fileName, bytes.Length, key.DocFingerprint);
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
     }
 
     public async Task<bool> RemoveAsync(CacheKey key, CancellationToken ct)
@@ -259,27 +271,18 @@ public sealed class SqliteDiskCache : IDiskCache, IAsyncDisposable
         cmd.ExecuteNonQuery();
     }
 
-    private async Task UpsertEntryAsync(string fileName, int size, string docFingerprint, CancellationToken ct)
+    private static void UpsertEntry(SqliteConnection conn, string fileName, int size, string docFingerprint)
     {
-        await _writeGate.WaitAsync(ct).ConfigureAwait(false);
-        try
-        {
-            using var conn = Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = """
-                INSERT INTO entries(key, size, last_access, doc_fp) VALUES($k, $sz, $ts, $fp)
-                ON CONFLICT(key) DO UPDATE SET size=$sz, last_access=$ts, doc_fp=$fp
-            """;
-            cmd.Parameters.AddWithValue("$k", fileName);
-            cmd.Parameters.AddWithValue("$sz", size);
-            cmd.Parameters.AddWithValue("$ts", NowTicks());
-            cmd.Parameters.AddWithValue("$fp", docFingerprint);
-            cmd.ExecuteNonQuery();
-        }
-        finally
-        {
-            _writeGate.Release();
-        }
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO entries(key, size, last_access, doc_fp) VALUES($k, $sz, $ts, $fp)
+            ON CONFLICT(key) DO UPDATE SET size=$sz, last_access=$ts, doc_fp=$fp
+        """;
+        cmd.Parameters.AddWithValue("$k", fileName);
+        cmd.Parameters.AddWithValue("$sz", size);
+        cmd.Parameters.AddWithValue("$ts", NowTicks());
+        cmd.Parameters.AddWithValue("$fp", docFingerprint);
+        cmd.ExecuteNonQuery();
     }
 
     private async Task UpdateAccessTimeAsync(string fileName, CancellationToken ct)

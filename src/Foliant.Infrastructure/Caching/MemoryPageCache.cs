@@ -50,9 +50,9 @@ public sealed class MemoryPageCache(long capacityBytes, int stickyWindow = 5) : 
         // Простая стратегия: полный обход не нужен — DiskCache знает доc_fp; в RAM
         // мы выгоняем точечно, когда документ закрывается. Сейчас просто Clear по
         // всему кэшу при инвалидации (в Phase 1 OK; точечная инвалидация — Phase 2).
-        if (_stickyDocFp == docFingerprint)
+        lock (_stickyGate)
         {
-            lock (_stickyGate)
+            if (_stickyDocFp == docFingerprint)
             {
                 _stickyDocFp = null;
                 _stickyCenter = -1;

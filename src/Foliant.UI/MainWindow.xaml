@@ -275,7 +275,7 @@
                   <ListBox.ItemTemplate>
                     <DataTemplate>
                       <StackPanel Margin="0,4">
-                        <TextBlock Text="{Binding PageIndex, StringFormat='Page {0}'}"
+                        <TextBlock Text="{Binding PageNumber, StringFormat='Page {0}'}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource Foreground}" />
                         <TextBlock Text="{Binding Snippet}"

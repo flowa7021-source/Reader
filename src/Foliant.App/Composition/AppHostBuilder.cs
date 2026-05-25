@@ -150,7 +150,8 @@ internal static class AppHostBuilder
                 fingerprint: sp.GetService<IFileFingerprint>(),
                 indexer: sp.GetService<IDocumentIndexer>(),
                 pageEdit: sp.GetService<IPageEditService>(),
-                openUseCase: sp.GetService<OpenDocumentUseCase>()));
+                openUseCase: sp.GetService<OpenDocumentUseCase>(),
+                settings: sp.GetService<ISettingsService>()));
 
         // ILicenseManager — optional: dev-сборка может не регистрировать его
         // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис
