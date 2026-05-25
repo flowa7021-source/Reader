@@ -148,6 +148,11 @@
                   Click="OnExitMenuItemClick" />
       </MenuItem>
       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuTools]}">
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsRunOcr]}"
+                  Command="{Binding SelectedTab.RunOcrCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsCancelOcr]}"
+                  Command="{Binding SelectedTab.CancelOcrCommand}" />
+        <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsSettings]}"
                   Click="OnSettingsMenuItemClick" />
       </MenuItem>
@@ -269,6 +274,9 @@
       </StatusBarItem>
       <StatusBarItem HorizontalAlignment="Right">
         <StackPanel Orientation="Horizontal">
+          <TextBlock Text="{Binding SelectedTab.OcrStatus}"
+                     Foreground="{DynamicResource Foreground}"
+                     Margin="0,0,16,0" />
           <TextBlock Text="{Binding SelectedTab.PageInfo}"
                      Foreground="{DynamicResource Foreground}"
                      Margin="0,0,16,0" />

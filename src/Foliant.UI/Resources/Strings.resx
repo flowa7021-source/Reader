@@ -79,6 +79,12 @@
   <data name="MenuToolsSettings" xml:space="preserve">
     <value>_Settings...</value>
   </data>
+  <data name="MenuToolsRunOcr" xml:space="preserve">
+    <value>Recognize Text (_OCR)</value>
+  </data>
+  <data name="MenuToolsCancelOcr" xml:space="preserve">
+    <value>Cancel OCR</value>
+  </data>
   <data name="MenuView" xml:space="preserve">
     <value>_View</value>
   </data>

@@ -85,7 +85,7 @@ internal static class AppHostBuilder
         // сериализует вызовы). ITextLayerCache не зарегистрирован → pipeline получает null (ok).
         services.AddSingleton<IOcrEngine, PaddleOcrEngine>();
         services.AddSingleton<OcrPageUseCase>();
-        services.AddSingleton<OcrPipelineService>();
+        services.AddSingleton<IOcrPipelineService, OcrPipelineService>();
 
         // Annotations — JSON sidecar (Phase 1). Phase 2: embed in PDF via PdfPig.
         services.AddSingleton<IAnnotationStore>(sp =>
@@ -144,7 +144,9 @@ internal static class AppHostBuilder
                 sp.GetRequiredService<ISearchService>(),
                 sp.GetRequiredService<IAnnotationService>(),
                 sp.GetRequiredService<IBookmarkService>(),
-                sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>()));
+                sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>(),
+                ocr: sp.GetService<IOcrPipelineService>(),
+                fingerprint: sp.GetService<IFileFingerprint>()));
 
         // ILicenseManager — optional: dev-сборка может не регистрировать его
         // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис

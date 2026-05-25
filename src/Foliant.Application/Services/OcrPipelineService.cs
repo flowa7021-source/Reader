@@ -21,7 +21,7 @@ public readonly record struct OcrProgress(int CompletedPages, int TotalPages);
 public sealed class OcrPipelineService(
     OcrPageUseCase pageUseCase,
     ILogger<OcrPipelineService> log,
-    ITextLayerCache? textCache = null)
+    ITextLayerCache? textCache = null) : IOcrPipelineService
 {
     /// <summary>
     /// Распознаёт все страницы <paramref name="document"/>, возвращает список

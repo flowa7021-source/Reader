@@ -79,6 +79,12 @@
   <data name="MenuToolsSettings" xml:space="preserve">
     <value>_Настройки...</value>
   </data>
+  <data name="MenuToolsRunOcr" xml:space="preserve">
+    <value>Распознать текст (_OCR)</value>
+  </data>
+  <data name="MenuToolsCancelOcr" xml:space="preserve">
+    <value>Отменить OCR</value>
+  </data>
   <data name="MenuView" xml:space="preserve">
     <value>_Вид</value>
   </data>
