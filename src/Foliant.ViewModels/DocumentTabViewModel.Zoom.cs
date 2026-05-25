@@ -35,15 +35,21 @@ public sealed partial class DocumentTabViewModel
     [RelayCommand]
     private void ZoomIn()
     {
+        FitMode = FitMode.ActualSize;
         Zoom = Math.Min(MaxZoom, Math.Round(Zoom + ZoomStep, 2));
     }
 
     [RelayCommand]
     private void ZoomOut()
     {
+        FitMode = FitMode.ActualSize;
         Zoom = Math.Max(MinZoom, Math.Round(Zoom - ZoomStep, 2));
     }
 
     [RelayCommand]
-    private void ResetZoom() => Zoom = 1.0;
+    private void ResetZoom()
+    {
+        FitMode = FitMode.ActualSize;
+        Zoom = 1.0;
+    }
 }

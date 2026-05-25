@@ -100,3 +100,6 @@ appsettings.*.local.json
 
 # Performance baselines temp
 tests/Foliant.Performance/results/
+
+# Agent worktrees / local Claude state
+.claude/

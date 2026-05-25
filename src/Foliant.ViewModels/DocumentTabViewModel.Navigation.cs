@@ -36,6 +36,8 @@ public sealed partial class DocumentTabViewModel
         }
 
         RefreshCurrentPageAnnotations();
+        OnPropertyChanged(nameof(VisiblePageIndices));
+        ApplyFitIfNeeded();
         _ = RenderCurrentPageAsync(CancellationToken.None);
     }
 
