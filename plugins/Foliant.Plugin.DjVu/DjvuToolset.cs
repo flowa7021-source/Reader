@@ -1,12 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
+#if WINDOWS
 using Microsoft.Win32;
+#endif
 
 namespace Foliant.Plugin.DjVu;
 
 /// <summary>Resolved absolute paths to the DjVuLibre CLI executables.</summary>
 public sealed record DjvuToolset(string DdjvuPath, string DjvusedPath)
 {
+#if WINDOWS
     private const string RegistrySubKey = @"Software\Foliant\Plugins\DjVu";
+#endif
     private const string DdjvuExe = "ddjvu.exe";
     private const string DjvusedExe = "djvused.exe";
 
@@ -34,8 +38,13 @@ public sealed record DjvuToolset(string DdjvuPath, string DjvusedPath)
 
     private static string? ReadInstallDir()
     {
+#if WINDOWS
         using RegistryKey? key = Registry.CurrentUser.OpenSubKey(RegistrySubKey);
         return key?.GetValue(null) as string;
+#else
+        // Non-Windows: no registry; rely on PATH resolution (see ResolveExe).
+        return null;
+#endif
     }
 
     private static string? ResolveExe(string exeName, string? installDir)
