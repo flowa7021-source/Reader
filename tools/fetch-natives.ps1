@@ -84,7 +84,7 @@ function Get-PaddleModel($name, $targetDir) {
     $actual = (Get-FileHash $target -Algorithm SHA256).Hash.ToLower()
     if ($actual -ne $entry.sha256) {
         Remove-Item $target -Force
-        throw "SHA256 mismatch для paddleocr/$name: ожидал $($entry.sha256), получил $actual"
+        throw "SHA256 mismatch для paddleocr/${name}: ожидал $($entry.sha256), получил $actual"
     }
     tar -xf $target -C $targetDir
 }

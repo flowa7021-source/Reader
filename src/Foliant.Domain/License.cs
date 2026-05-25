@@ -37,11 +37,17 @@ public enum LicenseStatus
 
 public sealed record LicenseValidationResult(LicenseStatus Status, License? License, string? Reason)
 {
-    public static LicenseValidationResult Valid(License license) =>
-        new(LicenseStatus.Valid, license, null);
+    public static LicenseValidationResult Valid(License license)
+    {
+        ArgumentNullException.ThrowIfNull(license);
+        return new(LicenseStatus.Valid, license, null);
+    }
 
-    public static LicenseValidationResult Expired(License license) =>
-        new(LicenseStatus.Expired, license, $"License expired at {license.ExpiresAt:O}");
+    public static LicenseValidationResult Expired(License license)
+    {
+        ArgumentNullException.ThrowIfNull(license);
+        return new(LicenseStatus.Expired, license, $"License expired at {license.ExpiresAt:O}");
+    }
 
     public static LicenseValidationResult Invalid(string reason) =>
         new(LicenseStatus.Invalid, null, reason);
