@@ -78,6 +78,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IDiskCache>(sp =>
             new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
         services.AddSingleton<IOcrCache, OcrDiskCache>();
+        services.AddSingleton<ThumbnailRenderer>();
 
         // OCR pipeline (PaddleOCR in-process). Движок — синглтон (держит загруженные модели,
         // сериализует вызовы). ITextLayerCache не зарегистрирован → pipeline получает null (ok).
