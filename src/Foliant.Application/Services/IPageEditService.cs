@@ -17,4 +17,8 @@ public interface IPageEditService
     Task RotatePageAsync(IDocument document, int pageIndex, ViewRotation rotation, CancellationToken ct);
 
     Task DeletePageAsync(IDocument document, int pageIndex, CancellationToken ct);
+
+    /// <summary>Переупорядочить страницы. <paramref name="newOrder"/> — перестановка
+    /// 0-based индексов <c>0..PageCount-1</c> в желаемом порядке.</summary>
+    Task ReorderPagesAsync(IDocument document, IReadOnlyList<int> newOrder, CancellationToken ct);
 }

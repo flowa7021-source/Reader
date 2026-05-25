@@ -94,6 +94,12 @@
   <data name="MenuEditDeletePage" xml:space="preserve">
     <value>Delete Page</value>
   </data>
+  <data name="MenuEditMovePageUp" xml:space="preserve">
+    <value>Move Page Up</value>
+  </data>
+  <data name="MenuEditMovePageDown" xml:space="preserve">
+    <value>Move Page Down</value>
+  </data>
   <data name="CrashRecoveryTitle" xml:space="preserve">
     <value>Crash Recovery</value>
   </data>

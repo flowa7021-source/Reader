@@ -34,6 +34,15 @@ public sealed class PdfPageEditService : IPageEditService
         await editor.SaveAsync(null, ct).ConfigureAwait(false);
     }
 
+    public async Task ReorderPagesAsync(IDocument document, IReadOnlyList<int> newOrder, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(newOrder);
+        IDocumentEditor editor = GetEditor(document);
+        await editor.ApplyAsync(new ReorderPagesCommand(newOrder), ct).ConfigureAwait(false);
+        await editor.SaveAsync(null, ct).ConfigureAwait(false);
+    }
+
     private static IDocumentEditor GetEditor(IDocument document) =>
         document.GetEditor() ?? throw new InvalidOperationException("Document is read-only; no editor available.");
 }

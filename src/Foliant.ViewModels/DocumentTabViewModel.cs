@@ -27,7 +27,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PageInfo))]
     [NotifyPropertyChangedFor(nameof(CanDeleteCurrentPage))]
+    [NotifyPropertyChangedFor(nameof(CanMovePageDown))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCurrentPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MovePageDownCommand))]
     private int _pageCount;
 
     [ObservableProperty]
@@ -35,6 +37,10 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [NotifyPropertyChangedFor(nameof(CanGoBack))]
     [NotifyPropertyChangedFor(nameof(CanGoForward))]
     [NotifyPropertyChangedFor(nameof(IsCurrentPageBookmarked))]
+    [NotifyPropertyChangedFor(nameof(CanMovePageUp))]
+    [NotifyPropertyChangedFor(nameof(CanMovePageDown))]
+    [NotifyCanExecuteChangedFor(nameof(MovePageUpCommand))]
+    [NotifyCanExecuteChangedFor(nameof(MovePageDownCommand))]
     private int _currentPageIndex;
 
     [ObservableProperty]

@@ -172,6 +172,11 @@
                   Command="{Binding SelectedTab.RotateCurrentPageCommand}" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditDeletePage]}"
                   Command="{Binding SelectedTab.DeleteCurrentPageCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditMovePageUp]}"
+                  Command="{Binding SelectedTab.MovePageUpCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditMovePageDown]}"
+                  Command="{Binding SelectedTab.MovePageDownCommand}" />
       </MenuItem>
       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuView]}">
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTheme]}">

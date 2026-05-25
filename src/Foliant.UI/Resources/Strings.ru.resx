@@ -94,6 +94,12 @@
   <data name="MenuEditDeletePage" xml:space="preserve">
     <value>Удалить страницу</value>
   </data>
+  <data name="MenuEditMovePageUp" xml:space="preserve">
+    <value>Переместить страницу вверх</value>
+  </data>
+  <data name="MenuEditMovePageDown" xml:space="preserve">
+    <value>Переместить страницу вниз</value>
+  </data>
   <data name="CrashRecoveryTitle" xml:space="preserve">
     <value>Восстановление после сбоя</value>
   </data>
