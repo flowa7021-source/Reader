@@ -59,6 +59,36 @@ public sealed partial class DocumentTabViewModel
         return order;
     }
 
+    /// <summary>Новый порядок при перемещении страницы <paramref name="from"/> на позицию
+    /// <paramref name="to"/> (drag-and-drop в ленте миниатюр): remove + insert, не swap.</summary>
+    private static int[] BuildMoveOrder(int count, int from, int to)
+    {
+        var list = new List<int>(count);
+        for (int i = 0; i < count; i++)
+        {
+            list.Add(i);
+        }
+
+        int item = list[from];
+        list.RemoveAt(from);
+        list.Insert(to, item);
+        return [.. list];
+    }
+
+    private void SelectPageFromStrip(int pageIndex) =>
+        CurrentPageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, PageCount - 1));
+
+    private Task ReorderPagesViaStripAsync(int from, int to, CancellationToken ct)
+    {
+        if (_pageEdit is null || _openUseCase is null || from == to)
+        {
+            return Task.CompletedTask;
+        }
+
+        int[] order = BuildMoveOrder(PageCount, from, to);
+        return EditAndReloadAsync(d => _pageEdit!.ReorderPagesAsync(d, order, ct));
+    }
+
     [SuppressMessage("Design", "CA1031:Do not catch general exception types",
         Justification = "Page-edit failure must surface as an error message, not crash the tab.")]
     private async Task EditAndReloadAsync(Func<IDocument, Task> edit, Action? afterReload = null)
@@ -98,6 +128,13 @@ public sealed partial class DocumentTabViewModel
         _document = fresh;
         PageCount = fresh.PageCount;
         CurrentPageIndex = Math.Clamp(CurrentPageIndex, 0, Math.Max(0, PageCount - 1));
+
+        // Rebuild the thumbnail strip only when the page count actually changed (delete/insert);
+        // a pure reorder keeps the count and the strip already reflects the new order.
+        if (Thumbnails.Pages.Count != PageCount)
+        {
+            Thumbnails.SetPageCount(PageCount);
+        }
 
         await old.DisposeAsync();
         await RenderCurrentPageAsync(ct);
