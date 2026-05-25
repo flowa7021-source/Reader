@@ -85,6 +85,15 @@
   <data name="MenuToolsCancelOcr" xml:space="preserve">
     <value>Cancel OCR</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
+  <data name="MenuEditRotatePage" xml:space="preserve">
+    <value>Rotate Page 90°</value>
+  </data>
+  <data name="MenuEditDeletePage" xml:space="preserve">
+    <value>Delete Page</value>
+  </data>
   <data name="CrashRecoveryTitle" xml:space="preserve">
     <value>Crash Recovery</value>
   </data>

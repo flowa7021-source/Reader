@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Foliant.Application.Services;
+using Foliant.Application.UseCases;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
 
@@ -7,7 +8,7 @@ namespace Foliant.ViewModels;
 
 public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDisposable
 {
-    private readonly IDocument _document;
+    private IDocument _document;
     private readonly string _filePath;
     private readonly ISearchService _searchService;
     private readonly IAnnotationService _annotationService;
@@ -16,6 +17,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IOcrPipelineService? _ocr;
     private readonly IFileFingerprint? _fingerprint;
     private readonly IDocumentIndexer? _indexer;
+    private readonly IPageEditService? _pageEdit;
+    private readonly OpenDocumentUseCase? _openUseCase;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -23,6 +26,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanDeleteCurrentPage))]
+    [NotifyCanExecuteChangedFor(nameof(DeleteCurrentPageCommand))]
     private int _pageCount;
 
     [ObservableProperty]
@@ -67,7 +72,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         ISearchHistoryService? searchHistory = null,
         IOcrPipelineService? ocr = null,
         IFileFingerprint? fingerprint = null,
-        IDocumentIndexer? indexer = null)
+        IDocumentIndexer? indexer = null,
+        IPageEditService? pageEdit = null,
+        OpenDocumentUseCase? openUseCase = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -85,6 +92,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _ocr = ocr;
         _fingerprint = fingerprint;
         _indexer = indexer;
+        _pageEdit = pageEdit;
+        _openUseCase = openUseCase;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;

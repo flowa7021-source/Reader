@@ -85,6 +85,15 @@
   <data name="MenuToolsCancelOcr" xml:space="preserve">
     <value>Отменить OCR</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>_Правка</value>
+  </data>
+  <data name="MenuEditRotatePage" xml:space="preserve">
+    <value>Повернуть страницу на 90°</value>
+  </data>
+  <data name="MenuEditDeletePage" xml:space="preserve">
+    <value>Удалить страницу</value>
+  </data>
   <data name="CrashRecoveryTitle" xml:space="preserve">
     <value>Восстановление после сбоя</value>
   </data>

@@ -120,6 +120,7 @@ internal static class AppHostBuilder
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
+        services.AddSingleton<IPageEditService, PdfPageEditService>();
 
         // Application
         services.AddSingleton<OpenDocumentUseCase>();
@@ -147,7 +148,9 @@ internal static class AppHostBuilder
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>(),
                 ocr: sp.GetService<IOcrPipelineService>(),
                 fingerprint: sp.GetService<IFileFingerprint>(),
-                indexer: sp.GetService<IDocumentIndexer>()));
+                indexer: sp.GetService<IDocumentIndexer>(),
+                pageEdit: sp.GetService<IPageEditService>(),
+                openUseCase: sp.GetService<OpenDocumentUseCase>()));
 
         // ILicenseManager — optional: dev-сборка может не регистрировать его
         // (нет публичного ключа в скоупе тестов). Factory-DI отдаёт null когда сервис

@@ -167,6 +167,12 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsSettings]}"
                   Click="OnSettingsMenuItemClick" />
       </MenuItem>
+      <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEdit]}">
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditRotatePage]}"
+                  Command="{Binding SelectedTab.RotateCurrentPageCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuEditDeletePage]}"
+                  Command="{Binding SelectedTab.DeleteCurrentPageCommand}" />
+      </MenuItem>
       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuView]}">
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTheme]}">
           <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ThemeLight]}"
