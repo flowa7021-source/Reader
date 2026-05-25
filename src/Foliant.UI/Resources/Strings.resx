@@ -85,6 +85,24 @@
   <data name="MenuToolsCancelOcr" xml:space="preserve">
     <value>Cancel OCR</value>
   </data>
+  <data name="CrashRecoveryTitle" xml:space="preserve">
+    <value>Crash Recovery</value>
+  </data>
+  <data name="CrashRecoveryHeader" xml:space="preserve">
+    <value>Foliant found unsaved actions from a previous session. Discard them, or keep them for later.</value>
+  </data>
+  <data name="CrashRecoveryActions" xml:space="preserve">
+    <value>unsaved action(s)</value>
+  </data>
+  <data name="CrashRecoveryDismiss" xml:space="preserve">
+    <value>Discard</value>
+  </data>
+  <data name="CrashRecoveryDismissAll" xml:space="preserve">
+    <value>Discard All</value>
+  </data>
+  <data name="CrashRecoveryClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
   <data name="MenuView" xml:space="preserve">
     <value>_View</value>
   </data>

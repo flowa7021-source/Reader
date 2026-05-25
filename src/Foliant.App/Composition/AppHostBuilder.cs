@@ -166,5 +166,8 @@ internal static class AppHostBuilder
         services.AddTransient<MainWindow>();
         services.AddTransient<SettingsWindow>();
         services.AddTransient<Func<SettingsWindow>>(sp => () => sp.GetRequiredService<SettingsWindow>());
+        services.AddTransient<CrashRecoveryViewModel>();
+        services.AddTransient<CrashRecoveryWindow>();
+        services.AddTransient<Func<CrashRecoveryWindow>>(sp => () => sp.GetRequiredService<CrashRecoveryWindow>());
     }
 }
