@@ -26,7 +26,6 @@ public static class PageGeometry
     /// <summary>Точка PDF (pt, origin внизу-слева) → пиксель рендера (origin вверху-слева).</summary>
     public static (double X, double Y) PointToPixel(double xPt, double yPt, PageSize page, double zoom)
     {
-        ArgumentNullException.ThrowIfNull(page);
         double scale = PixelsPerPoint(zoom);
         return (xPt * scale, (page.HeightPt - yPt) * scale);
     }
@@ -34,7 +33,6 @@ public static class PageGeometry
     /// <summary>Пиксель рендера (origin вверху-слева) → точка PDF (pt, origin внизу-слева).</summary>
     public static (double X, double Y) PixelToPoint(double xPx, double yPx, PageSize page, double zoom)
     {
-        ArgumentNullException.ThrowIfNull(page);
         double scale = PixelsPerPoint(zoom);
         return (xPx / scale, page.HeightPt - yPx / scale);
     }
@@ -46,7 +44,6 @@ public static class PageGeometry
     public static PixelRect ToPixels(AnnotationRect r, PageSize page, double zoom)
     {
         ArgumentNullException.ThrowIfNull(r);
-        ArgumentNullException.ThrowIfNull(page);
         double scale = PixelsPerPoint(zoom);
         double topPx = (page.HeightPt - (r.Y + r.Height)) * scale;
         return new PixelRect(r.X * scale, topPx, r.Width * scale, r.Height * scale);
@@ -58,7 +55,6 @@ public static class PageGeometry
     /// </summary>
     public static AnnotationRect ToPoints(PixelRect r, PageSize page, double zoom)
     {
-        ArgumentNullException.ThrowIfNull(page);
         double scale = PixelsPerPoint(zoom);
         double wPt = r.Width / scale;
         double hPt = r.Height / scale;
