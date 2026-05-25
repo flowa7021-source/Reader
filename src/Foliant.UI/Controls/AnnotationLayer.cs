@@ -1,0 +1,199 @@
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
+using Foliant.Domain;
+
+namespace Foliant.UI.Controls;
+
+/// <summary>
+/// Прозрачный оверлей поверх <see cref="PageSurface"/>, рисующий аннотации текущей страницы.
+/// Геометрия аннотаций хранится в PDF-точках (origin внизу-слева); слой конвертирует её в
+/// пиксели рендера через <see cref="PageGeometry"/>, выводя размер страницы из размеров
+/// текущего рендера и zoom — поэтому оверлей всегда совпадает с картинкой страницы.
+/// Двойной клик создаёт sticky-note через <see cref="CreateNoteCommand"/>.
+/// </summary>
+[SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
+    Justification = "Instantiated via XAML <ui:AnnotationLayer/> in MainWindow.xaml.")]
+internal sealed class AnnotationLayer : FrameworkElement
+{
+    public static readonly DependencyProperty AnnotationsProperty = DependencyProperty.Register(
+        nameof(Annotations), typeof(IEnumerable<Annotation>), typeof(AnnotationLayer),
+        new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender, OnAnnotationsChanged));
+
+    public static readonly DependencyProperty PageRenderProperty = DependencyProperty.Register(
+        nameof(PageRender), typeof(IPageRender), typeof(AnnotationLayer),
+        new FrameworkPropertyMetadata(null,
+            FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.AffectsMeasure));
+
+    public static readonly DependencyProperty ZoomProperty = DependencyProperty.Register(
+        nameof(Zoom), typeof(double), typeof(AnnotationLayer),
+        new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty CreateNoteCommandProperty = DependencyProperty.Register(
+        nameof(CreateNoteCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
+
+    public IEnumerable<Annotation>? Annotations
+    {
+        get => (IEnumerable<Annotation>?)GetValue(AnnotationsProperty);
+        set => SetValue(AnnotationsProperty, value);
+    }
+
+    public IPageRender? PageRender
+    {
+        get => (IPageRender?)GetValue(PageRenderProperty);
+        set => SetValue(PageRenderProperty, value);
+    }
+
+    public double Zoom
+    {
+        get => (double)GetValue(ZoomProperty);
+        set => SetValue(ZoomProperty, value);
+    }
+
+    public ICommand? CreateNoteCommand
+    {
+        get => (ICommand?)GetValue(CreateNoteCommandProperty);
+        set => SetValue(CreateNoteCommandProperty, value);
+    }
+
+    private static void OnAnnotationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        var layer = (AnnotationLayer)d;
+        if (e.OldValue is INotifyCollectionChanged oldCol)
+        {
+            oldCol.CollectionChanged -= layer.OnCollectionChanged;
+        }
+
+        if (e.NewValue is INotifyCollectionChanged newCol)
+        {
+            newCol.CollectionChanged += layer.OnCollectionChanged;
+        }
+    }
+
+    private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => InvalidateVisual();
+
+    protected override Size MeasureOverride(Size availableSize) =>
+        PageRender is { } r ? new Size(r.WidthPx, r.HeightPx) : base.MeasureOverride(availableSize);
+
+    protected override void OnRender(DrawingContext dc)
+    {
+        ArgumentNullException.ThrowIfNull(dc);
+        if (PageRender is not { } render)
+        {
+            return;
+        }
+
+        // Transparent fill makes the whole overlay hit-testable (for the double-click handler).
+        dc.DrawRectangle(Brushes.Transparent, null, new Rect(RenderSize));
+
+        if (Annotations is null)
+        {
+            return;
+        }
+
+        var page = PageOf(render);
+        foreach (Annotation a in Annotations)
+        {
+            Draw(dc, a, page);
+        }
+    }
+
+    private void Draw(DrawingContext dc, Annotation a, PageSize page)
+    {
+        Color color = ParseColor(a.ColorHex);
+        switch (a.Kind)
+        {
+            case AnnotationKind.Highlight when a.Bounds is { } b:
+                dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x60, color.R, color.G, color.B)), null, ToRect(b, page));
+                break;
+            case AnnotationKind.StickyNote when a.Bounds is { } b:
+                DrawNote(dc, ToRect(b, page), color);
+                break;
+            case AnnotationKind.Freehand when a.InkPoints is { Count: > 1 }:
+                DrawInk(dc, a.InkPoints, page, color);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void DrawNote(DrawingContext dc, Rect r, Color color)
+    {
+        var brush = new SolidColorBrush(color);
+        var pen = new Pen(Brushes.DimGray, 1);
+        dc.DrawRectangle(brush, pen, r);
+    }
+
+    private void DrawInk(DrawingContext dc, IReadOnlyList<AnnotationPoint> points, PageSize page, Color color)
+    {
+        var pen = new Pen(new SolidColorBrush(color), 2) { LineJoin = PenLineJoin.Round };
+        var geometry = new StreamGeometry();
+        using (StreamGeometryContext ctx = geometry.Open())
+        {
+            ctx.BeginFigure(ToPoint(points[0], page), isFilled: false, isClosed: false);
+            for (int i = 1; i < points.Count; i++)
+            {
+                ctx.LineTo(ToPoint(points[i], page), isStroked: true, isSmoothJoin: true);
+            }
+        }
+
+        geometry.Freeze();
+        dc.DrawGeometry(null, pen, geometry);
+    }
+
+    private Rect ToRect(AnnotationRect b, PageSize page)
+    {
+        PixelRect p = PageGeometry.ToPixels(b, page, Zoom);
+        return new Rect(p.X, p.Y, p.Width, p.Height);
+    }
+
+    private Point ToPoint(AnnotationPoint pt, PageSize page)
+    {
+        (double x, double y) = PageGeometry.PointToPixel(pt.X, pt.Y, page, Zoom);
+        return new Point(x, y);
+    }
+
+    private PageSize PageOf(IPageRender render)
+    {
+        double scale = PageGeometry.PixelsPerPoint(Zoom);
+        return new PageSize(render.WidthPx / scale, render.HeightPx / scale);
+    }
+
+    protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+        base.OnMouseLeftButtonDown(e);
+
+        if (e.ClickCount != 2 || PageRender is not { } render || CreateNoteCommand is null)
+        {
+            return;
+        }
+
+        Point px = e.GetPosition(this);
+        PageSize page = PageOf(render);
+        (double xPt, double yPt) = PageGeometry.PixelToPoint(px.X, px.Y, page, Zoom);
+        var location = new AnnotationPoint(xPt, yPt);
+        if (CreateNoteCommand.CanExecute(location))
+        {
+            CreateNoteCommand.Execute(location);
+            e.Handled = true;
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Malformed ColorHex must not crash rendering; fall back to a default colour.")]
+    private static Color ParseColor(string hex)
+    {
+        try
+        {
+            return (Color)ColorConverter.ConvertFromString(hex);
+        }
+        catch (Exception)
+        {
+            return Colors.Gold;
+        }
+    }
+}

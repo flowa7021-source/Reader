@@ -109,6 +109,23 @@ public sealed partial class DocumentTabViewModel
         }
     }
 
+    /// <summary>Размер новой sticky-note по умолчанию (в PDF-точках).</summary>
+    private const double DefaultNoteSizePt = 18.0;
+
+    /// <summary>Создать sticky-note в точке (PDF user space) — вызывается двойным кликом по
+    /// странице. Точка трактуется как верхний-левый угол заметки (в PDF ось Y растёт вверх).</summary>
+    [RelayCommand]
+    private Task AddNoteAtAsync(AnnotationPoint? location)
+    {
+        if (location is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var bounds = new AnnotationRect(location.X, location.Y - DefaultNoteSizePt, DefaultNoteSizePt, DefaultNoteSizePt);
+        return AddNoteAsync(CurrentPageIndex, bounds, "Note", "#FFEB3B", CancellationToken.None);
+    }
+
     [RelayCommand]
     private async Task RemoveAnnotationAsync(Annotation? annotation)
     {

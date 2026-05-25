@@ -193,9 +193,14 @@
             <Grid Grid.Column="0">
               <ScrollViewer HorizontalScrollBarVisibility="Auto"
                             VerticalScrollBarVisibility="Auto">
-                <ui:PageSurface PageRender="{Binding CurrentRender}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Top" />
+                <Grid HorizontalAlignment="Center"
+                      VerticalAlignment="Top">
+                  <ui:PageSurface PageRender="{Binding CurrentRender}" />
+                  <ui:AnnotationLayer PageRender="{Binding CurrentRender}"
+                                      Annotations="{Binding CurrentPageAnnotations}"
+                                      Zoom="{Binding Zoom}"
+                                      CreateNoteCommand="{Binding AddNoteAtCommand}" />
+                </Grid>
               </ScrollViewer>
               <TextBlock Text="{Binding ErrorMessage}"
                          Foreground="Red"
