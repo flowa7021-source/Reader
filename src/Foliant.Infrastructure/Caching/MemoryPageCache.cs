@@ -79,15 +79,18 @@ public sealed class MemoryPageCache(long capacityBytes, int stickyWindow = 5) : 
             return;
         }
 
-        for (var p = Math.Max(0, center - stickyWindow); p <= center + stickyWindow; p++)
+        // Трогаем РЕАЛЬНЫЕ ключи sticky-окна (любой zoom/engine/flags) — не угадываем их.
+        // Порядок — по убыванию удалённости от центра: центр касаем последним, чтобы он
+        // оказался самым свежим (head) и переживал эвикцию дольше соседей при нехватке RAM.
+        var sticky = _cache.KeysSnapshot()
+            .Where(k => string.Equals(k.DocFingerprint, doc, StringComparison.Ordinal)
+                        && Math.Abs(k.PageIndex - center) <= stickyWindow)
+            .OrderByDescending(k => Math.Abs(k.PageIndex - center))
+            .ToList();
+
+        foreach (var k in sticky)
         {
-            // TryGet поднимает запись в head — этого достаточно, чтобы LRU не выгнал.
-            // Делаем перебор по всем зум-бакетам, которые могли быть закэшированы.
-            // Для простоты — пробуем вытащить ключи с наиболее вероятными flags=0..7.
-            for (var flags = 0; flags < 8; flags++)
-            {
-                _ = _cache.TryGet(new CacheKey(doc, p, EngineVersion: 1, ZoomBucket: 100, Flags: flags), out _);
-            }
+            _ = _cache.TryGet(k, out _);
         }
     }
 }

@@ -23,6 +23,7 @@ public sealed class DocumentTabViewModelTests
         {
             document = Substitute.For<IDocument>();
             document.PageCount.Returns(10);
+            document.Metadata.Returns(new DocumentMetadata(null, null, null, null, null, new Dictionary<string, string>()));
         }
 
         if (search is null)

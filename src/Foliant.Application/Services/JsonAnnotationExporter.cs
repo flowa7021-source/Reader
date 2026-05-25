@@ -17,7 +17,8 @@ public sealed class JsonAnnotationExporter : IAnnotationExporter
     }
 }
 
-[JsonSourceGenerationOptions(WriteIndented = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSourceGenerationOptions(WriteIndented = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    UseStringEnumConverter = true)]
 [JsonSerializable(typeof(IReadOnlyList<Annotation>))]
 [JsonSerializable(typeof(Annotation))]
 [JsonSerializable(typeof(AnnotationRect))]
