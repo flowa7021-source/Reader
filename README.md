@@ -25,7 +25,7 @@
 ## Стек
 
 - **C# / .NET 10 LTS** + **WPF + MVVM** (CommunityToolkit.Mvvm)
-- **PDFium** (рендер) + **PdfPig** (модификация структуры) + **Tesseract LSTM** (OCR)
+- **PDFium** (рендер) + **PdfPig** (модификация структуры) + **PaddleOCR** через Sdcb (OCR, in-process)
 - **DjVu** через опциональный out-of-process плагин (DjVuLibre)
 - **SQLite + FTS5** для поиска
 - **Inno Setup** для инсталлятора

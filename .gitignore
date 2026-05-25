@@ -81,8 +81,8 @@ tests/**/runtimes/
 # Closed-source Pro repository (submodule, опц.)
 pro/
 
-# Tessdata models (большие, тащим через fetch-natives)
-**/tessdata/*.traineddata
+# OCR-модели PaddleOCR (большие, тащим через fetch-natives в native/paddleocr/)
+native/paddleocr/
 
 # Test assets — храним через Git LFS, локально могут быть распакованы
 tests/assets/_unpacked/

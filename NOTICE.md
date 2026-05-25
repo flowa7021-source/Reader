@@ -9,8 +9,10 @@ Foliant использует следующие сторонние компон�
 | .NET 10 LTS Runtime | 10.x | MIT | Среда выполнения |
 | PDFium (через PDFiumCore) | upstream | BSD-3-Clause / Apache-2.0 | Рендеринг PDF |
 | PdfPig | 0.1.x | Apache-2.0 | Модификация структуры PDF |
-| Tesseract (через Tesseract NuGet) | 5.x | Apache-2.0 | OCR-движок |
-| SixLabors.ImageSharp | 3.x | Apache-2.0 (Six Labors Split) | Препроцессинг изображений |
+| PaddleOCR (через Sdcb.PaddleOCR) | 2.x | Apache-2.0 (upstream PaddleOCR), MIT (Sdcb-обёртки) | OCR-движок |
+| PaddleInference runtime (Sdcb.PaddleInference.runtime.win64.mkl) | 2.x | Apache-2.0 | Нативный inference-рантайм OCR (win-x64) |
+| OpenCvSharp4 (+ runtime.win) | 4.x | Apache-2.0 (OpenCvSharp), BSD-3 (OpenCV native) | Обработка изображений для OCR |
+| SixLabors.ImageSharp | 3.x | Apache-2.0 (Six Labors Split) | Препроцессинг изображений (опционально) |
 | Microsoft.Data.Sqlite | 9.x | MIT | SQLite + FTS5 |
 | BouncyCastle.Cryptography | 2.x | MIT-style | Криптография, подписи |
 | CommunityToolkit.Mvvm | 8.x | MIT | MVVM helpers |

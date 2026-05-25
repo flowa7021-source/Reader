@@ -4,6 +4,7 @@ using Foliant.Application.Services;
 using Foliant.Application.Settings;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
+using Foliant.Engines.Ocr;
 using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Bookmarks;
@@ -75,6 +76,12 @@ internal static class AppHostBuilder
         services.AddSingleton<IDiskCache>(sp =>
             new SqliteDiskCache(AppPaths.Cache, sp.GetRequiredService<ILogger<SqliteDiskCache>>()));
         services.AddSingleton<IOcrCache, OcrDiskCache>();
+
+        // OCR pipeline (PaddleOCR in-process). Движок — синглтон (держит загруженные модели,
+        // сериализует вызовы). ITextLayerCache не зарегистрирован → pipeline получает null (ok).
+        services.AddSingleton<IOcrEngine, PaddleOcrEngine>();
+        services.AddSingleton<OcrPageUseCase>();
+        services.AddSingleton<OcrPipelineService>();
 
         // Annotations — JSON sidecar (Phase 1). Phase 2: embed in PDF via PdfPig.
         services.AddSingleton<IAnnotationStore>(sp =>
