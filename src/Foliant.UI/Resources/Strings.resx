@@ -103,6 +103,12 @@
   <data name="CrashRecoveryClose" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="TrialActiveFormat" xml:space="preserve">
+    <value>Trial — {0} day(s) left</value>
+  </data>
+  <data name="TrialExpired" xml:space="preserve">
+    <value>Trial expired — Pro features are locked</value>
+  </data>
   <data name="MenuView" xml:space="preserve">
     <value>_View</value>
   </data>

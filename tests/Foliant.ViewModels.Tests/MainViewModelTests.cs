@@ -16,7 +16,8 @@ public sealed class MainViewModelTests
         ISettingsService? settings = null,
         ILocalizationService? localization = null,
         IDocumentIndexer? indexer = null,
-        ILicenseManager? licenseManager = null)
+        ILicenseManager? licenseManager = null,
+        ITrialService? trial = null)
     {
         var useCase = new OpenDocumentUseCase([], NullLogger<OpenDocumentUseCase>.Instance);
         Func<IDocument, string, DocumentTabViewModel> factory = (_, _) => throw new NotSupportedException();
@@ -39,7 +40,34 @@ public sealed class MainViewModelTests
         indexer ??= Substitute.For<IDocumentIndexer>();
 
         return new MainViewModel(useCase, factory, recents, settings, localization, indexer,
-            NullLogger<MainViewModel>.Instance, licenseManager);
+            NullLogger<MainViewModel>.Instance, licenseManager, trial);
+    }
+
+    [Fact]
+    public async Task Initialize_WhenTrialActive_SetsLocalizedBanner()
+    {
+        var localization = Substitute.For<ILocalizationService>();
+        localization["TrialActiveFormat"].Returns("Trial — {0} day(s) left");
+        var trial = Substitute.For<ITrialService>();
+        trial.StartAsync(Arg.Any<CancellationToken>())
+            .Returns(new TrialEvaluation(TrialStatus.Active, 23, null));
+
+        var vm = CreateVm(localization: localization, trial: trial);
+        await vm.InitializeAsync(CancellationToken.None);
+
+        vm.TrialMessage.Should().Be("Trial — 23 day(s) left");
+        vm.IsTrialBannerVisible.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Initialize_WhenNoTrialService_NoBanner()
+    {
+        var vm = CreateVm();
+
+        await vm.InitializeAsync(CancellationToken.None);
+
+        vm.IsTrialBannerVisible.Should().BeFalse();
+        vm.TrialMessage.Should().BeNull();
     }
 
     [Fact]

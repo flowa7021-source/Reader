@@ -103,6 +103,12 @@
   <data name="CrashRecoveryClose" xml:space="preserve">
     <value>Закрыть</value>
   </data>
+  <data name="TrialActiveFormat" xml:space="preserve">
+    <value>Пробный период — осталось дней: {0}</value>
+  </data>
+  <data name="TrialExpired" xml:space="preserve">
+    <value>Пробный период истёк — Pro-функции заблокированы</value>
+  </data>
   <data name="MenuView" xml:space="preserve">
     <value>_Вид</value>
   </data>

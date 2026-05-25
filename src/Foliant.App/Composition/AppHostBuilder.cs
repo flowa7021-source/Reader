@@ -160,7 +160,8 @@ internal static class AppHostBuilder
             sp.GetRequiredService<ILocalizationService>(),
             sp.GetRequiredService<IDocumentIndexer>(),
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<MainViewModel>(),
-            sp.GetService<ILicenseManager>()));
+            sp.GetService<ILicenseManager>(),
+            sp.GetService<ITrialService>()));
         services.AddTransient<SettingsViewModel>();
 
         // Views

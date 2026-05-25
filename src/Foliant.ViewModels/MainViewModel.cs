@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Foliant.Application.Services;
@@ -17,6 +18,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ILocalizationService _localization;
     private readonly IDocumentIndexer _indexer;
     private readonly ILicenseManager? _licenseManager;
+    private readonly ITrialService? _trial;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -43,6 +45,15 @@ public sealed partial class MainViewModel : ObservableObject
     public LicenseStatusViewModel LicenseStatusView =>
         new(LicenseStatus, DateTimeOffset.UtcNow);
 
+    /// <summary>Сообщение trial-баннера (например, «Trial — 23 days left») или <c>null</c>,
+    /// если триал неприменим/не оценён. Обновляется в <see cref="InitializeAsync"/>.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTrialBannerVisible))]
+    private string? _trialMessage;
+
+    /// <summary>True если есть сообщение о пробном периоде — биндится к видимости баннера.</summary>
+    public bool IsTrialBannerVisible => TrialMessage is not null;
+
     public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
 
     public ObservableCollection<string> RecentFiles { get; } = [];
@@ -67,7 +78,8 @@ public sealed partial class MainViewModel : ObservableObject
         ILocalizationService localization,
         IDocumentIndexer indexer,
         ILogger<MainViewModel> logger,
-        ILicenseManager? licenseManager = null)
+        ILicenseManager? licenseManager = null,
+        ITrialService? trial = null)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
@@ -84,6 +96,7 @@ public sealed partial class MainViewModel : ObservableObject
         _localization = localization;
         _indexer = indexer;
         _licenseManager = licenseManager;
+        _trial = trial;
         _logger = logger;
 
         // Tabs.Count → PropertyChanged for TabsCount + HasOpenTab.
@@ -108,6 +121,33 @@ public sealed partial class MainViewModel : ObservableObject
         _localization.SetCulture(_settings.Current.Language);
         await RefreshRecentsAsync(ct);
         await RefreshLicenseStatusInternalAsync(ct);
+        await EvaluateTrialInternalAsync(ct);
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Trial evaluation failure must not crash startup; the banner just stays hidden.")]
+    private async Task EvaluateTrialInternalAsync(CancellationToken ct)
+    {
+        if (_trial is null)
+        {
+            return;
+        }
+
+        try
+        {
+            TrialEvaluation eval = await _trial.StartAsync(ct);
+            TrialMessage = eval.Status switch
+            {
+                TrialStatus.Active => string.Format(CultureInfo.CurrentCulture, _localization["TrialActiveFormat"], eval.DaysRemaining),
+                TrialStatus.Expired or TrialStatus.Tampered => _localization["TrialExpired"],
+                _ => null,
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Trial evaluation failed.");
+            TrialMessage = null;
+        }
     }
 
     [RelayCommand]
