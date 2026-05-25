@@ -10,6 +10,7 @@ using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
 using Foliant.Infrastructure.Export;
+using Foliant.Infrastructure.Licensing;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
@@ -120,6 +121,13 @@ internal static class AppHostBuilder
         // Document export — потребитель выбирает реализацию по CanExport(targetFormat).
         services.AddSingleton<IDocumentExportService, PlainTextDocumentExportService>();
         services.AddSingleton<IDocumentExportService, DocxDocumentExportService>();
+
+        // Licensing storage + trial (Windows-only persistence: DPAPI + HKCU + marker).
+        // ILicenseManager (требует публичный ключ верификатора) подключается на UI-этапе.
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<ILicenseStorage, DpapiLicenseStorage>();
+        services.AddSingleton<TrialStores>();
+        services.AddSingleton<ITrialService, TrialPersistenceService>();
 
         // ViewModels
         services.AddTransient<Func<IDocument, string, DocumentTabViewModel>>(sp =>

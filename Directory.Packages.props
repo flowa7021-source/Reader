@@ -55,6 +55,13 @@
     <PackageVersion Include="BouncyCastle.Cryptography" Version="2.5.0" />
   </ItemGroup>
 
+  <!-- DPAPI + реестр для хранения лицензии/триала (Windows-only). Версии сверить под
+       NuGet-audit; на net*-windows эти API поставляются отдельными пакетами. -->
+  <ItemGroup Label="WindowsSecurity">
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
+  </ItemGroup>
+
   <ItemGroup Label="MEF">
     <PackageVersion Include="System.Composition" Version="9.0.0" />
   </ItemGroup>
