@@ -51,6 +51,33 @@ public sealed class DocumentTabViewModelAnnotationTests
     }
 
     [Fact]
+    public async Task AddNoteAtPage_CreatesStickyNoteOnSpecifiedPage_NotCurrent()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann); // CurrentPageIndex == 0
+
+        await vm.AddNoteAtPageAsync(2, new AnnotationPoint(100, 700));
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.StickyNote && a.PageIndex == 2),
+            Arg.Any<CancellationToken>());
+        // Page 2 != current page 0, so it must NOT appear in the current-page snapshot.
+        vm.CurrentPageAnnotations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AddNoteAtPage_NullLocation_IsNoOp()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+
+        await vm.AddNoteAtPageAsync(1, null);
+
+        await ann.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public void SelectAnnotationTool_SetsActiveTool_AndTogglesOff()
     {
         var vm = CreateVm(Substitute.For<IAnnotationService>());
