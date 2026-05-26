@@ -142,7 +142,8 @@ internal static class AppHostBuilder
         services.AddSingleton<ITrialService, TrialPersistenceService>();
 
         // License verification — ECDSA P-256 over the embedded public key (LicenseKeys.PublicKeyPem).
-        services.AddSingleton<ILicenseVerifier>(_ => new EcdsaLicenseVerifier(LicenseKeys.PublicKeyPem));
+        services.AddSingleton<ILicenseVerifier>(_ =>
+            new EcdsaLicenseVerifier(LicenseKeys.PublicKeyPem, LicenseKeys.RevokedSignatureHashes));
         services.AddSingleton<ILicenseManager, LicenseManager>();
 
         // Update check (PROJECT_BOARD §7.4): GitHub Releases, once/day, opt-out via settings.
