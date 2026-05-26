@@ -58,11 +58,8 @@ internal sealed class DjvuDocument : IDocument
             .ConfigureAwait(false);
 
         PpmImage img = PpmParser.Parse(ppm);
-        if (opts.Theme is RenderTheme.Dark or RenderTheme.HighContrast)
-        {
-            // Parser returns a freshly owned buffer, so in-place mutation is safe.
-            InvertBgr(MemoryMarshal.AsMemory(img.Bgra32).Span);
-        }
+        // Parser returns a freshly owned buffer, so in-place mutation is safe.
+        RenderColorMap.ApplyTheme(MemoryMarshal.AsMemory(img.Bgra32).Span, opts.Theme);
 
         // ddjvu renders at native_size * zoom (see BuildRenderArgsAsync), so the zoom-independent
         // page size — the basis for annotation pixel↔page mapping — is recovered by dividing back.
@@ -170,15 +167,5 @@ internal sealed class DjvuDocument : IDocument
         }
 
         return Math.Max(1, (int)Math.Round(px));
-    }
-
-    private static void InvertBgr(Span<byte> bytes)
-    {
-        for (int i = 0; i < bytes.Length; i += 4)
-        {
-            bytes[i] = (byte)(255 - bytes[i]);         // B
-            bytes[i + 1] = (byte)(255 - bytes[i + 1]); // G
-            bytes[i + 2] = (byte)(255 - bytes[i + 2]); // R; alpha unchanged
-        }
     }
 }

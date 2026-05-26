@@ -1,9 +1,8 @@
 using FluentAssertions;
 using Foliant.Domain;
-using Foliant.Engines.Pdf;
 using Xunit;
 
-namespace Foliant.Engines.Pdf.Tests;
+namespace Foliant.Domain.Tests;
 
 public sealed class RenderColorMapTests
 {
