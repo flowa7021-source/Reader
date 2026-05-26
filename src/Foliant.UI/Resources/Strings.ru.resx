@@ -229,4 +229,7 @@
   <data name="SearchInProgress" xml:space="preserve">
     <value>Поиск...</value>
   </data>
+  <data name="AnnotationContextDelete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
 </root>

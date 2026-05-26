@@ -229,4 +229,7 @@
   <data name="SearchInProgress" xml:space="preserve">
     <value>Searching...</value>
   </data>
+  <data name="AnnotationContextDelete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
 </root>

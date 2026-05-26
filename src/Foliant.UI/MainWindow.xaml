@@ -432,7 +432,16 @@
                                 <TextBlock Margin="0,1"
                                            TextWrapping="Wrap"
                                            Foreground="{DynamicResource Foreground}"
-                                           Text="{Binding Text, TargetNullValue='(highlight)'}" />
+                                           Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Border}}"
+                                           Text="{Binding Text, TargetNullValue='(highlight)'}">
+                                  <TextBlock.ContextMenu>
+                                    <ContextMenu>
+                                      <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnnotationContextDelete]}"
+                                                Command="{Binding PlacementTarget.Tag.RemoveAnnotationCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                CommandParameter="{Binding}" />
+                                    </ContextMenu>
+                                  </TextBlock.ContextMenu>
+                                </TextBlock>
                               </DataTemplate>
                             </ItemsControl.ItemTemplate>
                           </ItemsControl>
