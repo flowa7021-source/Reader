@@ -66,6 +66,19 @@ jobs:
           --no-build
           --filter "Category=Integration"
 
+      # DjVu engine runs out-of-process via DjVuLibre — install it and exercise the real
+      # ddjvu/djvused round-trip (render + page size) against a tiny bundled sample.
+      - name: Install DjVuLibre
+        run: sudo apt-get update && sudo apt-get install -y djvulibre-bin
+
+      - name: DjVu engine integration (real ddjvu)
+        run: >-
+          dotnet test tests/Foliant.Plugin.DjVu.Tests/Foliant.Plugin.DjVu.Tests.csproj
+          -c Release
+          -f net10.0
+          --no-build
+          --filter "Category=Slow"
+
   verify:
     name: Build & test (Windows)
     runs-on: windows-latest

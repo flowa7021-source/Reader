@@ -20,4 +20,8 @@
     <ProjectReference Include="..\..\plugins\Foliant.Plugin.DjVu\Foliant.Plugin.DjVu.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
