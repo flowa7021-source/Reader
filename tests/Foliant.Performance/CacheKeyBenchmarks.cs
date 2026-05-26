@@ -4,6 +4,7 @@ using Foliant.Domain;
 namespace Foliant.Performance;
 
 [MemoryDiagnoser]
+[BenchmarkCategory("CrossPlatform")]
 public class CacheKeyBenchmarks
 {
     private readonly RenderOptions _opts = RenderOptions.Default with

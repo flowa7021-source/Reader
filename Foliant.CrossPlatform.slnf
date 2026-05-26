@@ -16,7 +16,10 @@
       "tests\\Foliant.ViewModels.Tests\\Foliant.ViewModels.Tests.csproj",
       "tests\\Foliant.Engines.Pdf.Tests\\Foliant.Engines.Pdf.Tests.csproj",
       "tests\\Foliant.Engines.Ocr.Tests\\Foliant.Engines.Ocr.Tests.csproj",
-      "tests\\Foliant.Plugin.DjVu.Tests\\Foliant.Plugin.DjVu.Tests.csproj"
+      "tests\\Foliant.Plugin.DjVu.Tests\\Foliant.Plugin.DjVu.Tests.csproj",
+      "tests\\Foliant.Performance\\Foliant.Performance.csproj",
+      "tools\\perf-compare\\perf-compare.csproj",
+      "tools\\perf-compare.Tests\\perf-compare.Tests.csproj"
     ]
   }
 }

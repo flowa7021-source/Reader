@@ -3,14 +3,12 @@ using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 
-namespace Foliant.Performance;
+namespace Foliant.Performance.Native;
 
 internal static class Program
 {
     public static int Main(string[] args)
     {
-        // --quick is a CI smoke shortcut equivalent to BDN's `--job short`; when neither is
-        // present we fall back to the default (statistically heavier) job.
         var quick = args.Contains("--quick");
 
         var config = ManualConfig
