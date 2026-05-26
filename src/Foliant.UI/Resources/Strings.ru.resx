@@ -151,6 +151,9 @@
   <data name="MenuViewTwoPage" xml:space="preserve">
     <value>_Две страницы</value>
   </data>
+  <data name="MenuViewThumbnails" xml:space="preserve">
+    <value>_Миниатюры</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Светлая</value>
   </data>

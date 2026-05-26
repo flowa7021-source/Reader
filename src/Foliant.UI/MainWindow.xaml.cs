@@ -171,4 +171,13 @@ public partial class MainWindow : Window
             page.Invalidate();
         }
     }
+
+    // Thumbnails render lazily when their strip item is realized; they persist (small, cached).
+    private void OnThumbnailLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: PageThumbnailViewModel page })
+        {
+            _ = page.EnsureThumbnailAsync(CancellationToken.None);
+        }
+    }
 }

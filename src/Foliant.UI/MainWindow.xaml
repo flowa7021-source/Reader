@@ -208,6 +208,9 @@
                   Command="{Binding SelectedTab.SetContinuousViewCommand}" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTwoPage]}"
                   Command="{Binding SelectedTab.SetTwoPageViewCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewThumbnails]}"
+                  Command="{Binding SelectedTab.ToggleThumbnailStripCommand}" />
       </MenuItem>
     </Menu>
 
@@ -226,6 +229,7 @@
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
@@ -436,6 +440,37 @@
                          Text="{Binding ExportedText, Mode=OneWay}"
                          Visibility="{Binding ExportedText, Converter={StaticResource NullToVisibilityConverter}}" />
               </Grid>
+            </Border>
+
+            <!-- Thumbnail strip (toggled via View menu); click navigates, image renders lazily -->
+            <Border Grid.Column="3"
+                    Width="168"
+                    BorderBrush="{DynamicResource Foreground}"
+                    BorderThickness="1,0,0,0"
+                    Background="{DynamicResource PageBackground}"
+                    Visibility="{Binding IsThumbnailStripVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+              <ListBox ItemsSource="{Binding Thumbnails.Pages}"
+                       SelectedIndex="{Binding Thumbnails.SelectedPageIndex, Mode=TwoWay}"
+                       Background="Transparent"
+                       BorderThickness="0"
+                       HorizontalContentAlignment="Stretch"
+                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto"
+                       VirtualizingStackPanel.IsVirtualizing="True">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Margin="4"
+                                Loaded="OnThumbnailLoaded">
+                      <ui:PageSurface PageRender="{Binding Thumbnail}"
+                                      HorizontalAlignment="Center" />
+                      <TextBlock Text="{Binding DisplayNumber}"
+                                 HorizontalAlignment="Center"
+                                 Margin="0,2,0,0"
+                                 Foreground="{DynamicResource Foreground}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
             </Border>
           </Grid>
         </DataTemplate>

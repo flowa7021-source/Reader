@@ -72,6 +72,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// по странице, с фильтрами/экспортом. Перестраивается при каждой мутации списка.</summary>
     public AnnotationsDocumentViewModel AnnotationsDocument { get; }
 
+    /// <summary>Ширина миниатюры в пикселях (фикс., не зависит от zoom).</summary>
+    private const int ThumbnailWidthPx = 128;
+
     /// <summary>Лента миниатюр страниц: выбор страницы и drag-reorder. Выбор синхронизирован
     /// с <see cref="CurrentPageIndex"/>; reorder делегируется page-edit + reload.</summary>
     public ThumbnailStripViewModel Thumbnails { get; }
@@ -119,7 +122,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         AnnotationsDocument = new AnnotationsDocumentViewModel(
             pageIndex => CurrentPageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, PageCount - 1)),
             annotationExporter);
-        Thumbnails = new ThumbnailStripViewModel(PageCount, ReorderPagesViaStripAsync, SelectPageFromStrip);
+        Thumbnails = new ThumbnailStripViewModel(
+            PageCount, ReorderPagesViaStripAsync, SelectPageFromStrip,
+            (index, token) => _document.RenderPageAsync(index, new RenderOptions(Zoom: 1.0, MaxWidthPx: ThumbnailWidthPx), token));
         _metadataLazy = new Lazy<DocumentMetadataViewModel>(
             () => new DocumentMetadataViewModel(_document.Metadata, _filePath, PageCount));
 
@@ -152,6 +157,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     {
         _ocrCts?.Dispose();
         ClearVisiblePages();
+        Thumbnails.Dispose();
         CurrentRender?.Dispose();
         CurrentRender = null;
         await _document.DisposeAsync();

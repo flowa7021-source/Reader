@@ -1,10 +1,19 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Foliant.Domain;
 
 namespace Foliant.ViewModels;
 
 public sealed partial class DocumentTabViewModel
 {
+    /// <summary>Видимость полосы миниатюр (toggle из меню View).</summary>
+    [ObservableProperty]
+    private bool _isThumbnailStripVisible;
+
+    [RelayCommand]
+    private void ToggleThumbnailStrip() => IsThumbnailStripVisible = !IsThumbnailStripVisible;
+
     /// <summary>Слоты страниц для multi-page раскладок (continuous/two-page). Пуста в
     /// <see cref="ViewMode.SinglePage"/> (там используется <see cref="CurrentRender"/>).
     /// Каждый слот рендерится лениво по запросу View; смена zoom/темы/режима их пересобирает.</summary>
