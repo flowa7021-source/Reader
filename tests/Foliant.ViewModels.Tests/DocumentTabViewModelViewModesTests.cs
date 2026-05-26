@@ -63,6 +63,19 @@ public sealed class DocumentTabViewModelViewModesTests
     }
 
     [Fact]
+    public void ModeFlags_TrackViewMode_MutuallyExclusive()
+    {
+        var vm = CreateVm(pageCount: 3);
+        (vm.IsSinglePageView, vm.IsContinuousView, vm.IsTwoPageView).Should().Be((true, false, false));
+
+        vm.SetContinuousViewCommand.Execute(null);
+        (vm.IsSinglePageView, vm.IsContinuousView, vm.IsTwoPageView).Should().Be((false, true, false));
+
+        vm.SetTwoPageViewCommand.Execute(null);
+        (vm.IsSinglePageView, vm.IsContinuousView, vm.IsTwoPageView).Should().Be((false, false, true));
+    }
+
+    [Fact]
     public void FitWidth_ComputesZoomFromViewportAndPageSize()
     {
         var vm = CreateVm(pageSize: new PageSize(612, 792));

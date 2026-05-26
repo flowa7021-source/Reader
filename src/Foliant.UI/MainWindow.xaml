@@ -201,6 +201,13 @@
                   Command="{Binding SelectedTab.FitPageCommand}" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewActualSize]}"
                   Command="{Binding SelectedTab.ActualSizeCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewSinglePage]}"
+                  Command="{Binding SelectedTab.SetSinglePageViewCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewContinuous]}"
+                  Command="{Binding SelectedTab.SetContinuousViewCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTwoPage]}"
+                  Command="{Binding SelectedTab.SetTwoPageViewCommand}" />
       </MenuItem>
     </Menu>
 
@@ -223,11 +230,13 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- Page surface -->
-            <Grid Grid.Column="0">
+            <!-- Page surface (one of three layouts visible per ViewMode) -->
+            <Grid Grid.Column="0"
+                  SizeChanged="OnPageAreaSizeChanged">
+              <!-- Single page (with annotation + search overlay) -->
               <ScrollViewer HorizontalScrollBarVisibility="Auto"
                             VerticalScrollBarVisibility="Auto"
-                            SizeChanged="OnPageAreaSizeChanged">
+                            Visibility="{Binding IsSinglePageView, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid HorizontalAlignment="Center"
                       VerticalAlignment="Top">
                   <ui:PageSurface PageRender="{Binding CurrentRender}" />
@@ -237,6 +246,66 @@
                                       CreateNoteCommand="{Binding AddNoteAtCommand}" />
                 </Grid>
               </ScrollViewer>
+
+              <!-- Continuous: virtualized vertical list; each page renders lazily when realized -->
+              <ListBox ItemsSource="{Binding VisiblePages}"
+                       Visibility="{Binding IsContinuousView, Converter={StaticResource BooleanToVisibilityConverter}}"
+                       Background="Transparent"
+                       BorderThickness="0"
+                       HorizontalContentAlignment="Center"
+                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto"
+                       VirtualizingStackPanel.IsVirtualizing="True">
+                <ListBox.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel Orientation="Vertical" />
+                  </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                  <Style TargetType="ListBoxItem">
+                    <Setter Property="Focusable" Value="False" />
+                    <Setter Property="Margin" Value="0,0,0,8" />
+                    <Setter Property="Template">
+                      <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                          <ContentPresenter />
+                        </ControlTemplate>
+                      </Setter.Value>
+                    </Setter>
+                  </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <ui:PageSurface PageRender="{Binding Render}"
+                                    Loaded="OnVisiblePageLoaded"
+                                    Unloaded="OnVisiblePageUnloaded" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <!-- Two-page spread (current + next, side by side) -->
+              <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Auto"
+                            Visibility="{Binding IsTwoPageView, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ItemsControl ItemsSource="{Binding VisiblePages}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Top">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <ui:PageSurface PageRender="{Binding Render}"
+                                      Margin="4,0"
+                                      Loaded="OnVisiblePageLoaded"
+                                      Unloaded="OnVisiblePageUnloaded" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+
               <TextBlock Text="{Binding ErrorMessage}"
                          Foreground="Red"
                          VerticalAlignment="Center"

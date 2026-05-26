@@ -153,4 +153,22 @@ public partial class MainWindow : Window
             tab.SetViewport(e.NewSize.Width, e.NewSize.Height);
         }
     }
+
+    // Multi-page (continuous/two-page) pages render lazily: render when the item is realized,
+    // drop the bitmap when it is virtualized out, so memory stays bounded to on-screen pages.
+    private void OnVisiblePageLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: RenderedPageViewModel page })
+        {
+            _ = page.EnsureRenderedAsync(CancellationToken.None);
+        }
+    }
+
+    private void OnVisiblePageUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: RenderedPageViewModel page })
+        {
+            page.Invalidate();
+        }
+    }
 }

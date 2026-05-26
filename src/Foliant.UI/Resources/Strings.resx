@@ -142,6 +142,15 @@
   <data name="MenuViewActualSize" xml:space="preserve">
     <value>_Actual Size (100%)</value>
   </data>
+  <data name="MenuViewSinglePage" xml:space="preserve">
+    <value>_Single Page</value>
+  </data>
+  <data name="MenuViewContinuous" xml:space="preserve">
+    <value>_Continuous</value>
+  </data>
+  <data name="MenuViewTwoPage" xml:space="preserve">
+    <value>_Two Pages</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Light</value>
   </data>
