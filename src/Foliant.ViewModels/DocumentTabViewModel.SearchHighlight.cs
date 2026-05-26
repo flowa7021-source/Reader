@@ -25,6 +25,7 @@ public sealed partial class DocumentTabViewModel
         {
             CurrentPageSearchHighlights.Clear();
         }
+        RefreshVisiblePageSearchHighlights(); // multi-page slots clear themselves (no active query)
     }
 
     /// <summary>Пересчитать подсветку поиска для текущей страницы по активному запросу.
@@ -37,6 +38,13 @@ public sealed partial class DocumentTabViewModel
         int generation = Interlocked.Increment(ref _searchHighlightGeneration);
         string? query = _activeHighlightQuery;
         int pageIndex = CurrentPageIndex;
+
+        if (ViewMode != ViewMode.SinglePage)
+        {
+            // Multi-page: каждая видимая страница считает свою подсветку лениво (по реализации
+            // и здесь — при смене запроса/страницы). Одностраничный overlay скрыт, не трогаем.
+            RefreshVisiblePageSearchHighlights();
+        }
 
         if (string.IsNullOrEmpty(query))
         {

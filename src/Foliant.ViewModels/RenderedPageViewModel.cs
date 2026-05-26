@@ -14,7 +14,9 @@ public sealed partial class RenderedPageViewModel : ObservableObject, IDisposabl
 {
     private readonly Func<int, RenderOptions, CancellationToken, Task<IPageRender>> _renderPage;
     private readonly Func<RenderOptions> _optionsProvider;
+    private readonly Func<int, CancellationToken, Task<IReadOnlyList<AnnotationRect>>>? _highlightProvider;
     private int _generation;
+    private int _highlightGeneration;
     private bool _disposed;
 
     /// <summary>0-based индекс страницы документа.</summary>
@@ -31,12 +33,20 @@ public sealed partial class RenderedPageViewModel : ObservableObject, IDisposabl
     [ObservableProperty]
     private IReadOnlyList<Annotation> _annotations = [];
 
+    /// <summary>Прямоугольники подсветки поиска для этой страницы (PDF-точки) — тот же overlay,
+    /// что и в одностраничном режиме. Считаются лениво при отрисовке и при смене запроса.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<AnnotationRect> _searchHighlights = [];
+
     /// <summary>Создаёт слот страницы. <paramref name="renderPage"/> рендерит страницу по
-    /// индексу/опциям; <paramref name="optionsProvider"/> отдаёт текущие <see cref="RenderOptions"/>.</summary>
+    /// индексу/опциям; <paramref name="optionsProvider"/> отдаёт текущие <see cref="RenderOptions"/>;
+    /// <paramref name="highlightProvider"/> (опц.) считает прямоугольники подсветки поиска для
+    /// страницы по активному запросу владельца.</summary>
     public RenderedPageViewModel(
         int pageIndex,
         Func<int, RenderOptions, CancellationToken, Task<IPageRender>> renderPage,
-        Func<RenderOptions> optionsProvider)
+        Func<RenderOptions> optionsProvider,
+        Func<int, CancellationToken, Task<IReadOnlyList<AnnotationRect>>>? highlightProvider = null)
     {
         ArgumentNullException.ThrowIfNull(renderPage);
         ArgumentNullException.ThrowIfNull(optionsProvider);
@@ -44,6 +54,7 @@ public sealed partial class RenderedPageViewModel : ObservableObject, IDisposabl
         PageIndex = pageIndex;
         _renderPage = renderPage;
         _optionsProvider = optionsProvider;
+        _highlightProvider = highlightProvider;
     }
 
     /// <summary>Отрисовать страницу, если ещё не отрисована (идемпотентно). Вызывается View
@@ -67,6 +78,7 @@ public sealed partial class RenderedPageViewModel : ObservableObject, IDisposabl
                 return;
             }
             Render = result;
+            await RefreshHighlightsAsync(ct);
         }
         catch (OperationCanceledException)
         {
@@ -78,13 +90,47 @@ public sealed partial class RenderedPageViewModel : ObservableObject, IDisposabl
         }
     }
 
+    /// <summary>Пересчитать подсветку поиска этой страницы по активному запросу владельца.
+    /// Без provider — no-op. Поколение отбрасывает устаревший результат при быстрой смене
+    /// запроса/страницы (как у рендера).</summary>
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Per-page highlight failure must leave the slot un-highlighted, not crash the view.")]
+    public async Task RefreshHighlightsAsync(CancellationToken ct)
+    {
+        if (_highlightProvider is null || _disposed)
+        {
+            return;
+        }
+
+        int generation = Interlocked.Increment(ref _highlightGeneration);
+        try
+        {
+            IReadOnlyList<AnnotationRect> rects = await _highlightProvider(PageIndex, ct);
+            if (_disposed || generation != Volatile.Read(ref _highlightGeneration))
+            {
+                return;
+            }
+            SearchHighlights = rects;
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation is not an error.
+        }
+        catch (Exception)
+        {
+            SearchHighlights = [];
+        }
+    }
+
     /// <summary>Сбросить отрисовку (после смены zoom/темы) — следующий
     /// <see cref="EnsureRenderedAsync"/> перерисует с новыми опциями.</summary>
     public void Invalidate()
     {
         Interlocked.Increment(ref _generation);
+        Interlocked.Increment(ref _highlightGeneration);
         IPageRender? old = Render;
         Render = null;
+        SearchHighlights = [];
         old?.Dispose();
     }
 
@@ -92,7 +138,9 @@ public sealed partial class RenderedPageViewModel : ObservableObject, IDisposabl
     {
         _disposed = true;
         Interlocked.Increment(ref _generation);
+        Interlocked.Increment(ref _highlightGeneration);
         Render?.Dispose();
         Render = null;
+        SearchHighlights = [];
     }
 }

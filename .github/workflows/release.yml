@@ -40,7 +40,7 @@ jobs:
 
       - name: Restore & build
         run: |
-          dotnet restore Foliant.sln --locked-mode
+          dotnet restore Foliant.sln
           dotnet build Foliant.sln -c Release --no-restore -warnaserror
 
       # Тесты в релизном пайплайне не гоняем — тестирование локальное при готовности альфы.

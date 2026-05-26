@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Foliant.Application.Services;
 using Foliant.Domain;
 
 namespace Foliant.ViewModels;
@@ -44,7 +45,8 @@ public sealed partial class DocumentTabViewModel
             VisiblePages.Add(new RenderedPageViewModel(
                 index,
                 (i, opts, ct) => _document.RenderPageAsync(i, opts, ct),
-                BuildRenderOptions)
+                BuildRenderOptions,
+                ComputePageSearchHighlightsAsync)
             {
                 Annotations = AnnotationsForPage(index),
             });
@@ -54,12 +56,38 @@ public sealed partial class DocumentTabViewModel
     private IReadOnlyList<Annotation> AnnotationsForPage(int pageIndex) =>
         [.. _allAnnotations.Where(a => a.PageIndex == pageIndex)];
 
+    /// <summary>Прямоугольники подсветки поиска для одной страницы по активному запросу.
+    /// Пустой запрос → пусто (без загрузки text-layer). Передаётся слотам как provider, поэтому
+    /// text-layer грузится лениво — только для реально отрисованных страниц.</summary>
+    private async Task<IReadOnlyList<AnnotationRect>> ComputePageSearchHighlightsAsync(int pageIndex, CancellationToken ct)
+    {
+        string? query = _activeHighlightQuery;
+        if (string.IsNullOrEmpty(query))
+        {
+            return [];
+        }
+
+        TextLayer? layer = await _document.GetTextLayerAsync(pageIndex, ct);
+        return SearchHighlight.MatchRects(
+            layer ?? TextLayer.Empty(pageIndex), query, _activeHighlightMatchCase, _activeHighlightWholeWord);
+    }
+
     /// <summary>Обновить снимки аннотаций видимых страниц (multi-page) после add/remove/update.</summary>
     internal void RefreshVisiblePageAnnotations()
     {
         foreach (RenderedPageViewModel page in VisiblePages)
         {
             page.Annotations = AnnotationsForPage(page.PageIndex);
+        }
+    }
+
+    /// <summary>Пересчитать подсветку поиска видимых страниц (multi-page) — после нового запроса,
+    /// очистки или смены страницы. Каждый слот сам вернёт пусто, если запрос неактивен.</summary>
+    internal void RefreshVisiblePageSearchHighlights()
+    {
+        foreach (RenderedPageViewModel page in VisiblePages)
+        {
+            _ = page.RefreshHighlightsAsync(CancellationToken.None);
         }
     }
 
