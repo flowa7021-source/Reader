@@ -7,6 +7,15 @@
 
 ## [Unreleased]
 
+_Пока нет изменений после 0.1.0._
+
+## [0.1.0] - 2026-05-26
+
+Первый альфа-релиз Foliant. Функционально покрывает объём Phase 1 (просмотр
+PDF/DjVu, поиск, аннотации, OCR, локализация, лицензия/триал, инсталлятор), но
+ещё не прошёл широкую проверку на разных документах и машинах. Возможны
+шероховатости. Известные ограничения см. в `.github/release-notes/v0.1.0.md`.
+
 ### Changed
 - **OCR-движок: Tesseract → PaddleOCR (in-process через Sdcb.PaddleOCR)**. Реализован `PaddleOcrEngine : IOcrEngine` в `Foliant.Engines.Ocr` (растр BGRA32 → OpenCvSharp `Mat` → PaddleOCR; каждая распознанная строка → `TextRun` с bounding-box в пикселях рендера; `SemaphoreSlim`-сериализация, т.к. `PaddleOcrAll` не потокобезопасен; модели оффлайн из `native/paddleocr/`). Чистый маппинг языков `OcrLanguageMap` (Tesseract-стиль `"eng+rus"` → набор моделей latin/cyrillic). Порты `IOcrEngine`/`OcrPageUseCase`/`OcrPipelineService`/`OcrDiskCache` не менялись. Весь OCR-конвейер дорегистрирован в DI (`AppHostBuilder`). Пакеты: убран `Tesseract`, добавлены `Sdcb.PaddleOCR`/`Sdcb.PaddleInference`/`Sdcb.PaddleInference.runtime.win64.mkl`/`OpenCvSharp4`(+runtime.win). `tools/fetch-natives.ps1` качает модели PaddleOCR по скриптам/tier'ам. Обновлены `PROJECT_BOARD.md`, `IMPLEMENTATION_PLAN.md` (S8, §5.3), `README.md`, `NOTICE.md`. Тесты: `OcrLanguageMapTests` + guard-тесты `PaddleOcrEngineTests`. Замечание: версии пакетов/имена моделей и сборку проверить на Windows-стенде (нет .NET SDK в текущем окружении).
 
@@ -77,4 +86,5 @@
 - **S11/E — Multi-tab keyboard navigation**: `MainViewModel` получил `NextTabCommand`/`PreviousTabCommand` (циклический wrap по `Tabs`) и `CloseCurrentTabCommand` (parameterless wrapper над `CloseTabCommand`). `CloseTabAsync` теперь корректно пересаживает selection на соседнюю вкладку при закрытии активной (clamp index). `MainWindow.xaml` биндит `Ctrl+Tab` / `Ctrl+Shift+Tab` / `Ctrl+W` на эти команды. Ещё **6 тестов**: forward/backward cycle с wrap, single-tab/empty-tabs no-op, close-middle reselects neighbor, close-last leaves null. Helper `MakeTabStub` инкапсулирует ctor с растущим списком зависимостей `DocumentTabViewModel`.
 - **S13/B — Trial anti-tamper logic (pure managed, no I/O)**: Domain `TrialState(StartedAt, MaxObservedAt, Nonce)`, enum `TrialStatus` (`NotStarted`/`Active`/`Expired`/`Tampered`), record `TrialEvaluation(Status, DaysRemaining, TamperReason)`. Application `TrialAntiTamperService` с константой `TrialDays = 30`, статическими методами `NewTrial(now)` (свежий GUID-нонс), `UpdateMaxObserved(state, now)` (advance high-water mark), `ComputeMarker(state)` (SHA-256 над `StartedAt|Nonce` — не зависит от `MaxObservedAt`, чтобы не требовать обновления маркера на каждом запуске), `Evaluate(primary, secondary, marker, now)`: empty-all → `NotStarted`, partial-empty/state-divergence/marker-mismatch/clock-rollback → `Tampered` (с `TamperReason`), elapsed ≥ 30 days → `Expired`, иначе `Active` с `DaysRemaining`. Откат часов детектится по `max(primary.MaxObservedAt, secondary.MaxObservedAt)`. Файловое хранение DPAPI + reg + marker — следующая часть (S13/C). Ещё **15 тестов** `TrialAntiTamperServiceTests`: not-started, active-fresh/after-10d, expired-after-31d, tampered-on-each-store-missing/divergence/marker-mismatch/clock-backwards, max-across-stores, UpdateMaxObserved newer/older, ComputeMarker определяется только StartedAt+Nonce, NewTrial fresh nonce.
 
-[Unreleased]: https://github.com/flowa7021-source/Reader/compare/HEAD
+[Unreleased]: https://github.com/flowa7021-source/Reader/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/flowa7021-source/Reader/releases/tag/v0.1.0
