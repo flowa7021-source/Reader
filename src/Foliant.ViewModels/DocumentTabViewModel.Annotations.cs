@@ -61,6 +61,23 @@ public sealed partial class DocumentTabViewModel
     [RelayCommand]
     private void ToggleAnnotations() => IsAnnotationsVisible = !IsAnnotationsVisible;
 
+    /// <summary>Активный инструмент палитры аннотаций (highlight/note/freehand) или null,
+    /// когда ничего не выбрано. Future XAML-палитра биндится к этому property; решает,
+    /// какой жест pointer-down/up создаёт (highlight-rect vs freehand-ink). Состояние
+    /// живёт в VM, чтобы highlight-vs-freehand путь был тестируемым.</summary>
+    [ObservableProperty]
+    private AnnotationKind? _activeAnnotationTool;
+
+    /// <summary>Выбрать инструмент палитры. Повторный выбор того же инструмента снимает
+    /// выбор (toggle), что соответствует поведению toolbar-кнопок.</summary>
+    [RelayCommand]
+    private void SelectAnnotationTool(AnnotationKind tool) =>
+        ActiveAnnotationTool = ActiveAnnotationTool == tool ? null : tool;
+
+    /// <summary>Снять выбор инструмента (Esc / клик мимо палитры).</summary>
+    [RelayCommand]
+    private void ClearAnnotationTool() => ActiveAnnotationTool = null;
+
     /// <summary>Число аннотаций именно на текущей странице. Совпадает с <c>CurrentPageAnnotations.Count</c>,
     /// но отдельным property удобнее биндить — counter в sidebar/status-bar не должен подписываться
     /// на <c>CollectionChanged</c>.</summary>
@@ -115,6 +132,30 @@ public sealed partial class DocumentTabViewModel
         if (pageIndex == CurrentPageIndex && MatchesFilter(note))
         {
             CurrentPageAnnotations.Add(note);
+        }
+    }
+
+    /// <summary>Зафиксировать freehand-обводку — вызывается WPF-слоем на pointer-up с собранными
+    /// точками (PDF user space). Персистит через сервис и обновляет counts/sidebar/visible-pages
+    /// тем же путём, что add-highlight/add-note. No-op при пустом или единственном point
+    /// (нет видимого штриха).</summary>
+    public async Task AddFreehandAsync(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        ArgumentNullException.ThrowIfNull(colorHex);
+
+        if (points.Count < 2)
+        {
+            return;
+        }
+
+        var ink = Annotation.Freehand(pageIndex, [.. points], colorHex, DateTimeOffset.UtcNow);
+        await _annotationService.AddAsync(_filePath, ink, ct);
+        _allAnnotations.Add(ink);
+        NotifyAnnotationCountsChanged();
+        if (pageIndex == CurrentPageIndex && MatchesFilter(ink))
+        {
+            CurrentPageAnnotations.Add(ink);
         }
     }
 
@@ -196,6 +237,27 @@ public sealed partial class DocumentTabViewModel
 
         AnnotationsDocument.Rebuild(_allAnnotations);
         RefreshVisiblePageAnnotations();
+    }
+
+    /// <summary>Изменить текст существующей sticky-note. Композирует новую запись через
+    /// <c>with</c> (Id/координаты/дата сохраняются) и персистит через тот же путь, что и
+    /// <see cref="UpdateAnnotationAsync"/>. No-op если аннотация не StickyNote или текст
+    /// не изменился. Параметр — кортеж (annotation, newText), удобно биндить из note-editor.</summary>
+    [RelayCommand]
+    private Task EditNoteTextAsync((Annotation Annotation, string Text) edit)
+    {
+        if (edit.Annotation is not { Kind: AnnotationKind.StickyNote } note)
+        {
+            return Task.CompletedTask;
+        }
+
+        ArgumentNullException.ThrowIfNull(edit.Text);
+        if (string.Equals(note.Text, edit.Text, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        return UpdateAnnotationAsync(note with { Text = edit.Text });
     }
 
     private void RefreshCurrentPageAnnotations()
