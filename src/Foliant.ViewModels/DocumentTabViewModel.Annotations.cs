@@ -162,10 +162,15 @@ public sealed partial class DocumentTabViewModel
     /// <summary>Размер новой sticky-note по умолчанию (в PDF-точках).</summary>
     private const double DefaultNoteSizePt = 18.0;
 
-    /// <summary>Создать sticky-note в точке (PDF user space) — вызывается двойным кликом по
-    /// странице. Точка трактуется как верхний-левый угол заметки (в PDF ось Y растёт вверх).</summary>
+    /// <summary>Создать sticky-note в точке (PDF user space) на ТЕКУЩЕЙ странице — вызывается
+    /// двойным кликом в одностраничном режиме. Точка — верхний-левый угол заметки (PDF ось Y вверх).</summary>
     [RelayCommand]
-    private Task AddNoteAtAsync(AnnotationPoint? location)
+    private Task AddNoteAtAsync(AnnotationPoint? location) => AddNoteAtPageAsync(CurrentPageIndex, location);
+
+    /// <summary>Page-aware вариант: заметка попадает на указанную страницу, а не на
+    /// <see cref="CurrentPageIndex"/>. Нужен multi-page слоям (continuous/two-page), где двойной
+    /// клик происходит по слоту конкретной страницы, отличной от текущей.</summary>
+    public Task AddNoteAtPageAsync(int pageIndex, AnnotationPoint? location, CancellationToken ct = default)
     {
         if (location is null)
         {
@@ -173,7 +178,7 @@ public sealed partial class DocumentTabViewModel
         }
 
         var bounds = new AnnotationRect(location.X, location.Y - DefaultNoteSizePt, DefaultNoteSizePt, DefaultNoteSizePt);
-        return AddNoteAsync(CurrentPageIndex, bounds, "Note", "#FFEB3B", CancellationToken.None);
+        return AddNoteAsync(pageIndex, bounds, "Note", "#FFEB3B", ct);
     }
 
     [RelayCommand]

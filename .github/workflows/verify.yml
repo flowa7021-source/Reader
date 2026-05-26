@@ -56,18 +56,18 @@ jobs:
           -f net10.0
           --no-build
           --filter "Category!=Slow&Category!=Integration&Category!=E2E"
-          --collect:"XPlat Code Coverage"
+          --settings tests/coverage.runsettings
           --results-directory ./coverage
 
-      # Покрытие объединяется построчно (union по всем тест-проектам). Блокирует сборку для
-      # слоёв, достигших §6.2 (Application/Infrastructure/ViewModels). Domain пока ниже 90 %
-      # (union-покрытие ~53 %: часть Domain-типов задействована только из других слоёв) —
-      # печатается, но не enforce'ится, пока не дорастёт.
+      # Покрытие объединяется построчно по basename (coverlet пишет один исходник под разными
+      # путями в разных тест-проектах). Все 4 слоя §6.2 блокирующие: Domain 100 %
+      # (declaration-only интерфейсы/enum'ы исключены через tests/coverage.runsettings — без
+      # исполняемого IL), Application/Infrastructure/ViewModels — выше своих порогов.
       - name: Coverage gate (§6.2)
         run: >-
           dotnet run --project tools/check-coverage -c Release -f net10.0 --no-build
           -- --report ./coverage
-          --enforce Foliant.Application,Foliant.Infrastructure,Foliant.ViewModels
+          --enforce Foliant.Domain,Foliant.Application,Foliant.Infrastructure,Foliant.ViewModels
 
       # Real-SQLite persistence tests (disk cache + FTS index) — cross-platform, run on Linux.
       - name: Integration (real SQLite)

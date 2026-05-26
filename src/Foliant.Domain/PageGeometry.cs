@@ -62,4 +62,18 @@ public static class PageGeometry
         double yPt = page.HeightPt - (r.Y / scale) - hPt;
         return new AnnotationRect(xPt, yPt, wPt, hPt);
     }
+
+    /// <summary>Нормализованный прямоугольник (PDF-точки, X/Y — нижний-левый угол) из двух
+    /// произвольных углов — например, начала и конца drag'а при создании highlight. Порядок и
+    /// направление точек не важны.</summary>
+    public static AnnotationRect RectFromPoints(AnnotationPoint a, AnnotationPoint b)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+        return new AnnotationRect(
+            Math.Min(a.X, b.X),
+            Math.Min(a.Y, b.Y),
+            Math.Abs(a.X - b.X),
+            Math.Abs(a.Y - b.Y));
+    }
 }
