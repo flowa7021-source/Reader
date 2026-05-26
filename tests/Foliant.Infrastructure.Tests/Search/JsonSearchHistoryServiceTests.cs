@@ -45,8 +45,7 @@ public sealed class JsonSearchHistoryServiceTests : IDisposable
         var first = new JsonSearchHistoryService(path, NullLogger<JsonSearchHistoryService>.Instance);
         first.Add("pdf");
         first.Add("doc");
-        // Allow fire-and-forget save to complete.
-        await Task.Delay(200);
+        await first.FlushPendingSavesAsync();
 
         var second = new JsonSearchHistoryService(path, NullLogger<JsonSearchHistoryService>.Instance);
         await second.LoadAsync(default);
@@ -89,10 +88,10 @@ public sealed class JsonSearchHistoryServiceTests : IDisposable
         var path = Path.Combine(_tmp.Path, "history.json");
         var sut = new JsonSearchHistoryService(path, NullLogger<JsonSearchHistoryService>.Instance);
         sut.Add("x");
-        await Task.Delay(200);
+        await sut.FlushPendingSavesAsync();
 
         sut.Clear();
-        await Task.Delay(200);
+        await sut.FlushPendingSavesAsync();
 
         var reload = new JsonSearchHistoryService(path, NullLogger<JsonSearchHistoryService>.Instance);
         await reload.LoadAsync(default);
@@ -106,10 +105,10 @@ public sealed class JsonSearchHistoryServiceTests : IDisposable
         var sut = new JsonSearchHistoryService(path, NullLogger<JsonSearchHistoryService>.Instance);
         sut.Add("alpha");
         sut.Add("beta");
-        await Task.Delay(200);
+        await sut.FlushPendingSavesAsync();
 
         sut.Remove("alpha");
-        await Task.Delay(200);
+        await sut.FlushPendingSavesAsync();
 
         var reload = new JsonSearchHistoryService(path, NullLogger<JsonSearchHistoryService>.Instance);
         await reload.LoadAsync(default);
@@ -156,7 +155,7 @@ public sealed class JsonSearchHistoryServiceTests : IDisposable
         sut.Add("b");
         sut.Add("c");
         sut.Add("d");   // "a" should be dropped
-        await Task.Delay(300);
+        await sut.FlushPendingSavesAsync();
 
         var reload = new JsonSearchHistoryService(path, NullLogger<JsonSearchHistoryService>.Instance, maxItems: 3);
         await reload.LoadAsync(default);

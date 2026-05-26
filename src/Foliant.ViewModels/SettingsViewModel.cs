@@ -77,24 +77,25 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveAsync()
     {
-        AppSettings updated = _settingsService.Current with
+        // UpdateAsync (а не SaveAsync с заранее собранным снимком): мутация идёт под одной
+        // блокировкой поверх актуального Current, поэтому RecentFiles, добавленные параллельно,
+        // не затираются (lost-update).
+        await _settingsService.UpdateAsync(current => current with
         {
             Theme = SelectedTheme,
             Language = SelectedLanguage,
-            Cache = _settingsService.Current.Cache with
+            Cache = current.Cache with
             {
                 DiskLimitBytes = (long)(DiskCacheLimitGb * 1024 * 1024 * 1024),
                 ClearOnExit = ClearCacheOnExit,
             },
-            Ocr = _settingsService.Current.Ocr with
+            Ocr = current.Ocr with
             {
                 DefaultLanguage = OcrLanguage,
                 MaxParallelPages = MaxParallelOcrPages,
                 AutoOcrOpenedScans = AutoOcrOpenedScans,
             },
-        };
-
-        await _settingsService.SaveAsync(updated, CancellationToken.None);
+        }, CancellationToken.None);
 
         // Hot-switch культуры — все XAML-биндинги {Path=[Key]} обновятся через "Item[]" PropertyChanged.
         if (!string.Equals(_localization.CurrentCulture, SelectedLanguage, StringComparison.OrdinalIgnoreCase))

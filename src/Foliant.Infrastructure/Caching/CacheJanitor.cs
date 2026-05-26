@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Foliant.Application.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -10,6 +11,7 @@ namespace Foliant.Infrastructure.Caching;
 /// </summary>
 public sealed class CacheJanitor(
     IDiskCache diskCache,
+    ISettingsService settings,
     CacheJanitorOptions options,
     ILogger<CacheJanitor> log) : BackgroundService
 {
@@ -19,14 +21,23 @@ public sealed class CacheJanitor(
     {
         var interval = options.Interval > TimeSpan.Zero ? options.Interval : DefaultInterval;
         log.LogInformation(
-            "CacheJanitor started: hardLimit={HardLimit} bytes, soft={SoftPct}%, tick={Interval}",
-            options.HardLimitBytes, options.SoftLimitPercent, interval);
+            "CacheJanitor started: soft={SoftPct}%, tick={Interval}",
+            options.SoftLimitPercent, interval);
 
         using var timer = new PeriodicTimer(interval);
         while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
             await TickAsync(stoppingToken).ConfigureAwait(false);
         }
+    }
+
+    // Hard-limit берём из живой пользовательской настройки (Settings → Disk cache limit),
+    // а не из статичного options: иначе изменение лимита в UI не вступало бы в силу до рестарта.
+    // options.HardLimitBytes — фолбэк, если настройка не задана (<= 0).
+    private long ResolveHardLimit()
+    {
+        long configured = settings.Current.Cache.DiskLimitBytes;
+        return configured > 0 ? configured : options.HardLimitBytes;
     }
 
     [SuppressMessage(
@@ -37,9 +48,10 @@ public sealed class CacheJanitor(
     {
         try
         {
+            var hard = ResolveHardLimit();
             var current = diskCache.CurrentSizeBytes;
-            var soft = options.HardLimitBytes * options.SoftLimitPercent / 100;
-            if (current <= options.HardLimitBytes)
+            var soft = hard * options.SoftLimitPercent / 100;
+            if (current <= hard)
             {
                 return;
             }

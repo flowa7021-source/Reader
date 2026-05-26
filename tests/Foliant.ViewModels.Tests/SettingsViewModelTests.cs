@@ -52,8 +52,8 @@ public sealed class SettingsViewModelTests
 
         await vm.SaveCommand.ExecuteAsync(null);
 
-        await settings.Received(1).SaveAsync(
-            Arg.Is<AppSettings>(s => s.Theme == "HighContrast"),
+        await settings.Received(1).UpdateAsync(
+            Arg.Is<Func<AppSettings, AppSettings>>(f => f(AppSettings.Default).Theme == "HighContrast"),
             Arg.Any<CancellationToken>());
         vm.IsSaved.Should().BeTrue();
     }
@@ -194,7 +194,8 @@ public sealed class SettingsViewModelTests
 
         vm.ResetToDefaultsCommand.Execute(null);
 
-        settings.DidNotReceive().SaveAsync(Arg.Any<AppSettings>(), Arg.Any<CancellationToken>());
+        settings.DidNotReceive().UpdateAsync(
+            Arg.Any<Func<AppSettings, AppSettings>>(), Arg.Any<CancellationToken>());
     }
 
     // ───── S9/E: OCR settings ─────
@@ -233,11 +234,11 @@ public sealed class SettingsViewModelTests
 
         await vm.SaveCommand.ExecuteAsync(null);
 
-        await settings.Received(1).SaveAsync(
-            Arg.Is<AppSettings>(s =>
-                s.Ocr.DefaultLanguage == "fra" &&
-                s.Ocr.MaxParallelPages == 8 &&
-                s.Ocr.AutoOcrOpenedScans),
+        await settings.Received(1).UpdateAsync(
+            Arg.Is<Func<AppSettings, AppSettings>>(f =>
+                f(AppSettings.Default).Ocr.DefaultLanguage == "fra" &&
+                f(AppSettings.Default).Ocr.MaxParallelPages == 8 &&
+                f(AppSettings.Default).Ocr.AutoOcrOpenedScans),
             Arg.Any<CancellationToken>());
     }
 

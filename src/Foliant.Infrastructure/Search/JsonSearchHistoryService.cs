@@ -146,6 +146,16 @@ public sealed class JsonSearchHistoryService : ISearchHistoryService
         }
     }
 
+    /// <summary>Дождаться завершения всех запланированных фоновых сохранений (для тестов —
+    /// детерминированная замена ожиданию fire-and-forget по таймеру).</summary>
+    internal Task FlushPendingSavesAsync()
+    {
+        lock (_gate)
+        {
+            return _saveTail;
+        }
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
         Justification = "Fire-and-forget background save must never crash the app; the failure is logged.")]
     private async Task SaveGuardedAsync()
