@@ -59,16 +59,15 @@ jobs:
           --collect:"XPlat Code Coverage"
           --results-directory ./coverage
 
-      # Информационно (не блокирует): печатает line-rate по слоям против порогов §6.2.
-      # Пока non-blocking — per-report line-rate объединяется грубо (max), что недооценивает
-      # union по слою (напр. Domain покрыт многими тест-проектами). Станет gate'ом, когда
-      # check-coverage начнёт объединять покрытие построчно и базлайны будут зафиксированы.
-      - name: Coverage report (§6.2, informational)
-        if: always()
-        continue-on-error: true
+      # Покрытие объединяется построчно (union по всем тест-проектам). Блокирует сборку для
+      # слоёв, достигших §6.2 (Application/Infrastructure/ViewModels). Domain пока ниже 90 %
+      # (union-покрытие ~53 %: часть Domain-типов задействована только из других слоёв) —
+      # печатается, но не enforce'ится, пока не дорастёт.
+      - name: Coverage gate (§6.2)
         run: >-
           dotnet run --project tools/check-coverage -c Release -f net10.0 --no-build
           -- --report ./coverage
+          --enforce Foliant.Application,Foliant.Infrastructure,Foliant.ViewModels
 
       # Real-SQLite persistence tests (disk cache + FTS index) — cross-platform, run on Linux.
       - name: Integration (real SQLite)
