@@ -1,0 +1,41 @@
+site_name: Foliant
+site_description: Лёгкая полностью оффлайн Windows-альтернатива Adobe Acrobat Pro (PDF/DjVu).
+repo_url: https://github.com/flowa7021-source/Reader
+repo_name: flowa7021-source/Reader
+docs_dir: docs
+
+theme:
+  name: material
+  language: ru
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Тёмная тема
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Светлая тема
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Обзор: index.md
+  - Руководство пользователя:
+      - Тур по интерфейсу: user-guide/ui-tour.md
+      - Горячие клавиши: user-guide/shortcuts.md
+      - Настройки OCR: user-guide/ocr-settings.md
+  - Разработчику:
+      - Архитектура: ARCHITECTURE.md
+      - Сборка: BUILD.md
+      - Кэш: CACHE.md
+      - Плагины: PLUGINS.md
+      - Ретроспектива: DEV_RETROSPECTIVE.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
