@@ -88,6 +88,36 @@ public sealed class DocumentIndexingServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ProcessRequest_AllEmptyLayers_SkipsIndexing_PreservingExistingIndex()
+    {
+        var emptyLayers = new[] { TextLayer.Empty(0), TextLayer.Empty(1) };
+        var request = new DocumentIndexingService.IndexRequest(null, FakePath, emptyLayers);
+
+        await _sut.ProcessRequestAsync(request, default);
+
+        await _fts.DidNotReceive().IndexDocumentAsync(
+            Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<IAsyncEnumerable<TextLayer>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ProcessRequest_LayersWithSomeText_Indexes()
+    {
+        var layers = new[]
+        {
+            TextLayer.Empty(0),
+            new TextLayer(1, [new TextRun("ocr text", 0, 0, 10, 10)]),
+        };
+        var request = new DocumentIndexingService.IndexRequest(null, FakePath, layers);
+
+        await _sut.ProcessRequestAsync(request, default);
+
+        await _fts.Received(1).IndexDocumentAsync(
+            FakeFingerprint, FakePath,
+            Arg.Any<IAsyncEnumerable<TextLayer>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ProcessRequest_Cancellation_Propagates()
     {
         using var cts = new CancellationTokenSource();

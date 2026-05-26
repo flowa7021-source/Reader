@@ -66,6 +66,15 @@ public sealed class DocumentIndexingService : BackgroundService, IDocumentIndexe
         try
         {
             ct.ThrowIfCancellationRequested();
+
+            // Don't let an all-empty OCR result (e.g. failed/blank recognition) full-replace and
+            // wipe a document's existing embedded-text index. Indexing nothing has no value anyway.
+            if (request.Layers is { } provided && provided.All(layer => layer.Runs.Count == 0))
+            {
+                _log.LogDebug("Skipping index of {Path}: supplied layers have no text.", request.Path);
+                return;
+            }
+
             var fp = await _fingerprint.ComputeAsync(request.Path, ct).ConfigureAwait(false);
             var pages = request.Layers is { } layers
                 ? ToAsync(layers, ct)
