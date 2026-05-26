@@ -97,6 +97,47 @@ public sealed class DocumentTabViewModelViewModesTests
     }
 
     [Fact]
+    public void TwoPage_NextPrevPage_StepByWholeSpread()
+    {
+        var vm = CreateVm(pageCount: 6);
+        vm.SetTwoPageViewCommand.Execute(null); // (0,1)(2,3)(4,5)
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([2, 3]);
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([4, 5]);
+
+        vm.NextPageCommand.Execute(null); // already last spread → no move
+        vm.VisiblePageIndices.Should().Equal([4, 5]);
+
+        vm.PreviousPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([2, 3]);
+    }
+
+    [Fact]
+    public void TwoPage_CoverSeparate_NextPrev_RespectAloneCover()
+    {
+        var vm = CreateVm(pageCount: 6);
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.ToggleTwoPageCoverSeparateCommand.Execute(null); // 0 | (1,2)(3,4)(5)
+
+        vm.VisiblePageIndices.Should().Equal([0]);
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([1, 2]);
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([3, 4]);
+
+        vm.PreviousPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([1, 2]);
+
+        vm.PreviousPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([0]); // back to lone cover
+    }
+
+    [Fact]
     public void Continuous_ShowsAllPages()
     {
         var vm = CreateVm(pageCount: 3);
