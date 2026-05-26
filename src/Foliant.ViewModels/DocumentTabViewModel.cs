@@ -151,6 +151,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     public async ValueTask DisposeAsync()
     {
         _ocrCts?.Dispose();
+        ClearVisiblePages();
         CurrentRender?.Dispose();
         CurrentRender = null;
         await _document.DisposeAsync();

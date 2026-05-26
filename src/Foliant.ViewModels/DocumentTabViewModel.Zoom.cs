@@ -29,6 +29,7 @@ public sealed partial class DocumentTabViewModel
             Zoom = clamped;
             return;
         }
+        SyncVisiblePages(forceRerender: true);
         _ = RenderCurrentPageAsync(CancellationToken.None);
     }
 
