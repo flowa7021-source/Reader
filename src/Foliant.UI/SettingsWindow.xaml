@@ -4,7 +4,7 @@
         xmlns:loc="clr-namespace:Foliant.UI.Localization"
         Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsTitle]}"
         Width="440"
-        Height="310"
+        Height="350"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
@@ -40,6 +40,18 @@
         <ComboBox Width="210"
                   ItemsSource="{Binding AvailableLanguages}"
                   SelectedItem="{Binding SelectedLanguage}" />
+      </StackPanel>
+
+      <!-- OCR model tier -->
+      <StackPanel Orientation="Horizontal"
+                  Margin="0,0,0,8">
+        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsOcrTier]}"
+                   Width="170"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource Foreground}" />
+        <ComboBox Width="210"
+                  ItemsSource="{Binding AvailableOcrTiers}"
+                  SelectedItem="{Binding OcrModelTier}" />
       </StackPanel>
 
       <!-- Disk cache limit -->

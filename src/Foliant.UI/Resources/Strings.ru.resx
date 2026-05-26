@@ -205,6 +205,12 @@
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Язык:</value>
   </data>
+  <data name="SettingsOcrTier" xml:space="preserve">
+    <value>Набор моделей OCR:</value>
+  </data>
+  <data name="UpdateAvailableFormat" xml:space="preserve">
+    <value>Доступно обновление: {0}</value>
+  </data>
   <data name="SettingsDiskCacheLimit" xml:space="preserve">
     <value>Лимит дискового кэша (ГБ):</value>
   </data>
