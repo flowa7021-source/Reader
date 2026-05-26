@@ -321,8 +321,9 @@ public sealed class SettingsViewModelTests
         var settings = Substitute.For<ISettingsService>();
         settings.Current.Returns(AppSettings.Default);
         AppSettings? persisted = null;
-        await settings.SaveAsync(
-            Arg.Do<AppSettings>(s => persisted = s), Arg.Any<CancellationToken>());
+        await settings.UpdateAsync(
+            Arg.Do<Func<AppSettings, AppSettings>>(f => persisted = f(AppSettings.Default)),
+            Arg.Any<CancellationToken>());
         var vm = CreateVm(settings: settings);
         vm.OcrModelTier = OcrModelTier.Standard;
 
