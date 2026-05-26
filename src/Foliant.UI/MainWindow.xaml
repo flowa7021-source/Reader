@@ -284,7 +284,8 @@
                           Unloaded="OnVisiblePageUnloaded">
                       <ui:PageSurface PageRender="{Binding Render}" />
                       <ui:AnnotationLayer PageRender="{Binding Render}"
-                                          Annotations="{Binding Annotations}" />
+                                          Annotations="{Binding Annotations}"
+                                          SearchHighlights="{Binding SearchHighlights}" />
                     </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -309,7 +310,8 @@
                             Unloaded="OnVisiblePageUnloaded">
                         <ui:PageSurface PageRender="{Binding Render}" />
                         <ui:AnnotationLayer PageRender="{Binding Render}"
-                                            Annotations="{Binding Annotations}" />
+                                            Annotations="{Binding Annotations}"
+                                            SearchHighlights="{Binding SearchHighlights}" />
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

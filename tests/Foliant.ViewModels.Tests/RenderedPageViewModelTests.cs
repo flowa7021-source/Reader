@@ -21,6 +21,17 @@ public sealed class RenderedPageViewModelTests
             () => RenderOptions.Default);
     }
 
+    private static RenderedPageViewModel CreateWithHighlights(
+        int pageIndex,
+        Func<int, IReadOnlyList<AnnotationRect>> highlights)
+    {
+        return new RenderedPageViewModel(
+            pageIndex,
+            (_, _, _) => Task.FromResult<IPageRender>(new FakePageRender()),
+            () => RenderOptions.Default,
+            (i, _) => Task.FromResult(highlights(i)));
+    }
+
     [Fact]
     public async Task EnsureRendered_SetsRender_AndExposesDisplayNumber()
     {
@@ -77,5 +88,67 @@ public sealed class RenderedPageViewModelTests
         produced[0].IsDisposed.Should().BeTrue();
         await vm.EnsureRenderedAsync(default); // no-op after dispose
         produced.Should().ContainSingle();
+    }
+
+    private static readonly AnnotationRect SampleRect = new(10, 20, 30, 40);
+
+    [Fact]
+    public async Task EnsureRendered_WithHighlightProvider_PopulatesSearchHighlights()
+    {
+        var vm = CreateWithHighlights(1, _ => [SampleRect]);
+
+        await vm.EnsureRenderedAsync(default);
+
+        vm.SearchHighlights.Should().ContainSingle().Which.Should().Be(SampleRect);
+    }
+
+    [Fact]
+    public async Task NoHighlightProvider_SearchHighlightsStayEmpty()
+    {
+        var produced = new List<FakePageRender>();
+        var vm = Create(0, produced); // 3-arg ctor — no provider
+
+        await vm.EnsureRenderedAsync(default);
+
+        vm.SearchHighlights.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RefreshHighlights_PicksUpProviderChange()
+    {
+        IReadOnlyList<AnnotationRect> current = [];
+        var vm = CreateWithHighlights(0, _ => current);
+        await vm.EnsureRenderedAsync(default);
+        vm.SearchHighlights.Should().BeEmpty();
+
+        current = [SampleRect];
+        await vm.RefreshHighlightsAsync(default);
+
+        vm.SearchHighlights.Should().ContainSingle().Which.Should().Be(SampleRect);
+    }
+
+    [Fact]
+    public async Task Invalidate_ClearsSearchHighlights()
+    {
+        var vm = CreateWithHighlights(0, _ => [SampleRect]);
+        await vm.EnsureRenderedAsync(default);
+        vm.SearchHighlights.Should().ContainSingle();
+
+        vm.Invalidate();
+
+        vm.SearchHighlights.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Dispose_ClearsSearchHighlights_AndBlocksRefresh()
+    {
+        var vm = CreateWithHighlights(0, _ => [SampleRect]);
+        await vm.EnsureRenderedAsync(default);
+
+        vm.Dispose();
+        vm.SearchHighlights.Should().BeEmpty();
+
+        await vm.RefreshHighlightsAsync(default); // no-op after dispose
+        vm.SearchHighlights.Should().BeEmpty();
     }
 }
