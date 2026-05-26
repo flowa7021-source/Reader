@@ -208,6 +208,10 @@
                   Command="{Binding SelectedTab.SetContinuousViewCommand}" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTwoPage]}"
                   Command="{Binding SelectedTab.SetTwoPageViewCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTwoPageCoverSeparate]}"
+                  IsCheckable="True"
+                  IsChecked="{Binding SelectedTab.TwoPageCoverSeparate, Mode=TwoWay}"
+                  IsEnabled="{Binding SelectedTab.IsTwoPageView}" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewThumbnails]}"
                   Command="{Binding SelectedTab.ToggleThumbnailStripCommand}" />

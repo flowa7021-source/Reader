@@ -260,7 +260,7 @@ Acceptance: окно открывает выбранный PDF, скроллит
 | № | Тема | Статус | Что сделано | Что осталось до acceptance |
 |---|---|---|---|---|
 | **S1** | Domain + PDFium | ✅ | `IDocument`/`PdfDocument` на PDFiumCore: рендер BGRA32, размеры, metadata, per-line текст. | Перцентили рендера не замерены (нет golden-набора). |
-| **S2** | UI shell + темы | 🟡 | MDI-табы, `ThemeManager`, меню, статус-бар; **Dark/HC = `RenderColorMap`** (инверсия + контраст-стретч, тесты); VM-ядра режимов (`ViewMode`/`FitMode`/`VisiblePageIndices`) + Fit-меню. | WPF-рендер непрерывного и 2-страничного режимов (ядро готово), «обложка отдельно». |
+| **S2** | UI shell + темы | 🟡 | MDI-табы, `ThemeManager`, меню, статус-бар; **Dark/HC = `RenderColorMap`** (инверсия + контраст-стретч, тесты); VM-ядра режимов (`ViewMode`/`FitMode`/`VisiblePageIndices`) + Fit-меню; **two-page фиксированные развороты + «обложка отдельно»** (`TwoPageCoverSeparate`, меню View, тесты). | WPF-рендер непрерывного и 2-страничного режимов (ядро готово). |
 | **S3** | In-memory кэш (1–3) | ✅ | `LruCache`, `MemoryPageCache` (sticky ±N), `ThumbnailCache`, `TextStructureCache`. | Бенчмарк «повторный рендер ≤ 5 мс» не замерен. |
 | **S4** | Disk-кэш (4) + fingerprint | ✅ | `SqliteDiskCache` (WAL, атомарная запись, LRU), `FileFingerprint` (head-окно покрыто регресс-тестом), `CacheKey`, `CacheJanitor`. | perf/integration прогон на Windows. |
 | **S5** | Локализация + Settings + Recents | ✅ | RU/EN hot-switch, `SettingsWindow`, `RecentsService` (MRU=20), миграции настроек. | — |

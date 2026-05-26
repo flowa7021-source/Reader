@@ -151,6 +151,9 @@
   <data name="MenuViewTwoPage" xml:space="preserve">
     <value>_Две страницы</value>
   </data>
+  <data name="MenuViewTwoPageCoverSeparate" xml:space="preserve">
+    <value>Обло_жка отдельно</value>
+  </data>
   <data name="MenuViewThumbnails" xml:space="preserve">
     <value>_Миниатюры</value>
   </data>

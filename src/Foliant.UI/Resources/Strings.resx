@@ -151,6 +151,9 @@
   <data name="MenuViewTwoPage" xml:space="preserve">
     <value>_Two Pages</value>
   </data>
+  <data name="MenuViewTwoPageCoverSeparate" xml:space="preserve">
+    <value>Separate Co_ver Page</value>
+  </data>
   <data name="MenuViewThumbnails" xml:space="preserve">
     <value>Thum_bnails</value>
   </data>

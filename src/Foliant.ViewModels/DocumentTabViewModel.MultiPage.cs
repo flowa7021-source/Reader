@@ -102,5 +102,7 @@ public sealed partial class DocumentTabViewModel
 
     partial void OnViewModeChanged(ViewMode value) => SyncVisiblePages(forceRerender: false);
 
+    partial void OnTwoPageCoverSeparateChanged(bool value) => SyncVisiblePages(forceRerender: false);
+
     partial void OnThemeChanged(RenderTheme value) => SyncVisiblePages(forceRerender: true);
 }
