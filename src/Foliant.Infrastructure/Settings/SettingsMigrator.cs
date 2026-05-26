@@ -6,11 +6,22 @@ internal static class SettingsMigrator
 {
     public static AppSettings Migrate(AppSettings raw)
     {
-        // Phase 0: одна версия. При появлении V2 — сюда добавится цепочка миграций
-        // (V1 → V2 → V3 → ...). См. IMPLEMENTATION_PLAN.md, раздел 5.8.
-        if (raw.Version == 1)
+        AppSettings current = raw;
+
+        // V1 → V2: добавлен OcrSettings.ModelTier; в старых файлах поля нет —
+        // дефолтим Basic (как в fetch-natives.ps1 без -Tier).
+        if (current.Version == 1)
         {
-            return raw;
+            current = current with
+            {
+                Version = 2,
+                Ocr = current.Ocr with { ModelTier = OcrModelTier.Basic },
+            };
+        }
+
+        if (current.Version == 2)
+        {
+            return current;
         }
 
         // Незнакомая будущая версия — возвращаем дефолты, не теряя пользователю файл.

@@ -63,7 +63,7 @@ public sealed class JsonSettingsStore(string filePath, ILogger<JsonSettingsStore
     }
 }
 
-[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(AppSettings))]
 [JsonSerializable(typeof(CacheSettings))]
 [JsonSerializable(typeof(OcrSettings))]

@@ -290,4 +290,75 @@ public sealed class SettingsViewModelTests
         vm.MaxParallelOcrPages.Should().Be(AppSettings.Default.Ocr.MaxParallelPages);
         vm.AutoOcrOpenedScans.Should().Be(AppSettings.Default.Ocr.AutoOcrOpenedScans);
     }
+
+    // ───── OCR model tier ─────
+
+    [Fact]
+    public void AvailableOcrTiers_ContainsAllThreeTiers()
+    {
+        var vm = CreateVm();
+
+        vm.AvailableOcrTiers.Should().BeEquivalentTo(
+            [OcrModelTier.Basic, OcrModelTier.Standard, OcrModelTier.Full]);
+    }
+
+    [Fact]
+    public void Constructor_LoadsOcrModelTierFromCurrent()
+    {
+        var initial = AppSettings.Default with
+        {
+            Ocr = new OcrSettings { ModelTier = OcrModelTier.Full },
+        };
+
+        var vm = CreateVm(initial);
+
+        vm.OcrModelTier.Should().Be(OcrModelTier.Full);
+    }
+
+    [Fact]
+    public async Task SaveThenLoad_OcrModelTier_RoundTrips()
+    {
+        var settings = Substitute.For<ISettingsService>();
+        settings.Current.Returns(AppSettings.Default);
+        AppSettings? persisted = null;
+        await settings.SaveAsync(
+            Arg.Do<AppSettings>(s => persisted = s), Arg.Any<CancellationToken>());
+        var vm = CreateVm(settings: settings);
+        vm.OcrModelTier = OcrModelTier.Standard;
+
+        await vm.SaveCommand.ExecuteAsync(null);
+        persisted.Should().NotBeNull();
+        settings.Current.Returns(persisted);
+        vm.LoadFromCurrent();
+
+        vm.OcrModelTier.Should().Be(OcrModelTier.Standard);
+        persisted!.Ocr.ModelTier.Should().Be(OcrModelTier.Standard);
+    }
+
+    [Fact]
+    public async Task IsSaved_ResetsToFalse_WhenOcrModelTierChangedAfterSave()
+    {
+        var vm = CreateVm();
+        await vm.SaveCommand.ExecuteAsync(null);
+        vm.IsSaved.Should().BeTrue();
+
+        vm.OcrModelTier = OcrModelTier.Full;
+
+        vm.IsSaved.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ResetToDefaults_RestoresDefaultOcrModelTier()
+    {
+        var custom = AppSettings.Default with
+        {
+            Ocr = new OcrSettings { ModelTier = OcrModelTier.Full },
+        };
+        var vm = CreateVm(custom);
+
+        vm.ResetToDefaultsCommand.Execute(null);
+
+        vm.OcrModelTier.Should().Be(AppSettings.Default.Ocr.ModelTier);
+        vm.OcrModelTier.Should().Be(OcrModelTier.Basic);
+    }
 }

@@ -34,9 +34,18 @@ public sealed record OcrSettings
     public string DefaultLanguage { get; init; } = "rus+eng";
     public int MaxParallelPages { get; init; } = 4;
     public bool AutoOcrOpenedScans { get; init; }
+    public OcrModelTier ModelTier { get; init; } = OcrModelTier.Basic;
+}
+
+// Уровень OCR-моделей; соответствует -Tier в tools/fetch-natives.ps1.
+public enum OcrModelTier
+{
+    Basic,
+    Standard,
+    Full,
 }
 
 internal static class AppSettingsVersion
 {
-    public const int Current = 1;
+    public const int Current = 2;
 }
