@@ -12,7 +12,7 @@ namespace Foliant.Plugin.DjVu.Tests;
 [Trait("Category", "Slow")]
 public sealed class DjvuRenderIntegrationTests
 {
-    private static string SamplePath => Path.Combine(AppContext.BaseDirectory, "assets", "sample.djvu");
+    private static string SamplePath => Path.Join(AppContext.BaseDirectory, "assets", "sample.djvu");
 
     private static DjvuToolset? Tools => DjvuToolset.TryResolve(out var t) ? t : null;
 
