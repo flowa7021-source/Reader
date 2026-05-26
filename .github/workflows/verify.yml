@@ -57,6 +57,15 @@ jobs:
           --no-build
           --filter "Category!=Slow&Category!=Integration&Category!=E2E"
 
+      # Real-SQLite persistence tests (disk cache + FTS index) — cross-platform, run on Linux.
+      - name: Integration (real SQLite)
+        run: >-
+          dotnet test tests/Foliant.Infrastructure.Tests/Foliant.Infrastructure.Tests.csproj
+          -c Release
+          -f net10.0
+          --no-build
+          --filter "Category=Integration"
+
   verify:
     name: Build & test (Windows)
     runs-on: windows-latest

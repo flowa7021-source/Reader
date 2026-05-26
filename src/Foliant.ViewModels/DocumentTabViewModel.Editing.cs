@@ -135,6 +135,7 @@ public sealed partial class DocumentTabViewModel
         {
             Thumbnails.SetPageCount(PageCount);
         }
+        SyncVisiblePages(forceRerender: true); // document reopened — drop stale renders
 
         await old.DisposeAsync();
         await RenderCurrentPageAsync(ct);

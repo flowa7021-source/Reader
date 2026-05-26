@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using Foliant.UI.Localization;
 using Foliant.ViewModels;
 using Microsoft.Extensions.Logging;
@@ -152,5 +155,95 @@ public partial class MainWindow : Window
         {
             tab.SetViewport(e.NewSize.Width, e.NewSize.Height);
         }
+    }
+
+    // Multi-page (continuous/two-page) pages render lazily: render when the item is realized,
+    // drop the bitmap when it is virtualized out, so memory stays bounded to on-screen pages.
+    private void OnVisiblePageLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: RenderedPageViewModel page })
+        {
+            _ = page.EnsureRenderedAsync(CancellationToken.None);
+        }
+    }
+
+    private void OnVisiblePageUnloaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: RenderedPageViewModel page })
+        {
+            page.Invalidate();
+        }
+    }
+
+    // Thumbnails render lazily when their strip item is realized; they persist (small, cached).
+    private void OnThumbnailLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: PageThumbnailViewModel page })
+        {
+            _ = page.EnsureThumbnailAsync(CancellationToken.None);
+        }
+    }
+
+    // ── Thumbnail strip drag-and-drop reorder ──
+    private Point _thumbDragStart;
+    private PageThumbnailViewModel? _thumbDragItem;
+
+    private void OnThumbnailStripPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _thumbDragStart = e.GetPosition(null);
+        _thumbDragItem = ThumbnailUnder(e.OriginalSource as DependencyObject);
+    }
+
+    private void OnThumbnailStripMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _thumbDragItem is null)
+        {
+            return;
+        }
+
+        Vector moved = _thumbDragStart - e.GetPosition(null);
+        if (Math.Abs(moved.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(moved.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        DragDrop.DoDragDrop((DependencyObject)sender, _thumbDragItem, DragDropEffects.Move);
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Drop handler must not propagate; reorder failures already surface as the tab's ErrorMessage.")]
+    private async void OnThumbnailStripDrop(object sender, DragEventArgs e)
+    {
+        try
+        {
+            if (e.Data.GetData(typeof(PageThumbnailViewModel)) is not PageThumbnailViewModel source ||
+                ThumbnailUnder(e.OriginalSource as DependencyObject) is not { } target ||
+                ReferenceEquals(source, target) ||
+                ((FrameworkElement)sender).DataContext is not DocumentTabViewModel tab)
+            {
+                return;
+            }
+
+            await tab.Thumbnails.MoveAsync(source.PageIndex, target.PageIndex, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Thumbnail drag-reorder failed.");
+        }
+        finally
+        {
+            _thumbDragItem = null;
+        }
+    }
+
+    private static PageThumbnailViewModel? ThumbnailUnder(DependencyObject? origin)
+    {
+        DependencyObject? current = origin;
+        while (current is not null and not ListBoxItem)
+        {
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return (current as ListBoxItem)?.DataContext as PageThumbnailViewModel;
     }
 }

@@ -27,4 +27,10 @@ echo "== test (unit only: skip Slow/Integration/E2E) =="
 "$DOTNET" test "$FILTER" -c Release -f net10.0 --no-build \
   --filter "Category!=Slow&Category!=Integration&Category!=E2E"
 
+# Infrastructure integration tests use REAL SQLite (cross-platform native), so they run on
+# Linux too — exercising the disk-cache + FTS-index persistence for real, not against mocks.
+echo "== integration (real SQLite, cross-platform) =="
+"$DOTNET" test tests/Foliant.Infrastructure.Tests/Foliant.Infrastructure.Tests.csproj \
+  -c Release -f net10.0 --no-build --filter "Category=Integration"
+
 echo "== OK: cross-platform layer builds clean and unit tests pass =="

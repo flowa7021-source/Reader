@@ -93,16 +93,14 @@ public sealed class PlainTextDocumentExportServiceTests
             TextLayer.Empty(0),
             TextLayer.Empty(1),
         };
-        var progressValues = new List<int>();
-        var progress = new Progress<int>(v => progressValues.Add(v));
+        var progress = new SyncProgress<int>();
         string path = Path.GetTempFileName();
         try
         {
             await _sut.ExportAsync(_doc, layers, path, "txt", progress, CancellationToken.None);
-            await Task.Yield();  // let Progress<T> callbacks fire on thread-pool
 
-            progressValues.Should().HaveCount(2);
-            progressValues.Should().BeInAscendingOrder();
+            progress.Reports.Should().HaveCount(2);
+            progress.Reports.Should().BeInAscendingOrder();
         }
         finally
         {
@@ -166,6 +164,23 @@ public sealed class PlainTextDocumentExportServiceTests
             if (File.Exists(path))
             {
                 File.Delete(path);
+            }
+        }
+    }
+
+    /// <summary>Synchronous <see cref="IProgress{T}"/> collector — captures every Report
+    /// deterministically (<see cref="Progress{T}"/> posts callbacks asynchronously, which is racy).</summary>
+    private sealed class SyncProgress<T> : IProgress<T>
+    {
+        private readonly Lock _gate = new();
+
+        public List<T> Reports { get; } = [];
+
+        public void Report(T value)
+        {
+            lock (_gate)
+            {
+                Reports.Add(value);
             }
         }
     }

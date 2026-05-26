@@ -154,6 +154,60 @@ public sealed class PdfDocumentEditorTests : IDisposable
         Directory.GetFiles(_tmpDir, "*.tmp").Should().BeEmpty("temp file must be moved, not left behind");
     }
 
+    [Fact]
+    public async Task Undo_WhenReplayThrows_DoesNotCommitPartialState()
+    {
+        var (editor, working, fail) = NewEditorWithFailToggle();
+        await editor.ApplyAsync(new DeletePageCommand(0), default);
+        await editor.ApplyAsync(new RotatePageCommand(1, ViewRotation.Cw90), default);
+
+        fail(true); // replay over the remaining ["delete-page"] will throw
+        await editor.Invoking(e => e.UndoAsync(default)).Should().ThrowAsync<InvalidOperationException>();
+
+        // The throwing undo must not have removed "rotate-page" from the applied log: a retry
+        // (now succeeding) replays exactly ["delete-page"]. If state had been corrupted, the
+        // remaining log would be empty and working would still show both commands.
+        fail(false);
+        await editor.UndoAsync(default);
+        Decode(working()).Should().Equal("delete-page");
+        editor.IsDirty.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Redo_WhenDispatchThrows_DoesNotDropTheRedoEntry()
+    {
+        var (editor, working, fail) = NewEditorWithFailToggle();
+        await editor.ApplyAsync(new DeletePageCommand(0), default);
+        await editor.UndoAsync(default); // pushes the command onto the redo stack
+
+        fail(true);
+        await editor.Invoking(e => e.RedoAsync(default)).Should().ThrowAsync<InvalidOperationException>();
+
+        // The failed redo must not have popped the entry: a retry re-applies it.
+        fail(false);
+        await editor.RedoAsync(default);
+        Decode(working()).Should().Equal("delete-page");
+    }
+
+    private (PdfDocumentEditor Editor, Func<byte[]> Working, Action<bool> Fail) NewEditorWithFailToggle()
+    {
+        byte[] baseBytes = Encode([]);
+        byte[] current = baseBytes;
+        bool shouldFail = false;
+        var editor = new PdfDocumentEditor(baseBytes, Fingerprint, _store, _targetPath, Dispatch);
+        return (editor, () => current, f => shouldFail = f);
+
+        byte[] Dispatch(byte[] input, DocumentCommandRecord rec)
+        {
+            if (shouldFail)
+            {
+                throw new InvalidOperationException("dispatch failed");
+            }
+            current = Encode(Decode(input).Append(rec.Kind));
+            return current;
+        }
+    }
+
     private PdfDocumentEditor NewEditor() => NewEditorWithProbe().Editor;
 
     private (PdfDocumentEditor Editor, Func<byte[]> Working) NewEditorWithProbe()

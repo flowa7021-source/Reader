@@ -201,6 +201,16 @@
                   Command="{Binding SelectedTab.FitPageCommand}" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewActualSize]}"
                   Command="{Binding SelectedTab.ActualSizeCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewSinglePage]}"
+                  Command="{Binding SelectedTab.SetSinglePageViewCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewContinuous]}"
+                  Command="{Binding SelectedTab.SetContinuousViewCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewTwoPage]}"
+                  Command="{Binding SelectedTab.SetTwoPageViewCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewThumbnails]}"
+                  Command="{Binding SelectedTab.ToggleThumbnailStripCommand}" />
       </MenuItem>
     </Menu>
 
@@ -221,13 +231,16 @@
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <!-- Page surface -->
-            <Grid Grid.Column="0">
+            <!-- Page surface (one of three layouts visible per ViewMode) -->
+            <Grid Grid.Column="0"
+                  SizeChanged="OnPageAreaSizeChanged">
+              <!-- Single page (with annotation + search overlay) -->
               <ScrollViewer HorizontalScrollBarVisibility="Auto"
                             VerticalScrollBarVisibility="Auto"
-                            SizeChanged="OnPageAreaSizeChanged">
+                            Visibility="{Binding IsSinglePageView, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid HorizontalAlignment="Center"
                       VerticalAlignment="Top">
                   <ui:PageSurface PageRender="{Binding CurrentRender}" />
@@ -237,6 +250,72 @@
                                       CreateNoteCommand="{Binding AddNoteAtCommand}" />
                 </Grid>
               </ScrollViewer>
+
+              <!-- Continuous: virtualized vertical list; each page renders lazily when realized -->
+              <ListBox ItemsSource="{Binding VisiblePages}"
+                       Visibility="{Binding IsContinuousView, Converter={StaticResource BooleanToVisibilityConverter}}"
+                       Background="Transparent"
+                       BorderThickness="0"
+                       HorizontalContentAlignment="Center"
+                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto"
+                       VirtualizingStackPanel.IsVirtualizing="True">
+                <ListBox.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel Orientation="Vertical" />
+                  </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                  <Style TargetType="ListBoxItem">
+                    <Setter Property="Focusable" Value="False" />
+                    <Setter Property="Margin" Value="0,0,0,8" />
+                    <Setter Property="Template">
+                      <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                          <ContentPresenter />
+                        </ControlTemplate>
+                      </Setter.Value>
+                    </Setter>
+                  </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <Grid Loaded="OnVisiblePageLoaded"
+                          Unloaded="OnVisiblePageUnloaded">
+                      <ui:PageSurface PageRender="{Binding Render}" />
+                      <ui:AnnotationLayer PageRender="{Binding Render}"
+                                          Annotations="{Binding Annotations}" />
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+              <!-- Two-page spread (current + next, side by side) -->
+              <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Auto"
+                            Visibility="{Binding IsTwoPageView, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ItemsControl ItemsSource="{Binding VisiblePages}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Top">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid Margin="4,0"
+                            Loaded="OnVisiblePageLoaded"
+                            Unloaded="OnVisiblePageUnloaded">
+                        <ui:PageSurface PageRender="{Binding Render}" />
+                        <ui:AnnotationLayer PageRender="{Binding Render}"
+                                            Annotations="{Binding Annotations}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+
               <TextBlock Text="{Binding ErrorMessage}"
                          Foreground="Red"
                          VerticalAlignment="Center"
@@ -367,6 +446,41 @@
                          Text="{Binding ExportedText, Mode=OneWay}"
                          Visibility="{Binding ExportedText, Converter={StaticResource NullToVisibilityConverter}}" />
               </Grid>
+            </Border>
+
+            <!-- Thumbnail strip (toggled via View menu); click navigates, image renders lazily -->
+            <Border Grid.Column="3"
+                    Width="168"
+                    BorderBrush="{DynamicResource Foreground}"
+                    BorderThickness="1,0,0,0"
+                    Background="{DynamicResource PageBackground}"
+                    Visibility="{Binding IsThumbnailStripVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+              <ListBox ItemsSource="{Binding Thumbnails.Pages}"
+                       SelectedIndex="{Binding Thumbnails.SelectedPageIndex, Mode=TwoWay}"
+                       Background="Transparent"
+                       BorderThickness="0"
+                       HorizontalContentAlignment="Stretch"
+                       AllowDrop="True"
+                       PreviewMouseLeftButtonDown="OnThumbnailStripPreviewMouseLeftButtonDown"
+                       PreviewMouseMove="OnThumbnailStripMouseMove"
+                       Drop="OnThumbnailStripDrop"
+                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto"
+                       VirtualizingStackPanel.IsVirtualizing="True">
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Margin="4"
+                                Loaded="OnThumbnailLoaded">
+                      <ui:PageSurface PageRender="{Binding Thumbnail}"
+                                      HorizontalAlignment="Center" />
+                      <TextBlock Text="{Binding DisplayNumber}"
+                                 HorizontalAlignment="Center"
+                                 Margin="0,2,0,0"
+                                 Foreground="{DynamicResource Foreground}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
             </Border>
           </Grid>
         </DataTemplate>

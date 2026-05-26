@@ -67,12 +67,17 @@ public sealed class PdfDocumentEditor : IDocumentEditor
             return;
         }
 
+        // Do the fallible work (replay + store compaction) against a COPY of the post-undo
+        // history first; only mutate in-memory state once both awaits succeed. Otherwise a
+        // throw/cancel would leave _applied/_redo undone while _working still held the change.
         var last = _applied[^1];
+        var afterUndo = _applied.GetRange(0, _applied.Count - 1);
+        byte[] next = await ReplayAsync(_base, afterUndo, ct).ConfigureAwait(false);
+        await _eventStore.CompactAsync(_fingerprint, afterUndo, ct).ConfigureAwait(false);
+
         _applied.RemoveAt(_applied.Count - 1);
         _redo.Push(last);
-
-        _working = await ReplayAsync(_base, _applied, ct).ConfigureAwait(false);
-        await _eventStore.CompactAsync(_fingerprint, _applied, ct).ConfigureAwait(false);
+        _working = next;
         IsDirty = true;
     }
 
@@ -83,10 +88,13 @@ public sealed class PdfDocumentEditor : IDocumentEditor
             return;
         }
 
-        var record = _redo.Pop();
+        // Peek, not Pop: only commit the redo once dispatch + store append succeed, so a
+        // throw/cancel doesn't silently drop the redo entry.
+        var record = _redo.Peek();
         byte[] next = await RunDispatchAsync(_working, record, ct).ConfigureAwait(false);
-
         await _eventStore.AppendAsync(_fingerprint, record, ct).ConfigureAwait(false);
+
+        _redo.Pop();
         _working = next;
         _applied.Add(record);
         IsDirty = true;

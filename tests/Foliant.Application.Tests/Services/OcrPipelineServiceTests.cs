@@ -71,18 +71,13 @@ public sealed class OcrPipelineServiceTests
     {
         int pageCount = 5;
         var doc = MakeDocument(pageCount);
-        var reports = new List<OcrProgress>();
-        var progress = new Progress<OcrProgress>(p => reports.Add(p));
+        var progress = new SyncProgress<OcrProgress>();
 
         await _sut.RecognizeDocumentAsync(doc, Fp, new OcrOptions(), progress, default);
 
-        // Give the synchronous progress callbacks a chance to fire (Progress<T> posts to the
-        // captured SynchronizationContext; in xUnit that is the thread-pool, so we yield).
-        await Task.Yield();
-
-        reports.Should().HaveCount(pageCount);
-        reports[^1].CompletedPages.Should().Be(pageCount);
-        reports[^1].TotalPages.Should().Be(pageCount);
+        progress.Reports.Should().HaveCount(pageCount);
+        progress.Reports[^1].CompletedPages.Should().Be(pageCount);
+        progress.Reports[^1].TotalPages.Should().Be(pageCount);
     }
 
     [Fact]
@@ -215,5 +210,23 @@ public sealed class OcrPipelineServiceTests
         var result = await _sut.RecognizeDocumentAsync(doc, Fp, new OcrOptions(), null, default);
 
         result.Should().HaveCount(3);
+    }
+
+    /// <summary>Synchronous <see cref="IProgress{T}"/> collector. Captures every Report
+    /// deterministically; <see cref="Progress{T}"/> posts to the captured SynchronizationContext
+    /// asynchronously (the thread-pool under xUnit), which made the assertion racy.</summary>
+    private sealed class SyncProgress<T> : IProgress<T>
+    {
+        private readonly Lock _gate = new();
+
+        public List<T> Reports { get; } = [];
+
+        public void Report(T value)
+        {
+            lock (_gate)
+            {
+                Reports.Add(value);
+            }
+        }
     }
 }

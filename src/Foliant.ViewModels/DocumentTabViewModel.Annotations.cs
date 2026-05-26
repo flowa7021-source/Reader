@@ -51,6 +51,7 @@ public sealed partial class DocumentTabViewModel
         OnPropertyChanged(nameof(NoteCount));
         OnPropertyChanged(nameof(FreehandCount));
         AnnotationsDocument.Rebuild(_allAnnotations);
+        RefreshVisiblePageAnnotations();
     }
 
     /// <summary>Видимость сайдбара «All Annotations» (toggle из меню/тулбара).</summary>
@@ -194,6 +195,7 @@ public sealed partial class DocumentTabViewModel
         }
 
         AnnotationsDocument.Rebuild(_allAnnotations);
+        RefreshVisiblePageAnnotations();
     }
 
     private void RefreshCurrentPageAnnotations()

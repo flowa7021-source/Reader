@@ -142,6 +142,18 @@
   <data name="MenuViewActualSize" xml:space="preserve">
     <value>_Реальный размер (100%)</value>
   </data>
+  <data name="MenuViewSinglePage" xml:space="preserve">
+    <value>_Одна страница</value>
+  </data>
+  <data name="MenuViewContinuous" xml:space="preserve">
+    <value>_Непрерывно</value>
+  </data>
+  <data name="MenuViewTwoPage" xml:space="preserve">
+    <value>_Две страницы</value>
+  </data>
+  <data name="MenuViewThumbnails" xml:space="preserve">
+    <value>_Миниатюры</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Светлая</value>
   </data>

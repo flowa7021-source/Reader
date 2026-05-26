@@ -1,15 +1,22 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Foliant.Domain;
 
 namespace Foliant.ViewModels;
 
 /// <summary>
-/// VM одной миниатюры страницы в полосе превью. Хранит только состояние порядка
-/// и выделения — само изображение миниатюры рисует View. <see cref="PageIndex"/>
-/// отражает ТЕКУЩУЮ позицию страницы в полосе (меняется после reorder).
+/// VM одной миниатюры страницы в полосе превью. Рисует своё изображение лениво по
+/// запросу View (при реализации элемента) и кэширует его: миниатюра отражает СОДЕРЖИМОЕ
+/// страницы, поэтому переживает <c>Pages.Move</c> без переотрисовки. <see cref="PageIndex"/>
+/// отражает ТЕКУЩУЮ позицию в полосе (меняется после reorder).
 /// </summary>
-public sealed partial class PageThumbnailViewModel : ObservableObject
+public sealed partial class PageThumbnailViewModel : ObservableObject, IDisposable
 {
+    private readonly Func<int, CancellationToken, Task<IPageRender>>? _renderThumbnail;
+    private int _generation;
+    private bool _disposed;
+
     /// <summary>Текущая 0-based позиция страницы в полосе превью.</summary>
     public int PageIndex { get; internal set; }
 
@@ -21,13 +28,62 @@ public sealed partial class PageThumbnailViewModel : ObservableObject
     [ObservableProperty]
     private int _displayNumber;
 
+    /// <summary>Отрисованная миниатюра (маленький рендер) или null, пока не запрошена.</summary>
+    [ObservableProperty]
+    private IPageRender? _thumbnail;
+
     /// <summary>Создаёт VM миниатюры для страницы с указанной 0-based позицией.</summary>
     /// <param name="pageIndex">0-based позиция страницы в полосе превью.</param>
-    public PageThumbnailViewModel(int pageIndex)
+    /// <param name="renderThumbnail">Колбэк ленивой отрисовки миниатюры по индексу; null —
+    /// изображение не рисуется (полоса показывает только номера).</param>
+    public PageThumbnailViewModel(
+        int pageIndex,
+        Func<int, CancellationToken, Task<IPageRender>>? renderThumbnail = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         PageIndex = pageIndex;
         DisplayNumber = pageIndex + 1;
+        _renderThumbnail = renderThumbnail;
+    }
+
+    /// <summary>Отрисовать миниатюру, если ещё не отрисована (идемпотентно). Вызывается View
+    /// при реализации элемента полосы.</summary>
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Thumbnail render failure must leave the slot blank, not crash the strip.")]
+    public async Task EnsureThumbnailAsync(CancellationToken ct)
+    {
+        if (_renderThumbnail is null || Thumbnail is not null || _disposed)
+        {
+            return;
+        }
+
+        int generation = Interlocked.Increment(ref _generation);
+        try
+        {
+            IPageRender result = await _renderThumbnail(PageIndex, ct);
+            if (_disposed || generation != Volatile.Read(ref _generation))
+            {
+                result.Dispose();
+                return;
+            }
+            Thumbnail = result;
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation is not an error.
+        }
+        catch (Exception)
+        {
+            Thumbnail = null; // leave the slot blank
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+        Interlocked.Increment(ref _generation);
+        Thumbnail?.Dispose();
+        Thumbnail = null;
     }
 }
 
@@ -36,10 +92,11 @@ public sealed partial class PageThumbnailViewModel : ObservableObject
 /// фактический reorder и переход на страницу инжектированным колбэкам. Полностью
 /// независим от WPF и нативного рендеринга — изображения остаются заботой View.
 /// </summary>
-public sealed partial class ThumbnailStripViewModel : ObservableObject
+public sealed partial class ThumbnailStripViewModel : ObservableObject, IDisposable
 {
     private readonly Func<int, int, CancellationToken, Task> _reorderAsync;
     private readonly Action<int> _onSelect;
+    private readonly Func<int, CancellationToken, Task<IPageRender>>? _renderThumbnail;
 
     /// <summary>Коллекция миниатюр в текущем порядке отображения.</summary>
     public ObservableCollection<PageThumbnailViewModel> Pages { get; } = [];
@@ -52,17 +109,28 @@ public sealed partial class ThumbnailStripViewModel : ObservableObject
     /// <param name="pageCount">Количество страниц (≥ 0).</param>
     /// <param name="reorderAsync">Колбэк фактического перемещения страницы from→to.</param>
     /// <param name="onSelect">Колбэк перехода на выделенную 0-based страницу.</param>
+    /// <param name="renderThumbnail">Колбэк ленивой отрисовки миниатюры (null — только номера).</param>
     public ThumbnailStripViewModel(
         int pageCount,
         Func<int, int, CancellationToken, Task> reorderAsync,
-        Action<int> onSelect)
+        Action<int> onSelect,
+        Func<int, CancellationToken, Task<IPageRender>>? renderThumbnail = null)
     {
         ArgumentNullException.ThrowIfNull(reorderAsync);
         ArgumentNullException.ThrowIfNull(onSelect);
         ArgumentOutOfRangeException.ThrowIfNegative(pageCount);
         _reorderAsync = reorderAsync;
         _onSelect = onSelect;
+        _renderThumbnail = renderThumbnail;
         BuildPages(pageCount);
+    }
+
+    public void Dispose()
+    {
+        foreach (PageThumbnailViewModel page in Pages)
+        {
+            page.Dispose();
+        }
     }
 
     /// <summary>
@@ -133,10 +201,14 @@ public sealed partial class ThumbnailStripViewModel : ObservableObject
 
     private void BuildPages(int pageCount)
     {
+        foreach (PageThumbnailViewModel page in Pages)
+        {
+            page.Dispose();
+        }
         Pages.Clear();
         for (int i = 0; i < pageCount; i++)
         {
-            Pages.Add(new PageThumbnailViewModel(i));
+            Pages.Add(new PageThumbnailViewModel(i, _renderThumbnail));
         }
     }
 

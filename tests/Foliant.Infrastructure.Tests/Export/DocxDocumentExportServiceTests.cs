@@ -97,17 +97,32 @@ public sealed class DocxDocumentExportServiceTests
             TextLayer.Empty(1),
             TextLayer.Empty(2),
         };
-        var progressValues = new List<int>();
-        var progress = new Progress<int>(v => progressValues.Add(v));
+        var progress = new SyncProgress<int>();
         using var dir = new TempDir();
         string path = dir.File("progress.docx");
 
         int result = await _sut.ExportAsync(_doc, layers, path, "docx", progress, CancellationToken.None);
-        await Task.Yield();  // let Progress<T> callbacks fire on thread-pool
 
         result.Should().Be(3);
-        progressValues.Should().HaveCount(3);
-        progressValues.Should().BeInAscendingOrder();
+        progress.Reports.Should().HaveCount(3);
+        progress.Reports.Should().BeInAscendingOrder();
+    }
+
+    /// <summary>Synchronous <see cref="IProgress{T}"/> collector — captures every Report
+    /// deterministically (<see cref="Progress{T}"/> posts callbacks asynchronously, which is racy).</summary>
+    private sealed class SyncProgress<T> : IProgress<T>
+    {
+        private readonly System.Threading.Lock _gate = new();
+
+        public List<T> Reports { get; } = [];
+
+        public void Report(T value)
+        {
+            lock (_gate)
+            {
+                Reports.Add(value);
+            }
+        }
     }
 
     [Fact]

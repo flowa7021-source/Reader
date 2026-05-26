@@ -1,12 +1,10 @@
-using Foliant.Domain;
-
-namespace Foliant.Engines.Pdf;
+namespace Foliant.Domain;
 
 /// <summary>
-/// Чистые цвето-преобразования BGRA32-буфера рендера по теме просмотра.
-/// <see cref="RenderTheme.Dark"/> — инверсия каналов; <see cref="RenderTheme.HighContrast"/> —
-/// инверсия + растяжение контраста вокруг середины (тёмное темнее, светлое светлее).
-/// Альфа-канал не изменяется. Буфер обрабатывается на месте.
+/// Чистые цвето-преобразования BGRA32-буфера рендера по теме просмотра, общие для всех
+/// движков (PDFium, DjVu). <see cref="RenderTheme.Dark"/> — инверсия каналов;
+/// <see cref="RenderTheme.HighContrast"/> — инверсия + растяжение контраста вокруг середины
+/// (тёмное темнее, светлое светлее). Альфа-канал не изменяется. Буфер правится на месте.
 /// </summary>
 public static class RenderColorMap
 {

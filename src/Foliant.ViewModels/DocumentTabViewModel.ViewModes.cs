@@ -11,10 +11,22 @@ public sealed partial class DocumentTabViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(VisiblePageIndices))]
+    [NotifyPropertyChangedFor(nameof(IsSinglePageView))]
+    [NotifyPropertyChangedFor(nameof(IsContinuousView))]
+    [NotifyPropertyChangedFor(nameof(IsTwoPageView))]
     private ViewMode _viewMode = ViewMode.SinglePage;
 
     [ObservableProperty]
     private FitMode _fitMode = FitMode.ActualSize;
+
+    /// <summary>True в одностраничном режиме (привязка видимости одностраничной поверхности).</summary>
+    public bool IsSinglePageView => ViewMode == ViewMode.SinglePage;
+
+    /// <summary>True в непрерывном режиме (привязка видимости виртуализованной ленты).</summary>
+    public bool IsContinuousView => ViewMode == ViewMode.Continuous;
+
+    /// <summary>True в режиме разворота (привязка видимости горизонтальной пары).</summary>
+    public bool IsTwoPageView => ViewMode == ViewMode.TwoPage;
 
     /// <summary>Индексы страниц, которые показывает область просмотра при текущем
     /// <see cref="ViewMode"/>: одна страница, разворот из двух или все (непрерывная лента).</summary>
