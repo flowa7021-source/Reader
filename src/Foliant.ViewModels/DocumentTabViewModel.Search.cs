@@ -184,6 +184,7 @@ public sealed partial class DocumentTabViewModel
 
             _activeHighlightQuery = trimmed;
             _activeHighlightMatchCase = SearchMatchCase;
+            _activeHighlightWholeWord = SearchMatchWholeWord;
             await RefreshSearchHighlightsAsync(CancellationToken.None);
         }
         catch (OperationCanceledException)
