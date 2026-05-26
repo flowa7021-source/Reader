@@ -4,7 +4,7 @@
         xmlns:loc="clr-namespace:Foliant.UI.Localization"
         Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsTitle]}"
         Width="440"
-        Height="350"
+        Height="410"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
@@ -66,12 +66,34 @@
       </StackPanel>
 
       <!-- Clear on exit -->
-      <StackPanel Orientation="Horizontal">
+      <StackPanel Orientation="Horizontal"
+                  Margin="0,0,0,8">
         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsClearCacheOnExit]}"
                    Width="170"
                    VerticalAlignment="Center"
                    Foreground="{DynamicResource Foreground}" />
         <CheckBox IsChecked="{Binding ClearCacheOnExit}"
+                  VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- Check for updates (opt-out) -->
+      <StackPanel Orientation="Horizontal"
+                  Margin="0,0,0,8">
+        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsCheckForUpdates]}"
+                   Width="170"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource Foreground}" />
+        <CheckBox IsChecked="{Binding CheckForUpdates}"
+                  VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- Crash reporting (opt-in) -->
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsCrashReporting]}"
+                   Width="170"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource Foreground}" />
+        <CheckBox IsChecked="{Binding CrashReportingEnabled}"
                   VerticalAlignment="Center" />
       </StackPanel>
     </StackPanel>

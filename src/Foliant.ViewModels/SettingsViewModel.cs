@@ -35,6 +35,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     private OcrModelTier _ocrModelTier = OcrModelTier.Basic;
 
     [ObservableProperty]
+    private bool _checkForUpdates = true;
+
+    [ObservableProperty]
+    private bool _crashReportingEnabled;
+
+    [ObservableProperty]
     private bool _isSaved;
 
     public IReadOnlyList<string> AvailableThemes { get; } = ["Auto", "Light", "Dark", "HighContrast"];
@@ -64,6 +70,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         MaxParallelOcrPages = s.Ocr.MaxParallelPages;
         AutoOcrOpenedScans = s.Ocr.AutoOcrOpenedScans;
         OcrModelTier = s.Ocr.ModelTier;
+        CheckForUpdates = s.CheckForUpdates;
+        CrashReportingEnabled = s.CrashReportingEnabled;
         IsSaved = false;
     }
 
@@ -82,6 +90,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnAutoOcrOpenedScansChanged(bool value) => IsSaved = false;
 
     partial void OnOcrModelTierChanged(OcrModelTier value) => IsSaved = false;
+
+    partial void OnCheckForUpdatesChanged(bool value) => IsSaved = false;
+
+    partial void OnCrashReportingEnabledChanged(bool value) => IsSaved = false;
 
     [RelayCommand]
     private async Task SaveAsync()
@@ -105,6 +117,8 @@ public sealed partial class SettingsViewModel : ObservableObject
                 AutoOcrOpenedScans = AutoOcrOpenedScans,
                 ModelTier = OcrModelTier,
             },
+            CheckForUpdates = CheckForUpdates,
+            CrashReportingEnabled = CrashReportingEnabled,
         }, CancellationToken.None);
 
         // Hot-switch культуры — все XAML-биндинги {Path=[Key]} обновятся через "Item[]" PropertyChanged.
@@ -131,5 +145,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         MaxParallelOcrPages = defaults.Ocr.MaxParallelPages;
         AutoOcrOpenedScans = defaults.Ocr.AutoOcrOpenedScans;
         OcrModelTier = defaults.Ocr.ModelTier;
+        CheckForUpdates = defaults.CheckForUpdates;
+        CrashReportingEnabled = defaults.CrashReportingEnabled;
     }
 }

@@ -217,6 +217,12 @@
   <data name="SettingsClearCacheOnExit" xml:space="preserve">
     <value>Clear cache on exit:</value>
   </data>
+  <data name="SettingsCheckForUpdates" xml:space="preserve">
+    <value>Check for updates:</value>
+  </data>
+  <data name="SettingsCrashReporting" xml:space="preserve">
+    <value>Send crash reports:</value>
+  </data>
   <data name="DialogOk" xml:space="preserve">
     <value>OK</value>
   </data>
