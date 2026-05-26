@@ -113,6 +113,34 @@ public sealed class LruCacheTests
     }
 
     [Fact]
+    public void Put_SameInstanceForExistingKey_DoesNotDisposeIt()
+    {
+        var c = new LruCache<int, Disposable>(capacityBytes: 100, sizeOf: _ => 10);
+        var value = new Disposable();
+
+        c.Put(1, value);
+        c.Put(1, value);   // re-insert the SAME instance
+
+        c.TryGet(1, out var got).Should().BeTrue();
+        got.Should().BeSameAs(value);
+        value.IsDisposed.Should().BeFalse();   // must stay live
+    }
+
+    [Fact]
+    public void Put_DifferentInstanceForExistingKey_DisposesOldOne()
+    {
+        var c = new LruCache<int, Disposable>(capacityBytes: 100, sizeOf: _ => 10);
+        var old = new Disposable();
+        var replacement = new Disposable();
+
+        c.Put(1, old);
+        c.Put(1, replacement);
+
+        old.IsDisposed.Should().BeTrue();
+        replacement.IsDisposed.Should().BeFalse();
+    }
+
+    [Fact]
     public void Constructor_NonPositiveCapacity_Throws()
     {
         var act = () => new LruCache<string, string>(capacityBytes: 0, sizeOf: _ => 1);

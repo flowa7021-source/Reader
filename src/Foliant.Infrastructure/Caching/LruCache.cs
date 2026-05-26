@@ -84,7 +84,12 @@ public sealed class LruCache<TKey, TValue>
             {
                 _currentBytes -= existing.Value.Size;
                 _order.Remove(existing);
-                evicted.Add(existing.Value.Value);
+                // Re-inserting the SAME instance under an existing key must not dispose it —
+                // it stays live in the cache (avoids a use-after-dispose).
+                if (!ReferenceEquals(existing.Value.Value, value))
+                {
+                    evicted.Add(existing.Value.Value);
+                }
                 _map.Remove(key);
             }
 
