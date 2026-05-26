@@ -24,6 +24,7 @@ nav:
   - Обзор: index.md
   - Руководство пользователя:
       - Тур по интерфейсу: user-guide/ui-tour.md
+      - Настройки: user-guide/settings.md
       - Горячие клавиши: user-guide/shortcuts.md
       - Настройки OCR: user-guide/ocr-settings.md
   - Разработчику:
