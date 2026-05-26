@@ -19,7 +19,9 @@ FILTER="Foliant.CrossPlatform.slnf"
 cd "$(dirname "$0")/.."
 
 echo "== build $FILTER (net10.0, -warnaserror) =="
-"$DOTNET" build "$FILTER" -c Release -f net10.0 -warnaserror
+# -maxcpucount:1: passing -f to a *solution* build sets TargetFramework globally, which
+# breaks project-reference dedup and races on shared outputs (Domain.deps.json). Serialize.
+"$DOTNET" build "$FILTER" -c Release -f net10.0 -warnaserror -maxcpucount:1
 
 echo "== test (unit only: skip Slow/Integration/E2E) =="
 "$DOTNET" test "$FILTER" -c Release -f net10.0 --no-build \

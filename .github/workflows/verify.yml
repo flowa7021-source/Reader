@@ -44,8 +44,10 @@ jobs:
 
       # net10.0 slice only (no WPF/native): the fast feedback loop for Domain, Application,
       # Infrastructure, ViewModels, Engines and the DjVu plugin. WPF + native smoke run on Windows below.
+      # -maxcpucount:1: passing -f to a *solution* build sets TargetFramework globally, which
+      # breaks project-reference dedup and races on shared outputs (Domain.deps.json). Serialize.
       - name: Build (warnings as errors)
-        run: dotnet build Foliant.CrossPlatform.slnf -c Release -f net10.0 -warnaserror
+        run: dotnet build Foliant.CrossPlatform.slnf -c Release -f net10.0 -warnaserror -maxcpucount:1
 
       - name: Test (unit only)
         run: >-

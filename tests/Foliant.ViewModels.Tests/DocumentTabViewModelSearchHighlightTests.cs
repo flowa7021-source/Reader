@@ -77,4 +77,16 @@ public sealed class DocumentTabViewModelSearchHighlightTests
 
         vm.CurrentPageSearchHighlights.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task RunSearch_WholeWord_ExcludesSubstringOnlyLines()
+    {
+        var vm = CreateVm(LayerWith("the cat sat", "category here"));
+        vm.SearchMatchWholeWord = true;
+        vm.SearchText = "cat";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.CurrentPageSearchHighlights.Should().HaveCount(1); // only "the cat sat"
+    }
 }

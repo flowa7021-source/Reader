@@ -10,6 +10,8 @@ public sealed partial class DocumentTabViewModel
 {
     private string? _activeHighlightQuery;
     private bool _activeHighlightMatchCase;
+    private bool _activeHighlightWholeWord;
+    private int _searchHighlightGeneration;
 
     /// <summary>Прямоугольники (PDF-точки) строк текущей страницы, содержащих активный
     /// поисковый запрос — для подсветки поверх рендера (overlay биндится как и аннотации).</summary>
@@ -17,6 +19,7 @@ public sealed partial class DocumentTabViewModel
 
     private void ClearSearchHighlights()
     {
+        Interlocked.Increment(ref _searchHighlightGeneration); // supersede any in-flight refresh
         _activeHighlightQuery = null;
         if (CurrentPageSearchHighlights.Count > 0)
         {
@@ -25,12 +28,17 @@ public sealed partial class DocumentTabViewModel
     }
 
     /// <summary>Пересчитать подсветку поиска для текущей страницы по активному запросу.
-    /// Вызывается после поиска и при смене страницы; без активного запроса — очищает.</summary>
+    /// Вызывается после поиска и при смене страницы; без активного запроса — очищает.
+    /// Поколение отбрасывает устаревший результат при быстрой смене страниц.</summary>
     [SuppressMessage("Design", "CA1031:Do not catch general exception types",
         Justification = "Highlight refresh runs fire-and-forget on page change; failures are logged, never crash the tab.")]
     internal async Task RefreshSearchHighlightsAsync(CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(_activeHighlightQuery))
+        int generation = Interlocked.Increment(ref _searchHighlightGeneration);
+        string? query = _activeHighlightQuery;
+        int pageIndex = CurrentPageIndex;
+
+        if (string.IsNullOrEmpty(query))
         {
             CurrentPageSearchHighlights.Clear();
             return;
@@ -38,9 +46,14 @@ public sealed partial class DocumentTabViewModel
 
         try
         {
-            TextLayer? layer = await _document.GetTextLayerAsync(CurrentPageIndex, ct);
+            TextLayer? layer = await _document.GetTextLayerAsync(pageIndex, ct);
+            if (generation != Volatile.Read(ref _searchHighlightGeneration))
+            {
+                return; // a newer refresh (page flip / clear) superseded this one
+            }
+
             IReadOnlyList<AnnotationRect> rects = SearchHighlight.MatchRects(
-                layer ?? TextLayer.Empty(CurrentPageIndex), _activeHighlightQuery, _activeHighlightMatchCase);
+                layer ?? TextLayer.Empty(pageIndex), query, _activeHighlightMatchCase, _activeHighlightWholeWord);
 
             CurrentPageSearchHighlights.Clear();
             foreach (AnnotationRect rect in rects)
@@ -54,7 +67,7 @@ public sealed partial class DocumentTabViewModel
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Search-highlight refresh failed on page {Page} of '{Title}'.", CurrentPageIndex, Title);
+            _logger.LogWarning(ex, "Search-highlight refresh failed on page {Page} of '{Title}'.", pageIndex, Title);
         }
     }
 }

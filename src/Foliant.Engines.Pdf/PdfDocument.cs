@@ -152,11 +152,7 @@ internal sealed partial class PdfDocument : IDocument
                     byte[] bytes = new byte[stride * hPx];
                     Marshal.Copy(ptr, bytes, 0, bytes.Length);
 
-                    if (opts.Theme == RenderTheme.Dark || opts.Theme == RenderTheme.HighContrast)
-                    {
-                        // TODO (S6): HighContrast palette; Phase 1 inverts B,G,R, alpha intact.
-                        InvertBgr(bytes);
-                    }
+                    RenderColorMap.ApplyTheme(bytes, opts.Theme);
 
                     return new PdfPageRender(wPx, hPx, stride, bytes, new PageSize(wPt, hPt));
                 }
@@ -254,15 +250,5 @@ internal sealed partial class PdfDocument : IDocument
         }
 
         return Math.Max(1, (int)Math.Round(px));
-    }
-
-    private static void InvertBgr(byte[] bytes)
-    {
-        for (int i = 0; i < bytes.Length; i += 4)
-        {
-            bytes[i] = (byte)(255 - bytes[i]);         // B
-            bytes[i + 1] = (byte)(255 - bytes[i + 1]); // G
-            bytes[i + 2] = (byte)(255 - bytes[i + 2]); // R; bytes[i + 3] = alpha, unchanged
-        }
     }
 }
