@@ -205,6 +205,12 @@
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Language:</value>
   </data>
+  <data name="SettingsOcrTier" xml:space="preserve">
+    <value>OCR model set:</value>
+  </data>
+  <data name="UpdateAvailableFormat" xml:space="preserve">
+    <value>Update available: {0}</value>
+  </data>
   <data name="SettingsDiskCacheLimit" xml:space="preserve">
     <value>Disk cache limit (GB):</value>
   </data>
@@ -228,5 +234,8 @@
   </data>
   <data name="SearchInProgress" xml:space="preserve">
     <value>Searching...</value>
+  </data>
+  <data name="AnnotationContextDelete" xml:space="preserve">
+    <value>Delete</value>
   </data>
 </root>

@@ -15,6 +15,7 @@ using Foliant.Infrastructure.Licensing;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
+using Foliant.Infrastructure.Updates;
 using Foliant.UI;
 using Foliant.UI.Localization;
 using Foliant.ViewModels;
@@ -143,6 +144,19 @@ internal static class AppHostBuilder
         services.AddSingleton<ILicenseVerifier>(_ => new EcdsaLicenseVerifier(LicenseKeys.PublicKeyPem));
         services.AddSingleton<ILicenseManager, LicenseManager>();
 
+        // Update check (PROJECT_BOARD §7.4): GitHub Releases, once/day, opt-out via settings.
+        services.AddHttpClient(GitHubReleaseSource.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://api.github.com/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Foliant-UpdateCheck");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+        services.AddSingleton<IReleaseSource>(sp => new GitHubReleaseSource(
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient(GitHubReleaseSource.HttpClientName),
+            sp.GetRequiredService<ILogger<GitHubReleaseSource>>()));
+        services.AddSingleton<IUpdateCheckService, GitHubUpdateCheckService>();
+
         // ViewModels
         services.AddTransient<Func<IDocument, string, DocumentTabViewModel>>(sp =>
             (doc, path) => new DocumentTabViewModel(
@@ -171,7 +185,8 @@ internal static class AppHostBuilder
             sp.GetRequiredService<IDocumentIndexer>(),
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<MainViewModel>(),
             sp.GetService<ILicenseManager>(),
-            sp.GetService<ITrialService>()));
+            sp.GetService<ITrialService>(),
+            sp.GetService<IUpdateCheckService>()));
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<LicenseImportViewModel>();
 

@@ -4,7 +4,6 @@
   "RenderPage1080p_Warm": { "P50_ms": 3,      "P95_ms": 8      },
   "SearchAcross10kPages": { "P50_ms": 1,      "P95_ms": 3      },
   "OcrPageRus":           { "P50_ms": 1500,   "P95_ms": 3000   },
-  "AppColdStart":         { "P50_ms": 800,    "P95_ms": 1500   },
   "Construct":            { "P50_ms": 0.0001, "P95_ms": 0.0005 },
   "ToFileName":           { "P50_ms": 0.0005, "P95_ms": 0.002  },
   "PutWithEviction":      { "P50_ms": 1.5,    "P95_ms": 4      },

@@ -19,6 +19,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IDocumentIndexer _indexer;
     private readonly ILicenseManager? _licenseManager;
     private readonly ITrialService? _trial;
+    private readonly IUpdateCheckService? _updateCheck;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -54,6 +55,17 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>True если есть сообщение о пробном периоде — биндится к видимости баннера.</summary>
     public bool IsTrialBannerVisible => TrialMessage is not null;
 
+    /// <summary>True если на GitHub найдена более новая версия (PROJECT_BOARD §7.4). Биндится
+    /// к видимости update-баннера в UI-слое.</summary>
+    [ObservableProperty]
+    private bool _updateAvailable;
+
+    /// <summary>Человекочитаемое сообщение об обновлении (например, «v0.2.0 available») или
+    /// <c>null</c>, если обновлений нет / проверка пропущена. Устанавливается в
+    /// <see cref="InitializeAsync"/> и <see cref="CheckForUpdatesCommand"/>.</summary>
+    [ObservableProperty]
+    private string? _updateMessage;
+
     public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
 
     public ObservableCollection<string> RecentFiles { get; } = [];
@@ -79,7 +91,8 @@ public sealed partial class MainViewModel : ObservableObject
         IDocumentIndexer indexer,
         ILogger<MainViewModel> logger,
         ILicenseManager? licenseManager = null,
-        ITrialService? trial = null)
+        ITrialService? trial = null,
+        IUpdateCheckService? updateCheck = null)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
@@ -97,6 +110,7 @@ public sealed partial class MainViewModel : ObservableObject
         _indexer = indexer;
         _licenseManager = licenseManager;
         _trial = trial;
+        _updateCheck = updateCheck;
         _logger = logger;
 
         // Tabs.Count → PropertyChanged for TabsCount + HasOpenTab.
@@ -122,6 +136,38 @@ public sealed partial class MainViewModel : ObservableObject
         await RefreshRecentsAsync(ct);
         await RefreshLicenseStatusInternalAsync(ct);
         await EvaluateTrialInternalAsync(ct);
+        await CheckForUpdatesInternalAsync(ct);
+    }
+
+    [RelayCommand]
+    private Task CheckForUpdatesAsync() => CheckForUpdatesInternalAsync(CancellationToken.None);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Update check failure must not crash startup; the banner just stays hidden.")]
+    private async Task CheckForUpdatesInternalAsync(CancellationToken ct)
+    {
+        // Opt-out + throttle (раз в сутки) и сетевые сбои инкапсулированы в сервисе:
+        // он сам читает CheckForUpdates/LastUpdateCheckTime и персистит время проверки,
+        // а на ошибках возвращает UpdateAvailable=false вместо исключения.
+        if (_updateCheck is null || !_settings.Current.CheckForUpdates)
+        {
+            return;
+        }
+
+        try
+        {
+            UpdateCheckResult result = await _updateCheck.CheckAsync(ct);
+            UpdateAvailable = result.UpdateAvailable;
+            UpdateMessage = result is { UpdateAvailable: true, LatestVersion: { } latest }
+                ? string.Format(CultureInfo.CurrentCulture, _localization["UpdateAvailableFormat"], latest)
+                : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Update check failed.");
+            UpdateAvailable = false;
+            UpdateMessage = null;
+        }
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",

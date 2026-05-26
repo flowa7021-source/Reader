@@ -74,4 +74,21 @@ public sealed class LoadCurrentTests
         regressions.Should().BeEmpty();
         report.Should().ContainSingle().Which.Should().Contain("skip");
     }
+
+    [Fact]
+    public void Compare_MissingKeyAlongsideOkKey_SkipsMissingAndStaysRegressionFree()
+    {
+        var baseline = new Dictionary<string, Program.Bench>(StringComparer.Ordinal)
+        {
+            ["SearchAcross10kPages"] = new(600, 1500),
+            ["OcrPageRus"] = new(1500, 3000),
+        };
+        var current = Program.ParseReport(FixtureJson());
+
+        var (report, regressions) = Program.Compare(baseline, current, thresholdPct: 15);
+
+        regressions.Should().BeEmpty();
+        report.Should().Contain(line => line.Contains("[skip]") && line.Contains("OcrPageRus"));
+        report.Should().Contain(line => line.Contains("ok") && line.Contains("SearchAcross10kPages"));
+    }
 }
