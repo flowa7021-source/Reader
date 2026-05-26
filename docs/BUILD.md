@@ -70,6 +70,9 @@ dotnet run --project tools/perf-compare -c Release -- `
     --threshold 15
 ```
 
+!!! note "Где меряются baseline'ы"
+    Нативные ключи (`OpenPdf500Pages`, `RenderPage1080p_Cold`, `RenderPage1080p_Warm`, `OcrPageRus`) зависят от PDFium/PaddleOCR и измеряются на **Windows perf-машине**; их значения в `baseline.json` пока **ориентировочные**. Кросс-платформенные бенчи (FTS / LRU / fingerprint / cachekey) гоняются на **Linux CI**. Ключ, отсутствующий в текущем прогоне, помечается `[skip]` и не считается регрессией.
+
 ## Релиз
 
 Релиз триггерится тегом:
