@@ -56,6 +56,19 @@ jobs:
           -f net10.0
           --no-build
           --filter "Category!=Slow&Category!=Integration&Category!=E2E"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./coverage
+
+      # Информационно (не блокирует): печатает line-rate по слоям против порогов §6.2.
+      # Пока non-blocking — per-report line-rate объединяется грубо (max), что недооценивает
+      # union по слою (напр. Domain покрыт многими тест-проектами). Станет gate'ом, когда
+      # check-coverage начнёт объединять покрытие построчно и базлайны будут зафиксированы.
+      - name: Coverage report (§6.2, informational)
+        if: always()
+        continue-on-error: true
+        run: >-
+          dotnet run --project tools/check-coverage -c Release -f net10.0 --no-build
+          -- --report ./coverage
 
       # Real-SQLite persistence tests (disk cache + FTS index) — cross-platform, run on Linux.
       - name: Integration (real SQLite)

@@ -19,7 +19,9 @@
       "tests\\Foliant.Plugin.DjVu.Tests\\Foliant.Plugin.DjVu.Tests.csproj",
       "tests\\Foliant.Performance\\Foliant.Performance.csproj",
       "tools\\perf-compare\\perf-compare.csproj",
-      "tools\\perf-compare.Tests\\perf-compare.Tests.csproj"
+      "tools\\perf-compare.Tests\\perf-compare.Tests.csproj",
+      "tools\\check-coverage\\check-coverage.csproj",
+      "tools\\check-coverage.Tests\\check-coverage.Tests.csproj"
     ]
   }
 }
