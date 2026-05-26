@@ -60,6 +60,25 @@ internal static class Program
             }
 
             var app = new System.Windows.Application();
+
+            // Глобальные обработчики сбоев → crash-report (§3.1): UI-поток ловит Dispatcher,
+            // фоновые/терминальные — AppDomain. Логируем и (при opt-in) пишем отчёт; поведение
+            // падения не меняем (Handled не выставляем).
+            var crashReporter = host.Services.GetService<ICrashReporter>();
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                if (e.ExceptionObject is Exception fatal)
+                {
+                    Log.Fatal(fatal, "Unhandled exception (AppDomain)");
+                    crashReporter?.Report(fatal, "appdomain");
+                }
+            };
+            app.DispatcherUnhandledException += (_, e) =>
+            {
+                Log.Fatal(e.Exception, "Unhandled exception (Dispatcher)");
+                crashReporter?.Report(e.Exception, "dispatcher");
+            };
+
             var window = host.Services.GetRequiredService<MainWindow>();
             return app.Run(window);
         }
