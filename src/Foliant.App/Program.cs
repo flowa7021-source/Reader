@@ -50,6 +50,7 @@ internal static class Program
         catch (Exception ex)
         {
             Log.Fatal(ex, "Unhandled exception in main thread");
+            host.Services.GetService<ICrashReporter>()?.Report(ex, "main-thread");
             return 1;
         }
         finally

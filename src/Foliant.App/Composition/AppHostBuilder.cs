@@ -10,6 +10,7 @@ using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
+using Foliant.Infrastructure.Diagnostics;
 using Foliant.Infrastructure.EventStore;
 using Foliant.Infrastructure.Export;
 using Foliant.Infrastructure.Licensing;
@@ -145,6 +146,13 @@ internal static class AppHostBuilder
         services.AddSingleton<ILicenseVerifier>(_ =>
             new EcdsaLicenseVerifier(LicenseKeys.PublicKeyPem, LicenseKeys.RevokedSignatureHashes));
         services.AddSingleton<ILicenseManager, LicenseManager>();
+
+        // Crash reporting (§3.1: opt-in). Writes JSON reports to %LOCALAPPDATA%\Foliant\CrashReports.
+        services.AddSingleton<ICrashReporter>(sp =>
+            new FileCrashReporter(
+                sp.GetRequiredService<ISettingsService>(),
+                AppPaths.CrashReports,
+                sp.GetRequiredService<TimeProvider>()));
 
         // Update check (PROJECT_BOARD §7.4): GitHub Releases, once/day, opt-out via settings.
         services.AddHttpClient(GitHubReleaseSource.HttpClientName, client =>
