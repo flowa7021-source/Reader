@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Windows;
 using Foliant.App.Composition;
 using Foliant.Application.Services;
@@ -32,6 +33,21 @@ internal static class Program
             settings.LoadAsync(default).GetAwaiter().GetResult();
             var localization = host.Services.GetRequiredService<ILocalizationService>();
             localization.SetCulture(settings.Current.Language);
+
+            // Auto-backup пользовательских данных при первом запуске после апгрейда (§7.4).
+            var currentVersion = typeof(Program).Assembly.GetName().Version?.ToString();
+            if (settings.Current.LastRunVersion is { } previousVersion
+                && !string.Equals(previousVersion, currentVersion, StringComparison.Ordinal))
+            {
+                var label = "v" + previousVersion + "_"
+                    + DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+                host.Services.GetService<IBackupService>()?.BackupUserDataAsync(label, default).GetAwaiter().GetResult();
+            }
+
+            if (!string.Equals(settings.Current.LastRunVersion, currentVersion, StringComparison.Ordinal))
+            {
+                settings.UpdateAsync(s => s with { LastRunVersion = currentVersion }, default).GetAwaiter().GetResult();
+            }
 
             // Стартуем hosted-сервисы (CacheJanitor, DocumentIndexingService) — без этого
             // фоновая индексация FTS5 и эвикция кэша не работают.

@@ -154,6 +154,14 @@ internal static class AppHostBuilder
                 AppPaths.CrashReports,
                 sp.GetRequiredService<TimeProvider>()));
 
+        // Backup user data before an upgrade (§7.4): settings + license + trial + autosave.
+        services.AddSingleton<IBackupService>(sp =>
+            new FileBackupService(
+                AppPaths.Backup,
+                [AppPaths.SettingsFile, AppPaths.LicenseFile, AppPaths.TrialFile],
+                [AppPaths.Autosave],
+                sp.GetRequiredService<ILogger<FileBackupService>>()));
+
         // Update check (PROJECT_BOARD §7.4): GitHub Releases, once/day, opt-out via settings.
         services.AddHttpClient(GitHubReleaseSource.HttpClientName, client =>
         {
