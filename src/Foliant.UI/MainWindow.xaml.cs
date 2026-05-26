@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using Foliant.UI.Localization;
 using Foliant.ViewModels;
 using Microsoft.Extensions.Logging;
@@ -179,5 +182,68 @@ public partial class MainWindow : Window
         {
             _ = page.EnsureThumbnailAsync(CancellationToken.None);
         }
+    }
+
+    // ── Thumbnail strip drag-and-drop reorder ──
+    private Point _thumbDragStart;
+    private PageThumbnailViewModel? _thumbDragItem;
+
+    private void OnThumbnailStripPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        _thumbDragStart = e.GetPosition(null);
+        _thumbDragItem = ThumbnailUnder(e.OriginalSource as DependencyObject);
+    }
+
+    private void OnThumbnailStripMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _thumbDragItem is null)
+        {
+            return;
+        }
+
+        Vector moved = _thumbDragStart - e.GetPosition(null);
+        if (Math.Abs(moved.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(moved.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        DragDrop.DoDragDrop((DependencyObject)sender, _thumbDragItem, DragDropEffects.Move);
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Drop handler must not propagate; reorder failures already surface as the tab's ErrorMessage.")]
+    private async void OnThumbnailStripDrop(object sender, DragEventArgs e)
+    {
+        try
+        {
+            if (e.Data.GetData(typeof(PageThumbnailViewModel)) is not PageThumbnailViewModel source ||
+                ThumbnailUnder(e.OriginalSource as DependencyObject) is not { } target ||
+                ReferenceEquals(source, target) ||
+                ((FrameworkElement)sender).DataContext is not DocumentTabViewModel tab)
+            {
+                return;
+            }
+
+            await tab.Thumbnails.MoveAsync(source.PageIndex, target.PageIndex, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Thumbnail drag-reorder failed.");
+        }
+        finally
+        {
+            _thumbDragItem = null;
+        }
+    }
+
+    private static PageThumbnailViewModel? ThumbnailUnder(DependencyObject? origin)
+    {
+        DependencyObject? current = origin;
+        while (current is not null and not ListBoxItem)
+        {
+            current = VisualTreeHelper.GetParent(current);
+        }
+        return (current as ListBoxItem)?.DataContext as PageThumbnailViewModel;
     }
 }
