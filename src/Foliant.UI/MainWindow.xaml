@@ -280,9 +280,12 @@
                 </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>
                   <DataTemplate>
-                    <ui:PageSurface PageRender="{Binding Render}"
-                                    Loaded="OnVisiblePageLoaded"
-                                    Unloaded="OnVisiblePageUnloaded" />
+                    <Grid Loaded="OnVisiblePageLoaded"
+                          Unloaded="OnVisiblePageUnloaded">
+                      <ui:PageSurface PageRender="{Binding Render}" />
+                      <ui:AnnotationLayer PageRender="{Binding Render}"
+                                          Annotations="{Binding Annotations}" />
+                    </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
               </ListBox>
@@ -301,10 +304,13 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <ui:PageSurface PageRender="{Binding Render}"
-                                      Margin="4,0"
-                                      Loaded="OnVisiblePageLoaded"
-                                      Unloaded="OnVisiblePageUnloaded" />
+                      <Grid Margin="4,0"
+                            Loaded="OnVisiblePageLoaded"
+                            Unloaded="OnVisiblePageUnloaded">
+                        <ui:PageSurface PageRender="{Binding Render}" />
+                        <ui:AnnotationLayer PageRender="{Binding Render}"
+                                            Annotations="{Binding Annotations}" />
+                      </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>

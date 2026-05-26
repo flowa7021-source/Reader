@@ -26,6 +26,11 @@ public sealed partial class RenderedPageViewModel : ObservableObject, IDisposabl
     [ObservableProperty]
     private IPageRender? _render;
 
+    /// <summary>Аннотации этой страницы (снимок) — для overlay в multi-page режимах.
+    /// Обновляется владельцем при перестройке/мутации списка аннотаций.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<Annotation> _annotations = [];
+
     /// <summary>Создаёт слот страницы. <paramref name="renderPage"/> рендерит страницу по
     /// индексу/опциям; <paramref name="optionsProvider"/> отдаёт текущие <see cref="RenderOptions"/>.</summary>
     public RenderedPageViewModel(

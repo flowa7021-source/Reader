@@ -9,7 +9,7 @@ namespace Foliant.ViewModels.Tests;
 
 public sealed class DocumentTabViewModelMultiPageTests
 {
-    private static DocumentTabViewModel CreateVm(int pageCount = 5)
+    private static DocumentTabViewModel CreateVm(int pageCount = 5, IAnnotationService? annotations = null)
     {
         var document = Substitute.For<IDocument>();
         document.PageCount.Returns(pageCount);
@@ -23,9 +23,12 @@ public sealed class DocumentTabViewModelMultiPageTests
         var search = Substitute.For<ISearchService>();
         search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
               .Returns(Task.FromResult<IReadOnlyList<SearchHit>>([]));
-        var annotations = Substitute.For<IAnnotationService>();
-        annotations.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-                   .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        if (annotations is null)
+        {
+            annotations = Substitute.For<IAnnotationService>();
+            annotations.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                       .Returns(Task.FromResult<IReadOnlyList<Annotation>>([]));
+        }
         var bookmarks = Substitute.For<IBookmarkService>();
         bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                  .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
@@ -81,6 +84,24 @@ public sealed class DocumentTabViewModelMultiPageTests
         await vm.VisiblePages[0].EnsureRenderedAsync(default);
 
         vm.VisiblePages[0].Render.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task VisiblePages_CarryPerPageAnnotationSnapshots()
+    {
+        var p0 = Annotation.Highlight(0, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var p1 = Annotation.Highlight(1, new AnnotationRect(0, 0, 1, 1), "#000", DateTimeOffset.UtcNow);
+        var ann = Substitute.For<IAnnotationService>();
+        ann.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<IReadOnlyList<Annotation>>([p0, p1]));
+        var vm = CreateVm(pageCount: 3, annotations: ann);
+
+        await vm.LoadAnnotationsAsync(default); // populates _allAnnotations
+        vm.SetContinuousViewCommand.Execute(null);
+
+        vm.VisiblePages[0].Annotations.Should().ContainSingle().Which.Should().Be(p0);
+        vm.VisiblePages[1].Annotations.Should().ContainSingle().Which.Should().Be(p1);
+        vm.VisiblePages[2].Annotations.Should().BeEmpty();
     }
 
     [Fact]

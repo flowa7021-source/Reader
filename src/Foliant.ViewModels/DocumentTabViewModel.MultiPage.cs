@@ -44,7 +44,22 @@ public sealed partial class DocumentTabViewModel
             VisiblePages.Add(new RenderedPageViewModel(
                 index,
                 (i, opts, ct) => _document.RenderPageAsync(i, opts, ct),
-                BuildRenderOptions));
+                BuildRenderOptions)
+            {
+                Annotations = AnnotationsForPage(index),
+            });
+        }
+    }
+
+    private IReadOnlyList<Annotation> AnnotationsForPage(int pageIndex) =>
+        [.. _allAnnotations.Where(a => a.PageIndex == pageIndex)];
+
+    /// <summary>Обновить снимки аннотаций видимых страниц (multi-page) после add/remove/update.</summary>
+    internal void RefreshVisiblePageAnnotations()
+    {
+        foreach (RenderedPageViewModel page in VisiblePages)
+        {
+            page.Annotations = AnnotationsForPage(page.PageIndex);
         }
     }
 
