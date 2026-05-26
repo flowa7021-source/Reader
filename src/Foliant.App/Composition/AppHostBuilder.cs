@@ -154,11 +154,14 @@ internal static class AppHostBuilder
                 AppPaths.CrashReports,
                 sp.GetRequiredService<TimeProvider>()));
 
-        // Backup user data before an upgrade (§7.4): settings + license + trial + autosave.
+        // Backup user data before an upgrade (§7.4). Only non-secret, upgrade-migratable data:
+        // settings (schema-versioned) + autosave. license.key/trial.dat are DPAPI- and
+        // machine-bound and are not touched by an in-place upgrade, so duplicating them into a
+        // backup adds no recovery value and would copy a credential — deliberately excluded.
         services.AddSingleton<IBackupService>(sp =>
             new FileBackupService(
                 AppPaths.Backup,
-                [AppPaths.SettingsFile, AppPaths.LicenseFile, AppPaths.TrialFile],
+                [AppPaths.SettingsFile],
                 [AppPaths.Autosave],
                 sp.GetRequiredService<ILogger<FileBackupService>>()));
 

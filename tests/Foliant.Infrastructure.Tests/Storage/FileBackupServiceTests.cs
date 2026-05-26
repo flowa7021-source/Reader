@@ -56,8 +56,8 @@ public sealed class FileBackupServiceTests : IDisposable
     public async Task BackupUserData_CopiesPresentSources_EvenWhenOthersMissing()
     {
         Directory.CreateDirectory(_root);
-        var present = Path.Combine(_root, "license.key");
-        File.WriteAllText(present, "key");
+        var present = Path.Combine(_root, "settings.json");
+        File.WriteAllText(present, "{}");
         var backupRoot = Path.Combine(_root, "Backup");
 
         var sut = new FileBackupService(
@@ -68,7 +68,7 @@ public sealed class FileBackupServiceTests : IDisposable
         var path = await sut.BackupUserDataAsync("v1", default);
 
         path.Should().NotBeNull();
-        File.Exists(Path.Combine(path!, "license.key")).Should().BeTrue();
+        File.Exists(Path.Combine(path!, "settings.json")).Should().BeTrue();
         File.Exists(Path.Combine(path!, "missing.dat")).Should().BeFalse();
     }
 }

@@ -84,7 +84,7 @@ public sealed class FileBackupService : IBackupService
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Backup: failed to copy file {Source}.", source);
+            _log.LogWarning(ex, "Backup: failed to copy {File}.", Path.GetFileName(source));
             return false;
         }
     }
