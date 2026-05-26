@@ -16,12 +16,21 @@ namespace Foliant.Infrastructure.Licensing;
 public sealed class EcdsaLicenseVerifier : ILicenseVerifier, IDisposable
 {
     private readonly ECDsa _publicKey;
+    private readonly HashSet<string> _revokedSignatures;
 
-    public EcdsaLicenseVerifier(string publicKeyPem)
+    /// <summary>Создаёт верификатор с публичным ключом издателя и опциональным блок-листом
+    /// отозванных лицензий.</summary>
+    /// <param name="publicKeyPem">PEM публичного ключа издателя.</param>
+    /// <param name="revokedSignatureHashes">SHA-256 (hex) подписей отозванных лицензий —
+    /// блок-лист §2.2, обновляется в каждом релизе. Подпись уникальна для выданной лицензии,
+    /// поэтому хэш подписи идентифицирует утёкший ключ без изменения схемы лицензии. По
+    /// умолчанию пусто (отзывов нет).</param>
+    public EcdsaLicenseVerifier(string publicKeyPem, IEnumerable<string>? revokedSignatureHashes = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(publicKeyPem);
         _publicKey = ECDsa.Create();
         _publicKey.ImportFromPem(publicKeyPem);
+        _revokedSignatures = new HashSet<string>(revokedSignatureHashes ?? [], StringComparer.OrdinalIgnoreCase);
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types",
@@ -55,6 +64,12 @@ public sealed class EcdsaLicenseVerifier : ILicenseVerifier, IDisposable
         if (!sigOk)
         {
             return LicenseValidationResult.Invalid("Signature does not match license content");
+        }
+
+        if (_revokedSignatures.Count > 0
+            && _revokedSignatures.Contains(Convert.ToHexString(SHA256.HashData(signature))))
+        {
+            return LicenseValidationResult.Invalid("License has been revoked");
         }
 
         License? license;

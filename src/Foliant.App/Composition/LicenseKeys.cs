@@ -13,4 +13,11 @@ internal static class LicenseKeys
         1tik2Sdu0tyZitnHBy94Oj/gfvnbxtemKmc9oUzP2M9JJz66DaEWxRPyzw==
         -----END PUBLIC KEY-----
         """;
+
+    /// <summary>
+    /// Блок-лист отозванных лицензий (§2.2): SHA-256 (hex) подписи каждой отозванной лицензии.
+    /// Подпись уникальна для выданной лицензии, поэтому её хэш идентифицирует утёкший ключ.
+    /// Пополняется в каждом релизе при компрометации; пусто = отозванных нет.
+    /// </summary>
+    public static readonly string[] RevokedSignatureHashes = [];
 }

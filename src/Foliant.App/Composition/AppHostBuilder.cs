@@ -10,6 +10,7 @@ using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
 using Foliant.Infrastructure.Bookmarks;
 using Foliant.Infrastructure.Caching;
+using Foliant.Infrastructure.Diagnostics;
 using Foliant.Infrastructure.EventStore;
 using Foliant.Infrastructure.Export;
 using Foliant.Infrastructure.Licensing;
@@ -142,8 +143,27 @@ internal static class AppHostBuilder
         services.AddSingleton<ITrialService, TrialPersistenceService>();
 
         // License verification — ECDSA P-256 over the embedded public key (LicenseKeys.PublicKeyPem).
-        services.AddSingleton<ILicenseVerifier>(_ => new EcdsaLicenseVerifier(LicenseKeys.PublicKeyPem));
+        services.AddSingleton<ILicenseVerifier>(_ =>
+            new EcdsaLicenseVerifier(LicenseKeys.PublicKeyPem, LicenseKeys.RevokedSignatureHashes));
         services.AddSingleton<ILicenseManager, LicenseManager>();
+
+        // Crash reporting (§3.1: opt-in). Writes JSON reports to %LOCALAPPDATA%\Foliant\CrashReports.
+        services.AddSingleton<ICrashReporter>(sp =>
+            new FileCrashReporter(
+                sp.GetRequiredService<ISettingsService>(),
+                AppPaths.CrashReports,
+                sp.GetRequiredService<TimeProvider>()));
+
+        // Backup user data before an upgrade (§7.4). Only non-secret, upgrade-migratable data:
+        // settings (schema-versioned) + autosave. license.key/trial.dat are DPAPI- and
+        // machine-bound and are not touched by an in-place upgrade, so duplicating them into a
+        // backup adds no recovery value and would copy a credential — deliberately excluded.
+        services.AddSingleton<IBackupService>(sp =>
+            new FileBackupService(
+                AppPaths.Backup,
+                [AppPaths.SettingsFile],
+                [AppPaths.Autosave],
+                sp.GetRequiredService<ILogger<FileBackupService>>()));
 
         // Update check (PROJECT_BOARD §7.4): GitHub Releases, once/day, opt-out via settings.
         services.AddHttpClient(GitHubReleaseSource.HttpClientName, client =>

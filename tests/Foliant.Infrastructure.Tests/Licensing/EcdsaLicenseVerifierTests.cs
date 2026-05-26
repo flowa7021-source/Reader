@@ -107,6 +107,49 @@ public sealed class EcdsaLicenseVerifierTests : IDisposable
     }
 
     [Fact]
+    public void Verify_RevokedSignature_ReturnsInvalid()
+    {
+        var (json, sig) = SignLicense(new License(
+            "alice", "Pro", DateTimeOffset.UtcNow.AddYears(1), ["editor"]));
+        var sigHash = Convert.ToHexString(SHA256.HashData(Convert.FromBase64String(sig)));
+
+        using var sut = new EcdsaLicenseVerifier(_signingKey.ExportSubjectPublicKeyInfoPem(), [sigHash]);
+        var result = sut.Verify(json, sig, DateTimeOffset.UtcNow);
+
+        result.Status.Should().Be(LicenseStatus.Invalid);
+        result.Reason.Should().Contain("revoked");
+        result.License.Should().BeNull();
+    }
+
+    [Fact]
+    public void Verify_NonRevokedSignature_WithBlocklistPresent_StillValid()
+    {
+        var (json, sig) = SignLicense(new License(
+            "alice", "Pro", DateTimeOffset.UtcNow.AddYears(1), ["editor"]));
+
+        // Blocklist contains an unrelated hash → this license is unaffected.
+        using var sut = new EcdsaLicenseVerifier(
+            _signingKey.ExportSubjectPublicKeyInfoPem(),
+            [Convert.ToHexString(SHA256.HashData([0x01, 0x02, 0x03]))]);
+        var result = sut.Verify(json, sig, DateTimeOffset.UtcNow);
+
+        result.Status.Should().Be(LicenseStatus.Valid);
+    }
+
+    [Fact]
+    public void Verify_RevocationCheck_IsCaseInsensitiveHex()
+    {
+        var (json, sig) = SignLicense(new License(
+            "alice", "Pro", DateTimeOffset.UtcNow.AddYears(1), ["editor"]));
+        var lowerHash = Convert.ToHexStringLower(SHA256.HashData(Convert.FromBase64String(sig)));
+
+        using var sut = new EcdsaLicenseVerifier(_signingKey.ExportSubjectPublicKeyInfoPem(), [lowerHash]);
+        var result = sut.Verify(json, sig, DateTimeOffset.UtcNow);
+
+        result.Status.Should().Be(LicenseStatus.Invalid);
+    }
+
+    [Fact]
     public void License_HasFeature_IsCaseInsensitive()
     {
         var lic = new License("u", "Pro", DateTimeOffset.UtcNow, ["Editor", "OCR"]);

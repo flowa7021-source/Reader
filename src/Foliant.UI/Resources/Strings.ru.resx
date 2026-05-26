@@ -217,6 +217,12 @@
   <data name="SettingsClearCacheOnExit" xml:space="preserve">
     <value>Очищать кэш при выходе:</value>
   </data>
+  <data name="SettingsCheckForUpdates" xml:space="preserve">
+    <value>Проверять обновления:</value>
+  </data>
+  <data name="SettingsCrashReporting" xml:space="preserve">
+    <value>Отправлять отчёты о сбоях:</value>
+  </data>
   <data name="DialogOk" xml:space="preserve">
     <value>ОК</value>
   </data>

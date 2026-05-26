@@ -25,6 +25,14 @@ public sealed record AppSettings
     /// <summary>Opt-out проверки обновлений. По умолчанию включено.</summary>
     public bool CheckForUpdates { get; init; } = true;
 
+    /// <summary>Opt-in записи crash-отчётов (§3.1: только crash-reports, по согласию).
+    /// По умолчанию выключено — пользователь включает явно.</summary>
+    public bool CrashReportingEnabled { get; init; }
+
+    /// <summary>Версия приложения на прошлом запуске. При изменении на старте делается
+    /// auto-backup пользовательских данных (§7.4). <c>null</c> — первый запуск (бэкап не нужен).</summary>
+    public string? LastRunVersion { get; init; }
+
     public static AppSettings Default { get; } = new();
 }
 

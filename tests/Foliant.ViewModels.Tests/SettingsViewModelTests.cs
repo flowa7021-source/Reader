@@ -41,6 +41,49 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void Constructor_LoadsUpdateAndCrashTogglesFromCurrent()
+    {
+        var initial = AppSettings.Default with { CheckForUpdates = false, CrashReportingEnabled = true };
+
+        var vm = CreateVm(initial);
+
+        vm.CheckForUpdates.Should().BeFalse();
+        vm.CrashReportingEnabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Save_PersistsUpdateAndCrashToggles()
+    {
+        var settings = Substitute.For<ISettingsService>();
+        settings.Current.Returns(AppSettings.Default); // defaults: CheckForUpdates=true, CrashReportingEnabled=false
+        AppSettings? persisted = null;
+        await settings.UpdateAsync(
+            Arg.Do<Func<AppSettings, AppSettings>>(f => persisted = f(AppSettings.Default)),
+            Arg.Any<CancellationToken>());
+        var vm = CreateVm(settings: settings);
+
+        vm.CheckForUpdates = false;
+        vm.CrashReportingEnabled = true;
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        persisted.Should().NotBeNull();
+        persisted!.CheckForUpdates.Should().BeFalse();
+        persisted.CrashReportingEnabled.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsSaved_ResetsToFalse_WhenCrashReportingToggled()
+    {
+        var vm = CreateVm();
+        await vm.SaveCommand.ExecuteAsync(null);
+        vm.IsSaved.Should().BeTrue();
+
+        vm.CrashReportingEnabled = true;
+
+        vm.IsSaved.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task SaveCommand_PersistsThroughSettingsService()
     {
         var settings = Substitute.For<ISettingsService>();
