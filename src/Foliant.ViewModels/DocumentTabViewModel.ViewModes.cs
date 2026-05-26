@@ -19,6 +19,13 @@ public sealed partial class DocumentTabViewModel
     [ObservableProperty]
     private FitMode _fitMode = FitMode.ActualSize;
 
+    /// <summary>«Обложка отдельно» в режиме разворота (Q-F2): первая страница показывается одна,
+    /// далее развороты (1,2),(3,4)… Иначе развороты выровнены с нуля: (0,1),(2,3)…
+    /// Влияет только на <see cref="ViewMode.TwoPage"/>.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisiblePageIndices))]
+    private bool _twoPageCoverSeparate;
+
     /// <summary>True в одностраничном режиме (привязка видимости одностраничной поверхности).</summary>
     public bool IsSinglePageView => ViewMode == ViewMode.SinglePage;
 
@@ -40,13 +47,29 @@ public sealed partial class DocumentTabViewModel
             }
             return ViewMode switch
             {
-                ViewMode.TwoPage => CurrentPageIndex + 1 < PageCount
-                    ? [CurrentPageIndex, CurrentPageIndex + 1]
-                    : [CurrentPageIndex],
+                ViewMode.TwoPage => TwoPageSpread(),
                 ViewMode.Continuous => [.. Enumerable.Range(0, PageCount)],
                 _ => [CurrentPageIndex],
             };
         }
+    }
+
+    /// <summary>Разворот, содержащий <see cref="CurrentPageIndex"/>, выровненный по фиксированным
+    /// парам (а не «текущая+следующая»). При <see cref="TwoPageCoverSeparate"/> обложка (стр. 0)
+    /// показывается одна, а пары начинаются с (1,2). Последняя непарная страница идёт одна.</summary>
+    private IReadOnlyList<int> TwoPageSpread()
+    {
+        int current = CurrentPageIndex;
+        if (TwoPageCoverSeparate && current == 0)
+        {
+            return [0];
+        }
+
+        int start = TwoPageCoverSeparate
+            ? current - ((current - 1) % 2)  // current ≥ 1: нечётная → она же, чётная → −1
+            : current - (current % 2);
+
+        return start + 1 < PageCount ? [start, start + 1] : [start];
     }
 
     /// <summary>Сообщить VM размер области просмотра (px); вызывается View при ресайзе.
@@ -95,6 +118,9 @@ public sealed partial class DocumentTabViewModel
 
     [RelayCommand]
     private void SetTwoPageView() => ViewMode = ViewMode.TwoPage;
+
+    [RelayCommand]
+    private void ToggleTwoPageCoverSeparate() => TwoPageCoverSeparate = !TwoPageCoverSeparate;
 
     [RelayCommand]
     private void FitWidth() => FitMode = FitMode.FitWidth;

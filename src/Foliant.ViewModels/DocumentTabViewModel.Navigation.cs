@@ -107,6 +107,17 @@ public sealed partial class DocumentTabViewModel
     [RelayCommand]
     private void NextPage()
     {
+        // В режиме разворота шагаем целым разворотом, иначе соседние спреды перекрываются.
+        if (ViewMode == ViewMode.TwoPage)
+        {
+            IReadOnlyList<int> spread = VisiblePageIndices;
+            if (spread.Count > 0 && spread[^1] + 1 < PageCount)
+            {
+                CurrentPageIndex = spread[^1] + 1;
+            }
+            return;
+        }
+
         if (CurrentPageIndex < PageCount - 1)
         {
             CurrentPageIndex++;
@@ -116,6 +127,16 @@ public sealed partial class DocumentTabViewModel
     [RelayCommand]
     private void PreviousPage()
     {
+        if (ViewMode == ViewMode.TwoPage)
+        {
+            IReadOnlyList<int> spread = VisiblePageIndices;
+            if (spread.Count > 0 && spread[0] - 1 >= 0)
+            {
+                CurrentPageIndex = spread[0] - 1;
+            }
+            return;
+        }
+
         if (CurrentPageIndex > 0)
         {
             CurrentPageIndex--;

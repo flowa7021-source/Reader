@@ -109,6 +109,8 @@ function Get-PaddleModel($name, $targetDir) {
         Remove-Item $target -Force
         throw "SHA256 mismatch для paddleocr/${name}: ожидал $($entry.sha256), получил $actual"
     }
+    # Архив обязан распаковываться ПЛОСКО (infer-файлы + label.txt для rec прямо в $targetDir),
+    # без вложенного *_infer/. Контракт с движком — tools/third-party/README.md.
     tar -xf $target -C $targetDir
 }
 

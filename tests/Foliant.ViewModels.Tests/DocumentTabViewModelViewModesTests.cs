@@ -42,16 +42,99 @@ public sealed class DocumentTabViewModelViewModesTests
     }
 
     [Fact]
-    public void TwoPage_ShowsCurrentAndNext_ButOnlyCurrentOnLastPage()
+    public void TwoPage_UsesFixedSpreads_AlignedFromZero()
     {
         var vm = CreateVm(pageCount: 4);
         vm.SetTwoPageViewCommand.Execute(null);
 
+        // Развороты выровнены по парам (0,1),(2,3) — не «текущая+следующая».
+        vm.CurrentPageIndex = 1;
+        vm.VisiblePageIndices.Should().Equal([0, 1]);
+
+        vm.CurrentPageIndex = 2;
+        vm.VisiblePageIndices.Should().Equal([2, 3]);
+    }
+
+    [Fact]
+    public void TwoPage_LastUnpairedPage_ShownAlone()
+    {
+        var vm = CreateVm(pageCount: 3); // 0,1,2 → пары (0,1) и одинокая 2
+        vm.SetTwoPageViewCommand.Execute(null);
+
+        vm.CurrentPageIndex = 2;
+        vm.VisiblePageIndices.Should().Equal([2]);
+    }
+
+    [Fact]
+    public void TwoPage_CoverSeparate_ShowsFirstPageAloneThenPairsFromOne()
+    {
+        var vm = CreateVm(pageCount: 5);
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.ToggleTwoPageCoverSeparateCommand.Execute(null);
+
+        vm.CurrentPageIndex = 0;
+        vm.VisiblePageIndices.Should().Equal([0]); // обложка одна
+
         vm.CurrentPageIndex = 1;
         vm.VisiblePageIndices.Should().Equal([1, 2]);
 
-        vm.CurrentPageIndex = 3; // last page
-        vm.VisiblePageIndices.Should().Equal([3]);
+        vm.CurrentPageIndex = 2;
+        vm.VisiblePageIndices.Should().Equal([1, 2]); // тот же разворот
+
+        vm.CurrentPageIndex = 4; // 0 alone, (1,2),(3,4) → последняя пара полная
+        vm.VisiblePageIndices.Should().Equal([3, 4]);
+    }
+
+    [Fact]
+    public void ToggleCoverSeparate_RebuildsVisiblePages()
+    {
+        var vm = CreateVm(pageCount: 5);
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.VisiblePages.Select(p => p.PageIndex).Should().Equal([0, 1]);
+
+        vm.ToggleTwoPageCoverSeparateCommand.Execute(null);
+        vm.VisiblePages.Select(p => p.PageIndex).Should().Equal([0]);
+    }
+
+    [Fact]
+    public void TwoPage_NextPrevPage_StepByWholeSpread()
+    {
+        var vm = CreateVm(pageCount: 6);
+        vm.SetTwoPageViewCommand.Execute(null); // (0,1)(2,3)(4,5)
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([2, 3]);
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([4, 5]);
+
+        vm.NextPageCommand.Execute(null); // already last spread → no move
+        vm.VisiblePageIndices.Should().Equal([4, 5]);
+
+        vm.PreviousPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([2, 3]);
+    }
+
+    [Fact]
+    public void TwoPage_CoverSeparate_NextPrev_RespectAloneCover()
+    {
+        var vm = CreateVm(pageCount: 6);
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.ToggleTwoPageCoverSeparateCommand.Execute(null); // 0 | (1,2)(3,4)(5)
+
+        vm.VisiblePageIndices.Should().Equal([0]);
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([1, 2]);
+
+        vm.NextPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([3, 4]);
+
+        vm.PreviousPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([1, 2]);
+
+        vm.PreviousPageCommand.Execute(null);
+        vm.VisiblePageIndices.Should().Equal([0]); // back to lone cover
     }
 
     [Fact]
