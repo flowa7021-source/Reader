@@ -5,29 +5,26 @@ using Microsoft.Extensions.Logging;
 namespace Foliant.Infrastructure.Settings;
 
 /// <summary>
-/// MRU-список последних открытых документов, персистится через <see cref="ISettingsStore"/>.
-/// Concurrent-safe (внутренний <see cref="SemaphoreSlim"/>): сериализует операции записи,
-/// чтобы read-modify-write через ISettingsStore не терял обновления при гонке.
+/// MRU-список последних открытых документов. Все мутации идут через единую точку
+/// <see cref="ISettingsService.UpdateAsync"/> — это и сериализует запись, и сохраняет
+/// остальные поля <see cref="AppSettings"/> (тему, кэш, OCR) при параллельной записи
+/// из разных сервисов (исключает lost-update поверх ISettingsStore напрямую).
 /// </summary>
-public sealed class RecentsService : IRecentsService, IDisposable
+public sealed class RecentsService : IRecentsService
 {
-    private readonly ISettingsStore _store;
+    private readonly ISettingsService _settings;
     private readonly ILogger<RecentsService> _log;
-    private readonly SemaphoreSlim _gate = new(initialCount: 1, maxCount: 1);
 
-    public RecentsService(ISettingsStore store, ILogger<RecentsService> log)
+    public RecentsService(ISettingsService settings, ILogger<RecentsService> log)
     {
-        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(log);
-        _store = store;
+        _settings = settings;
         _log = log;
     }
 
-    public async Task<IReadOnlyList<string>> GetAsync(CancellationToken ct)
-    {
-        AppSettings settings = await _store.LoadAsync(ct).ConfigureAwait(false);
-        return settings.RecentFiles;
-    }
+    public Task<IReadOnlyList<string>> GetAsync(CancellationToken ct)
+        => Task.FromResult(_settings.Current.RecentFiles);
 
     public async Task AddAsync(string path, CancellationToken ct)
     {
@@ -35,24 +32,17 @@ public sealed class RecentsService : IRecentsService, IDisposable
 
         string canonical = NormalizePath(path);
 
-        await _gate.WaitAsync(ct).ConfigureAwait(false);
-        try
+        await _settings.UpdateAsync(current =>
         {
-            AppSettings settings = await _store.LoadAsync(ct).ConfigureAwait(false);
-            List<string> updated = MoveToFrontAndCap(settings.RecentFiles, canonical);
-
-            if (updated.SequenceEqual(settings.RecentFiles, StringComparer.OrdinalIgnoreCase))
+            List<string> updated = MoveToFrontAndCap(current.RecentFiles, canonical);
+            if (updated.SequenceEqual(current.RecentFiles, StringComparer.OrdinalIgnoreCase))
             {
-                return;
+                return current;
             }
 
-            await _store.SaveAsync(settings with { RecentFiles = updated }, ct).ConfigureAwait(false);
             _log.LogDebug("Recents: added {Path}; size={Size}", canonical, updated.Count);
-        }
-        finally
-        {
-            _gate.Release();
-        }
+            return current with { RecentFiles = updated };
+        }, ct).ConfigureAwait(false);
     }
 
     public async Task RemoveAsync(string path, CancellationToken ct)
@@ -61,51 +51,34 @@ public sealed class RecentsService : IRecentsService, IDisposable
 
         string canonical = NormalizePath(path);
 
-        await _gate.WaitAsync(ct).ConfigureAwait(false);
-        try
+        await _settings.UpdateAsync(current =>
         {
-            AppSettings settings = await _store.LoadAsync(ct).ConfigureAwait(false);
-            var filtered = settings.RecentFiles
+            var filtered = current.RecentFiles
                 .Where(p => !PathEquals(p, canonical))
                 .ToArray();
 
-            if (filtered.Length == settings.RecentFiles.Count)
+            if (filtered.Length == current.RecentFiles.Count)
             {
-                return;
+                return current;
             }
 
-            await _store.SaveAsync(settings with { RecentFiles = filtered }, ct).ConfigureAwait(false);
             _log.LogDebug("Recents: removed {Path}; size={Size}", canonical, filtered.Length);
-        }
-        finally
-        {
-            _gate.Release();
-        }
+            return current with { RecentFiles = filtered };
+        }, ct).ConfigureAwait(false);
     }
 
     public async Task ClearAsync(CancellationToken ct)
     {
-        await _gate.WaitAsync(ct).ConfigureAwait(false);
-        try
+        await _settings.UpdateAsync(current =>
         {
-            AppSettings settings = await _store.LoadAsync(ct).ConfigureAwait(false);
-            if (settings.RecentFiles.Count == 0)
+            if (current.RecentFiles.Count == 0)
             {
-                return;
+                return current;
             }
 
-            await _store.SaveAsync(settings with { RecentFiles = [] }, ct).ConfigureAwait(false);
             _log.LogDebug("Recents: cleared");
-        }
-        finally
-        {
-            _gate.Release();
-        }
-    }
-
-    public void Dispose()
-    {
-        _gate.Dispose();
+            return current with { RecentFiles = [] };
+        }, ct).ConfigureAwait(false);
     }
 
     private static List<string> MoveToFrontAndCap(IReadOnlyList<string> existing, string path)

@@ -56,6 +56,30 @@ public sealed class SettingsService : ISettingsService, IDisposable
         }
     }
 
+    public async Task UpdateAsync(Func<AppSettings, AppSettings> mutate, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(mutate);
+
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            AppSettings updated = mutate(_current);
+            ArgumentNullException.ThrowIfNull(updated);
+            if (ReferenceEquals(updated, _current))
+            {
+                return;
+            }
+
+            await _store.SaveAsync(updated, ct).ConfigureAwait(false);
+            _current = updated;
+            _log.LogDebug("Settings updated: Theme={Theme}, Language={Language}", updated.Theme, updated.Language);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     public void Dispose()
     {
         _gate.Dispose();

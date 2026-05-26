@@ -69,4 +69,53 @@ public sealed class SettingsServiceTests : IDisposable
 
         await act.Should().ThrowAsync<ArgumentNullException>();
     }
+
+    [Fact]
+    public async Task UpdateAsync_AppliesMutation_UpdatesCurrent_AndPersists()
+    {
+        using var sut = CreateSut();
+
+        await sut.UpdateAsync(s => s with { Theme = "Dark" }, default);
+
+        sut.Current.Theme.Should().Be("Dark");
+
+        var store2 = new JsonSettingsStore(_tmp.File("settings.json"), NullLogger<JsonSettingsStore>.Instance);
+        using var sut2 = new SettingsService(store2, NullLogger<SettingsService>.Instance);
+        await sut2.LoadAsync(default);
+        sut2.Current.Theme.Should().Be("Dark");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_MutatorReturnsSameInstance_DoesNotPersist()
+    {
+        var store = new JsonSettingsStore(_tmp.File("settings.json"), NullLogger<JsonSettingsStore>.Instance);
+        using var sut = new SettingsService(store, NullLogger<SettingsService>.Instance);
+
+        await sut.UpdateAsync(s => s, default);
+
+        // Никакой записи не было — файл не создан, перезагрузка даёт дефолт.
+        File.Exists(_tmp.File("settings.json")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_SequentialMutations_PreserveEachOther()
+    {
+        using var sut = CreateSut();
+
+        await sut.UpdateAsync(s => s with { Theme = "Dark" }, default);
+        await sut.UpdateAsync(s => s with { RecentFiles = ["a.pdf"] }, default);
+
+        sut.Current.Theme.Should().Be("Dark");
+        sut.Current.RecentFiles.Should().ContainSingle().Which.Should().Be("a.pdf");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NullMutator_Throws()
+    {
+        using var sut = CreateSut();
+
+        var act = async () => await sut.UpdateAsync(null!, default);
+
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
 }

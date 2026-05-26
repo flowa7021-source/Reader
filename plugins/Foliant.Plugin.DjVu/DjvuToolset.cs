@@ -11,8 +11,10 @@ public sealed record DjvuToolset(string DdjvuPath, string DjvusedPath)
 #if WINDOWS
     private const string RegistrySubKey = @"Software\Foliant\Plugins\DjVu";
 #endif
-    private const string DdjvuExe = "ddjvu.exe";
-    private const string DjvusedExe = "djvused.exe";
+    // DjVuLibre binaries are `*.exe` on Windows, bare names elsewhere (the plugin multi-targets
+    // and its tests run on Linux); resolve the platform-appropriate name.
+    private static string DdjvuExe => OperatingSystem.IsWindows() ? "ddjvu.exe" : "ddjvu";
+    private static string DjvusedExe => OperatingSystem.IsWindows() ? "djvused.exe" : "djvused";
 
     /// <summary>
     /// Resolves <c>ddjvu</c>/<c>djvused</c> from <c>HKCU\Software\Foliant\Plugins\DjVu</c>

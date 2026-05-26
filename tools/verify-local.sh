@@ -33,4 +33,10 @@ echo "== integration (real SQLite, cross-platform) =="
 "$DOTNET" test tests/Foliant.Infrastructure.Tests/Foliant.Infrastructure.Tests.csproj \
   -c Release -f net10.0 --no-build --filter "Category=Integration"
 
+# DjVu engine integration: real ddjvu/djvused. Self-skips if DjVuLibre isn't installed
+# (apt-get install djvulibre-bin to exercise it); on CI the Linux job installs it.
+echo "== djvu engine integration (real ddjvu, skips if not installed) =="
+"$DOTNET" test tests/Foliant.Plugin.DjVu.Tests/Foliant.Plugin.DjVu.Tests.csproj \
+  -c Release -f net10.0 --no-build --filter "Category=Slow"
+
 echo "== OK: cross-platform layer builds clean and unit tests pass =="
