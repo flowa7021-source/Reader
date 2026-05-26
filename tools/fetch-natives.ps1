@@ -53,6 +53,12 @@ if (-not (Test-Path $ChecksumsFile)) {
 
 $checksums = Get-Content $ChecksumsFile | ConvertFrom-Json
 
+# Распаковка моделей идёт через bsdtar (`tar`). В Windows 10 17063+ он встроен, но в CI/старых
+# образах может отсутствовать — падаем рано с понятной ошибкой, а не на середине загрузки.
+if (-not (Get-Command 'tar' -ErrorAction SilentlyContinue)) {
+    throw "Не найден 'tar' (bsdtar) — нужен для распаковки моделей. Windows 10 17063+ / установите вручную."
+}
+
 # Скрипты распознавания PaddleOCR по tier'ам (det/cls — общие, всегда). Латиница покрывает
 # базовую Европу, кириллица — рус/СНГ; CJK/арабский — отдельные модели в Full.
 $scriptsByTier = @{
@@ -62,6 +68,23 @@ $scriptsByTier = @{
 }
 
 $paddleRoot = Join-Path $NativeRoot 'paddleocr'
+
+# Загрузка с экспоненциальным backoff: модели тянутся в release-пайплайне, и единичный сетевой
+# сбой не должен валить весь релиз. 4 попытки: 2s, 4s, 8s.
+function Invoke-DownloadWithRetry($uri, $outFile) {
+    $delays = @(2, 4, 8)
+    for ($attempt = 0; ; $attempt++) {
+        try {
+            Invoke-WebRequest -Uri $uri -OutFile $outFile -UseBasicParsing
+            return
+        }
+        catch {
+            if ($attempt -ge $delays.Count) { throw }
+            Write-Warning "Загрузка $uri не удалась ($($_.Exception.Message)) — повтор через $($delays[$attempt])s"
+            Start-Sleep -Seconds $delays[$attempt]
+        }
+    }
+}
 
 function Get-PaddleModel($name, $targetDir) {
     $entry = $checksums.paddleocr.$name
@@ -80,7 +103,7 @@ function Get-PaddleModel($name, $targetDir) {
         Write-Host "[stale] paddleocr/$name — переcкачиваю"
     }
     Write-Host "[fetch] paddleocr/$name"
-    Invoke-WebRequest -Uri $entry.url -OutFile $target -UseBasicParsing
+    Invoke-DownloadWithRetry $entry.url $target
     $actual = (Get-FileHash $target -Algorithm SHA256).Hash.ToLower()
     if ($actual -ne $entry.sha256) {
         Remove-Item $target -Force
