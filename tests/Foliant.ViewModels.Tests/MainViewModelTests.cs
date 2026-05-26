@@ -17,7 +17,8 @@ public sealed class MainViewModelTests
         ILocalizationService? localization = null,
         IDocumentIndexer? indexer = null,
         ILicenseManager? licenseManager = null,
-        ITrialService? trial = null)
+        ITrialService? trial = null,
+        IUpdateCheckService? updateCheck = null)
     {
         var useCase = new OpenDocumentUseCase([], NullLogger<OpenDocumentUseCase>.Instance);
         Func<IDocument, string, DocumentTabViewModel> factory = (_, _) => throw new NotSupportedException();
@@ -40,7 +41,34 @@ public sealed class MainViewModelTests
         indexer ??= Substitute.For<IDocumentIndexer>();
 
         return new MainViewModel(useCase, factory, recents, settings, localization, indexer,
-            NullLogger<MainViewModel>.Instance, licenseManager, trial);
+            NullLogger<MainViewModel>.Instance, licenseManager, trial, updateCheck);
+    }
+
+    [Fact]
+    public async Task Initialize_WhenNewerVersionReported_SetsUpdateAvailable()
+    {
+        var localization = Substitute.For<ILocalizationService>();
+        localization["UpdateAvailableFormat"].Returns("{0} available");
+        var updateCheck = Substitute.For<IUpdateCheckService>();
+        updateCheck.CheckAsync(Arg.Any<CancellationToken>())
+            .Returns(new UpdateCheckResult(new Version(0, 1, 0), new Version(0, 2, 0), UpdateAvailable: true));
+
+        var vm = CreateVm(localization: localization, updateCheck: updateCheck);
+        await vm.InitializeAsync(CancellationToken.None);
+
+        vm.UpdateAvailable.Should().BeTrue();
+        vm.UpdateMessage.Should().Be("0.2.0 available");
+    }
+
+    [Fact]
+    public async Task Initialize_WhenNoUpdateService_NoUpdateBanner()
+    {
+        var vm = CreateVm();
+
+        await vm.InitializeAsync(CancellationToken.None);
+
+        vm.UpdateAvailable.Should().BeFalse();
+        vm.UpdateMessage.Should().BeNull();
     }
 
     [Fact]

@@ -18,6 +18,13 @@ public sealed record AppSettings
 
     public IReadOnlyList<string> RecentFiles { get; init; } = [];
 
+    /// <summary>Когда последний раз проверяли обновления (PROJECT_BOARD §7.4). <c>null</c> —
+    /// ещё ни разу; используется для throttle «не чаще раза в сутки».</summary>
+    public DateTimeOffset? LastUpdateCheckTime { get; init; }
+
+    /// <summary>Opt-out проверки обновлений. По умолчанию включено.</summary>
+    public bool CheckForUpdates { get; init; } = true;
+
     public static AppSettings Default { get; } = new();
 }
 
