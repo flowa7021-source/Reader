@@ -10,7 +10,26 @@
 ### Changed
 - **OCR-движок: Tesseract → PaddleOCR (in-process через Sdcb.PaddleOCR)**. Реализован `PaddleOcrEngine : IOcrEngine` в `Foliant.Engines.Ocr` (растр BGRA32 → OpenCvSharp `Mat` → PaddleOCR; каждая распознанная строка → `TextRun` с bounding-box в пикселях рендера; `SemaphoreSlim`-сериализация, т.к. `PaddleOcrAll` не потокобезопасен; модели оффлайн из `native/paddleocr/`). Чистый маппинг языков `OcrLanguageMap` (Tesseract-стиль `"eng+rus"` → набор моделей latin/cyrillic). Порты `IOcrEngine`/`OcrPageUseCase`/`OcrPipelineService`/`OcrDiskCache` не менялись. Весь OCR-конвейер дорегистрирован в DI (`AppHostBuilder`). Пакеты: убран `Tesseract`, добавлены `Sdcb.PaddleOCR`/`Sdcb.PaddleInference`/`Sdcb.PaddleInference.runtime.win64.mkl`/`OpenCvSharp4`(+runtime.win). `tools/fetch-natives.ps1` качает модели PaddleOCR по скриптам/tier'ам. Обновлены `PROJECT_BOARD.md`, `IMPLEMENTATION_PLAN.md` (S8, §5.3), `README.md`, `NOTICE.md`. Тесты: `OcrLanguageMapTests` + guard-тесты `PaddleOcrEngineTests`. Замечание: версии пакетов/имена моделей и сборку проверить на Windows-стенде (нет .NET SDK в текущем окружении).
 
+### Fixed
+- **Корень: цикл сборки.** Не-WPF проекты переведены на `net10.0` (Infrastructure/DjVu — мульти-таргет с `#if WINDOWS`); весь логический слой собирается и юнит-тестируется на Linux (`tools/verify-local.sh`, ~807 тестов) и в CI. `verify.yml`: Linux-джоб + Windows build+test.
+- `FileFingerprint` — хэш фиксированного 64KB-окна (ArrayPool мог вернуть больший буфер → недетерминированный fingerprint для файлов > 64KB).
+- `MemoryPageCache` sticky — реальные ключи окна (а не угаданные), центр — самым свежим.
+- `JsonSearchHistoryService` — сериализация фоновых сохранений (гонка на `.tmp`).
+- `SqliteFtsIndex`/`SqliteDiskCache` — потокобезопасная инициализация / запись под gate (stale-hit после invalidate).
+- `PdfDocument` — off-by-one извлечения текста, OOB-чтение метаданных, краш `ParsePdfDate` на битой дате.
+- `PdfDocumentEditor` Undo/Redo — exception-safe (мутация состояния только после успешных await).
+- VM-рендер: generation-guard (устаревший рендер не перетирает текущий); подсветка поиска — тоже guard + whole-word.
+- CI: гонка параллельной сборки solution с `-f` (`-maxcpucount:1`); де-флейк трёх progress-тестов (`Progress<T>` → синхронный `IProgress`).
+
 ### Added
+- **Режимы просмотра**: Single / Continuous (виртуализованная лента) / Two-Page + Fit Width/Page/Actual; `RenderedPageViewModel` (ленивый per-page рендер).
+- **Полоса миниатюр** (`ThumbnailStripViewModel`): ленивые миниатюры, клик-навигация, drag-drop reorder.
+- **On-page подсветка поиска** (`SearchHighlight`) и оверлей аннотаций во всех режимах просмотра.
+- **PDF→DOCX** (`DocxDocumentExportService`, OpenXml); **DjVu**-плагин (out-of-process, MEF).
+- **Аннотации**: `AnnotationLayer` (overlay, hit-test, заметка по двойному клику) + сайдбар «All Annotations» с JSON-экспортом.
+- **Управление страницами**: rotate/delete/move/reorder через `PdfPageEditService` + reload.
+- **Лицензия**: DPAPI-хранилище (`DpapiLicenseStorage`/`TrialStores`) + диалог импорта (Tools → Import License, ECDSA-P256 dev-ключ).
+- Корректная палитра Dark/HighContrast (`RenderColorMap` в Domain, общая для PDFium и DjVu).
 - `PROJECT_BOARD.md` — концепт проекта, 68 закрытых решений, фазы, риски.
 - `IMPLEMENTATION_PLAN.md` — детальный план реализации Phase 0/1, контракт качества кода, контракты Domain.
 - Структура репозитория (`src/`, `tests/`, `plugins/`, `installer/`, `tools/`, `docs/`, `.github/`).
