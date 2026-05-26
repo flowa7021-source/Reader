@@ -1,0 +1,28 @@
+{
+  "Title": "Foliant.Performance.FtsSearchBenchmarks-20260101-000000",
+  "HostEnvironmentInfo": {
+    "BenchmarkDotNetVersion": "0.14.0"
+  },
+  "Benchmarks": [
+    {
+      "Method": "SearchAcross10kPages",
+      "Statistics": {
+        "Mean": 700000000.0,
+        "Percentiles": {
+          "P50": 660000000.0,
+          "P95": 1650000000.0
+        }
+      }
+    },
+    {
+      "Method": "ComputeFingerprint",
+      "Statistics": {
+        "Mean": 1200000.0,
+        "Percentiles": {
+          "P50": 1100000.0,
+          "P95": 2000000.0
+        }
+      }
+    }
+  ]
+}

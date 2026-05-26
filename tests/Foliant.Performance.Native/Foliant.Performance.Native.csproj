@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Windows-only: PDFium render + PaddleOCR native runtimes. Deferred-run benches; NOT in
+         the cross-platform slnf, executed by the Windows job in perf.yml. -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Foliant.Performance.Native</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Pdf\Foliant.Engines.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Ocr\Foliant.Engines.Ocr.csproj" />
+  </ItemGroup>
+
+</Project>

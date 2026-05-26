@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Foliant.Tools.CheckCoverage</RootNamespace>
+    <AssemblyName>check-coverage</AssemblyName>
+    <Description>Проверяет line-rate из Cobertura-отчётов coverlet против порогов §6.2 и падает с exit&#160;code&#160;1 при недоборе.</Description>
+    <NoWarn>$(NoWarn);CA1303</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Foliant.Tools.CheckCoverage.Tests" />
+  </ItemGroup>
+
+</Project>

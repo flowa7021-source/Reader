@@ -32,11 +32,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _autoOcrOpenedScans;
 
     [ObservableProperty]
+    private OcrModelTier _ocrModelTier = OcrModelTier.Basic;
+
+    [ObservableProperty]
     private bool _isSaved;
 
     public IReadOnlyList<string> AvailableThemes { get; } = ["Auto", "Light", "Dark", "HighContrast"];
 
     public IReadOnlyList<string> AvailableLanguages { get; } = ["ru", "en"];
+
+    public IReadOnlyList<OcrModelTier> AvailableOcrTiers { get; } =
+        [OcrModelTier.Basic, OcrModelTier.Standard, OcrModelTier.Full];
 
     public SettingsViewModel(ISettingsService settingsService, ILocalizationService localization)
     {
@@ -57,6 +63,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         OcrLanguage = s.Ocr.DefaultLanguage;
         MaxParallelOcrPages = s.Ocr.MaxParallelPages;
         AutoOcrOpenedScans = s.Ocr.AutoOcrOpenedScans;
+        OcrModelTier = s.Ocr.ModelTier;
         IsSaved = false;
     }
 
@@ -73,6 +80,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnMaxParallelOcrPagesChanged(int value) => IsSaved = false;
 
     partial void OnAutoOcrOpenedScansChanged(bool value) => IsSaved = false;
+
+    partial void OnOcrModelTierChanged(OcrModelTier value) => IsSaved = false;
 
     [RelayCommand]
     private async Task SaveAsync()
@@ -94,6 +103,7 @@ public sealed partial class SettingsViewModel : ObservableObject
                 DefaultLanguage = OcrLanguage,
                 MaxParallelPages = MaxParallelOcrPages,
                 AutoOcrOpenedScans = AutoOcrOpenedScans,
+                ModelTier = OcrModelTier,
             },
         }, CancellationToken.None);
 
@@ -120,5 +130,6 @@ public sealed partial class SettingsViewModel : ObservableObject
         OcrLanguage = defaults.Ocr.DefaultLanguage;
         MaxParallelOcrPages = defaults.Ocr.MaxParallelPages;
         AutoOcrOpenedScans = defaults.Ocr.AutoOcrOpenedScans;
+        OcrModelTier = defaults.Ocr.ModelTier;
     }
 }

@@ -9,4 +9,8 @@
     <NoWarn>$(NoWarn);CA1303</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Foliant.Tools.PerfCompare.Tests" />
+  </ItemGroup>
+
 </Project>
