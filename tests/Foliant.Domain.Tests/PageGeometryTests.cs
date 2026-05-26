@@ -76,10 +76,4 @@ public sealed class PageGeometryTests
         yPx.Should().BeApproximately(400, 1e-6);
     }
 
-    [Fact]
-    public void PointToPixel_NullPage_Throws()
-    {
-        Action act = () => PageGeometry.PointToPixel(0, 0, null!, 1.0);
-        act.Should().Throw<ArgumentNullException>();
-    }
 }

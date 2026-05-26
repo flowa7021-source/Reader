@@ -158,7 +158,7 @@ internal sealed partial class PdfDocument : IDocument
                         InvertBgr(bytes);
                     }
 
-                    return new PdfPageRender(wPx, hPx, stride, bytes);
+                    return new PdfPageRender(wPx, hPx, stride, bytes, new PageSize(wPt, hPt));
                 }
                 finally
                 {
@@ -196,7 +196,11 @@ internal sealed partial class PdfDocument : IDocument
                 return null;
             }
 
-            string value = Marshal.PtrToStringUni(buf) ?? string.Empty;
+            // `len` is the full byte length incl. NUL and may exceed BufBytes when the value
+            // was truncated; bound the read to the buffer so PtrToStringUni can't scan past it.
+            int bytesInBuf = (int)Math.Min(len, (ulong)BufBytes);
+            int charCount = (bytesInBuf / 2) - 1; // UTF-16 units, excluding trailing NUL
+            string value = charCount <= 0 ? string.Empty : Marshal.PtrToStringUni(buf, charCount);
             return string.IsNullOrWhiteSpace(value) ? null : value;
         }
         finally
@@ -230,7 +234,15 @@ internal sealed partial class PdfDocument : IDocument
             return null;
         }
 
-        return new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
+        // A malformed PDF date (e.g. month 13) must not throw while reading metadata on open.
+        try
+        {
+            return new DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return null;
+        }
     }
 
     private static int ComputePixels(float points, double zoom, int? maxPx)

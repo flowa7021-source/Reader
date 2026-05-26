@@ -36,6 +36,10 @@ public sealed partial class DocumentTabViewModel
         }
 
         RefreshCurrentPageAnnotations();
+        OnPropertyChanged(nameof(VisiblePageIndices));
+        Thumbnails.SelectedPageIndex = CurrentPageIndex;
+        ApplyFitIfNeeded();
+        _ = RefreshSearchHighlightsAsync(CancellationToken.None);
         _ = RenderCurrentPageAsync(CancellationToken.None);
     }
 

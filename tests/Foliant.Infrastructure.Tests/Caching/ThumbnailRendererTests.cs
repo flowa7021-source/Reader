@@ -132,6 +132,7 @@ public sealed class ThumbnailRendererTests
         public int HeightPx { get; }
         public int Stride { get; }
         public ReadOnlyMemory<byte> Bgra32 => _data;
+        public PageSize PageSize => new(WidthPx, HeightPx);
 
         public void Dispose()
         {

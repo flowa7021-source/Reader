@@ -57,25 +57,23 @@ public sealed class TrialAntiTamperService
         string? markerHash,
         DateTimeOffset now)
     {
-        bool primaryEmpty = primary is null;
-        bool secondaryEmpty = secondary is null;
         bool markerEmpty = string.IsNullOrEmpty(markerHash);
 
         // Полностью чистая система → триал ещё не запускался.
-        if (primaryEmpty && secondaryEmpty && markerEmpty)
+        if (primary is null && secondary is null && markerEmpty)
         {
             return new TrialEvaluation(TrialStatus.NotStarted, TrialDays, null);
         }
 
         // Что-то есть, но не всё — кто-то стёр один из stores.
-        if (primaryEmpty || secondaryEmpty || markerEmpty)
+        if (primary is null || secondary is null || markerEmpty)
         {
             return new TrialEvaluation(TrialStatus.Tampered, 0,
                 "One or more trial stores missing while others remain");
         }
 
-        // primary != null && secondary != null && markerHash != null после проверок выше.
-        if (primary!.StartedAt != secondary!.StartedAt || primary.Nonce != secondary.Nonce)
+        // После guard'ов выше flow-анализ доказывает: primary и secondary non-null.
+        if (primary.StartedAt != secondary.StartedAt || primary.Nonce != secondary.Nonce)
         {
             return new TrialEvaluation(TrialStatus.Tampered, 0,
                 "Primary and secondary trial stores diverge");

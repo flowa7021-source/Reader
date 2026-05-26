@@ -47,6 +47,16 @@ public sealed class LruCache<TKey, TValue>
         }
     }
 
+    /// <summary>Снимок текущих ключей (для точечного «дёргания» sticky-записей без знания
+    /// zoom/flags). Возвращает копию — итерировать можно вне блокировки.</summary>
+    public IReadOnlyList<TKey> KeysSnapshot()
+    {
+        lock (_gate)
+        {
+            return [.. _map.Keys];
+        }
+    }
+
     public bool TryGet(TKey key, out TValue value)
     {
         lock (_gate)

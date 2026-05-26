@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Foliant.ViewModels</RootNamespace>
     <Description>
       MVVM ViewModels (CommunityToolkit.Mvvm). Без ссылок на UI / PresentationFramework.

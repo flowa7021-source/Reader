@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Foliant.Domain;
 
@@ -48,7 +49,7 @@ public sealed class PlainTextDocumentExportService : IDocumentExportService
             {
                 ct.ThrowIfCancellationRequested();
 
-                sb.AppendLine($"=== Page {i + 1} ===");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"=== Page {i + 1} ===");
                 sb.AppendLine(textLayers[i].ToPlainText());
                 sb.AppendLine();
                 written++;
@@ -63,7 +64,9 @@ public sealed class PlainTextDocumentExportService : IDocumentExportService
         }
         catch
         {
-            try { File.Delete(tmp); } catch { /* best-effort cleanup */ }
+            try { File.Delete(tmp); }
+            catch (IOException) { /* best-effort cleanup */ }
+            catch (UnauthorizedAccessException) { /* best-effort cleanup */ }
             throw;
         }
     }

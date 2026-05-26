@@ -53,12 +53,14 @@ public sealed class MemoryPageCacheTests
         // переподнимает sticky-страницы в head.
         using var sut = new MemoryPageCache(capacityBytes: 5_000, stickyWindow: 5);
 
+        // Sticky должен быть активен ДО put'ов: иначе центральная страница выгоняется
+        // обычным LRU ещё до того, как её начнут защищать.
+        sut.SetCurrent("doc-fp", 5);
+
         for (var p = 0; p <= 10; p++)
         {
             sut.Put(K(p), new FakePageRender(width: 5, height: 50));   // 5*4*50 = 1000
         }
-
-        sut.SetCurrent("doc-fp", 5);
 
         // Добавим ещё страницу 11 — она вытолкнет того, кто давно не использовался.
         sut.Put(K(11), new FakePageRender(5, 50));

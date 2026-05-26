@@ -75,6 +75,62 @@ public sealed class FileFingerprintTests
     }
 
     [Fact]
+    public async Task FilesDifferingOnlyBeyondHeadWindow_WithSameSizeAndMtime_HaveSameFingerprint()
+    {
+        // Regression: the fingerprint must hash only the fixed 64KB head window (+ size + mtime),
+        // independent of bytes past it (and of the ArrayPool-rented buffer length).
+        using var tmp = new TempDir();
+        var p1 = tmp.File("big1.bin");
+        var p2 = tmp.File("big2.bin");
+
+        const int size = 200 * 1024;          // > 64KB head window
+        const int head = 64 * 1024;
+        var a = new byte[size];
+        new Random(7).NextBytes(a);
+        Array.Clear(a, 0, head);              // identical head (zeros) in both files
+        var b = (byte[])a.Clone();
+        for (int i = head; i < size; i++)     // differ ONLY beyond the head window
+        {
+            b[i] = (byte)(a[i] ^ 0xFF);
+        }
+
+        await File.WriteAllBytesAsync(p1, a);
+        await File.WriteAllBytesAsync(p2, b);
+        var mtime = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        File.SetLastWriteTimeUtc(p1, mtime);
+        File.SetLastWriteTimeUtc(p2, mtime);
+
+        var f1 = await _sut.ComputeAsync(p1, default);
+        var f2 = await _sut.ComputeAsync(p2, default);
+
+        f1.Should().Be(f2);
+    }
+
+    [Fact]
+    public async Task ChangingByteInsideHeadWindow_ChangesFingerprint()
+    {
+        using var tmp = new TempDir();
+        var p1 = tmp.File("h1.bin");
+        var p2 = tmp.File("h2.bin");
+
+        var a = new byte[100 * 1024];
+        new Random(11).NextBytes(a);
+        var b = (byte[])a.Clone();
+        b[1000] ^= 0xFF;                      // a byte well within the 64KB head
+
+        await File.WriteAllBytesAsync(p1, a);
+        await File.WriteAllBytesAsync(p2, b);
+        var mtime = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        File.SetLastWriteTimeUtc(p1, mtime);
+        File.SetLastWriteTimeUtc(p2, mtime);
+
+        var f1 = await _sut.ComputeAsync(p1, default);
+        var f2 = await _sut.ComputeAsync(p2, default);
+
+        f1.Should().NotBe(f2);
+    }
+
+    [Fact]
     public async Task Missing_Throws()
     {
         var act = () => _sut.ComputeAsync("/no/such/file/here.bin", default);

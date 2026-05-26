@@ -2,12 +2,13 @@ using Foliant.Domain;
 
 namespace Foliant.Plugin.DjVu;
 
-internal sealed class DjvuPageRender(int widthPx, int heightPx, int stride, ReadOnlyMemory<byte> data) : IPageRender
+internal sealed class DjvuPageRender(int widthPx, int heightPx, int stride, ReadOnlyMemory<byte> data, PageSize pageSize) : IPageRender
 {
     public int WidthPx => widthPx;
     public int HeightPx => heightPx;
     public int Stride => stride;
     public ReadOnlyMemory<byte> Bgra32 => data;
+    public PageSize PageSize => pageSize;
 
     public void Dispose()
     {

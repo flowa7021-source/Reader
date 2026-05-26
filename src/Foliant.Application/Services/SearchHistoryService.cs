@@ -11,6 +11,7 @@ public sealed class SearchHistoryService : ISearchHistoryService
     private readonly Lock _gate = new();
     private readonly int _maxItems;
 
+    /// <summary>Создаёт сервис истории поиска с ограничением длины MRU.</summary>
     /// <param name="maxItems">Максимальная длина истории.
     /// Должен быть > 0; по умолчанию <see cref="ISearchHistoryService.DefaultMaxItems"/>.</param>
     public SearchHistoryService(int maxItems = ISearchHistoryService.DefaultMaxItems)

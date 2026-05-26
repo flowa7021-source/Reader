@@ -164,6 +164,8 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsCancelOcr]}"
                   Command="{Binding SelectedTab.CancelOcrCommand}" />
         <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsImportLicense]}"
+                  Click="OnImportLicenseMenuItemClick" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsSettings]}"
                   Click="OnSettingsMenuItemClick" />
       </MenuItem>
@@ -190,6 +192,15 @@
                     Command="{Binding ChangeThemeCommand}"
                     CommandParameter="HighContrast" />
         </MenuItem>
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewAnnotations]}"
+                  Command="{Binding SelectedTab.ToggleAnnotationsCommand}" />
+        <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewFitWidth]}"
+                  Command="{Binding SelectedTab.FitWidthCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewFitPage]}"
+                  Command="{Binding SelectedTab.FitPageCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewActualSize]}"
+                  Command="{Binding SelectedTab.ActualSizeCommand}" />
       </MenuItem>
     </Menu>
 
@@ -209,18 +220,20 @@
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <!-- Page surface -->
             <Grid Grid.Column="0">
               <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                            VerticalScrollBarVisibility="Auto">
+                            VerticalScrollBarVisibility="Auto"
+                            SizeChanged="OnPageAreaSizeChanged">
                 <Grid HorizontalAlignment="Center"
                       VerticalAlignment="Top">
                   <ui:PageSurface PageRender="{Binding CurrentRender}" />
                   <ui:AnnotationLayer PageRender="{Binding CurrentRender}"
                                       Annotations="{Binding CurrentPageAnnotations}"
-                                      Zoom="{Binding Zoom}"
+                                      SearchHighlights="{Binding CurrentPageSearchHighlights}"
                                       CreateNoteCommand="{Binding AddNoteAtCommand}" />
                 </Grid>
               </ScrollViewer>
@@ -275,7 +288,7 @@
                   <ListBox.ItemTemplate>
                     <DataTemplate>
                       <StackPanel Margin="0,4">
-                        <TextBlock Text="{Binding PageIndex, StringFormat='Page {0}'}"
+                        <TextBlock Text="{Binding PageNumber, StringFormat='Page {0}'}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource Foreground}" />
                         <TextBlock Text="{Binding Snippet}"
@@ -285,6 +298,74 @@
                     </DataTemplate>
                   </ListBox.ItemTemplate>
                 </ListBox>
+              </Grid>
+            </Border>
+
+            <!-- All-Annotations sidebar (toggled via View menu) -->
+            <Border Grid.Column="2"
+                    Width="320"
+                    BorderBrush="{DynamicResource Foreground}"
+                    BorderThickness="1,0,0,0"
+                    Background="{DynamicResource PageBackground}"
+                    Visibility="{Binding IsAnnotationsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+              <Grid Margin="8"
+                    DataContext="{Binding AnnotationsDocument}">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0"
+                           LastChildFill="True">
+                  <Button DockPanel.Dock="Right"
+                          Content="Export"
+                          Width="72"
+                          Margin="4,0,0,0"
+                          Command="{Binding ExportAnnotationsCommand}"
+                          IsEnabled="{Binding CanExport}" />
+                  <TextBlock VerticalAlignment="Center"
+                             FontWeight="Bold"
+                             Foreground="{DynamicResource Foreground}"
+                             Text="{Binding TotalCount, StringFormat='Annotations: {0}'}" />
+                </DockPanel>
+
+                <ScrollViewer Grid.Row="1"
+                              Margin="0,8,0,0"
+                              VerticalScrollBarVisibility="Auto">
+                  <ItemsControl ItemsSource="{Binding Groups}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel Margin="0,4">
+                          <TextBlock Text="{Binding OneBasedPageNumber, StringFormat='Page {0}'}"
+                                     FontWeight="Bold"
+                                     Foreground="{DynamicResource Foreground}" />
+                          <ItemsControl Margin="8,2,0,0"
+                                        ItemsSource="{Binding Annotations}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate>
+                                <TextBlock Margin="0,1"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource Foreground}"
+                                           Text="{Binding Text, TargetNullValue='(highlight)'}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+
+                <TextBox Grid.Row="2"
+                         Margin="0,8,0,0"
+                         MaxHeight="120"
+                         IsReadOnly="True"
+                         VerticalScrollBarVisibility="Auto"
+                         TextWrapping="NoWrap"
+                         FontFamily="Consolas"
+                         Text="{Binding ExportedText, Mode=OneWay}"
+                         Visibility="{Binding ExportedText, Converter={StaticResource NullToVisibilityConverter}}" />
               </Grid>
             </Border>
           </Grid>

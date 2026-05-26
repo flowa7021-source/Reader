@@ -13,22 +13,26 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private readonly Func<SettingsWindow> _settingsWindowFactory;
     private readonly Func<CrashRecoveryWindow> _crashRecoveryWindowFactory;
+    private readonly Func<LicenseImportWindow> _licenseWindowFactory;
     private readonly ILogger<MainWindow> _logger;
 
     public MainWindow(
         MainViewModel vm,
         Func<SettingsWindow> settingsWindowFactory,
         Func<CrashRecoveryWindow> crashRecoveryWindowFactory,
+        Func<LicenseImportWindow> licenseWindowFactory,
         ILogger<MainWindow> logger)
     {
         ArgumentNullException.ThrowIfNull(vm);
         ArgumentNullException.ThrowIfNull(settingsWindowFactory);
         ArgumentNullException.ThrowIfNull(crashRecoveryWindowFactory);
+        ArgumentNullException.ThrowIfNull(licenseWindowFactory);
         ArgumentNullException.ThrowIfNull(logger);
 
         _vm = vm;
         _settingsWindowFactory = settingsWindowFactory;
         _crashRecoveryWindowFactory = crashRecoveryWindowFactory;
+        _licenseWindowFactory = licenseWindowFactory;
         _logger = logger;
 
         InitializeComponent();
@@ -129,8 +133,24 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnImportLicenseMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        var window = _licenseWindowFactory();
+        window.Owner = this;
+        window.ShowDialog();
+    }
+
     private void OnExitMenuItemClick(object sender, RoutedEventArgs e)
     {
         System.Windows.Application.Current.Shutdown();
+    }
+
+    // Reports the page viewport size to the active tab so Fit Width / Fit Page can compute zoom.
+    private void OnPageAreaSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: DocumentTabViewModel tab })
+        {
+            tab.SetViewport(e.NewSize.Width, e.NewSize.Height);
+        }
     }
 }

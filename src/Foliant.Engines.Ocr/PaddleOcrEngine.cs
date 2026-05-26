@@ -124,7 +124,7 @@ public sealed class PaddleOcrEngine : IOcrEngine, IDisposable
                 "Run tools/fetch-natives.ps1 or install the OCR model tier.");
         }
 
-        DetectionModel det = DetectionModel.FromDirectory(detDir);
+        DetectionModel det = DetectionModel.FromDirectory(detDir, ModelVersion.V4);
         ClassificationModel cls = ClassificationModel.FromDirectory(clsDir);
         RecognizationModel rec = RecognizationModel.FromDirectory(recDir, labelFile, ModelVersion.V4);
         return new FullOcrModel(det, cls, rec);

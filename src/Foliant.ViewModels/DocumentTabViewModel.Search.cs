@@ -161,6 +161,7 @@ public sealed partial class DocumentTabViewModel
 
         if (string.IsNullOrWhiteSpace(SearchText))
         {
+            ClearSearchHighlights();
             return;
         }
 
@@ -180,6 +181,10 @@ public sealed partial class DocumentTabViewModel
                 SearchResults.Add(hit);
             }
             PromoteRecentSearch(trimmed);
+
+            _activeHighlightQuery = trimmed;
+            _activeHighlightMatchCase = SearchMatchCase;
+            await RefreshSearchHighlightsAsync(CancellationToken.None);
         }
         catch (OperationCanceledException)
         {

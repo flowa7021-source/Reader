@@ -77,7 +77,15 @@ internal sealed partial class PdfDocument
 
         ushort[] buffer = new ushort[count + 1]; // +1 for terminating NUL
         int written = fpdf_text.FPDFTextGetBoundedText(tp, left, top, right, bottom, ref buffer[0], buffer.Length);
-        int chars = Math.Clamp(written - 1, 0, count); // `written` includes NUL when space allowed
+        if (written <= 0)
+        {
+            return null;
+        }
+        // The probe (buflen=0) reported `count` chars excluding the terminator. Whether the
+        // second call's return value includes the trailing NUL is PDFium-build-dependent, so
+        // clamp to `count` instead of `written - 1` (which dropped the last char on builds
+        // that exclude the terminator).
+        int chars = Math.Min(written, count);
         string text = new(MemoryMarshal.Cast<ushort, char>(buffer.AsSpan(0, chars)));
 
         // Canonical TextRun (PageGeometry/Annotation): X=left, Y=bottom, Y up.

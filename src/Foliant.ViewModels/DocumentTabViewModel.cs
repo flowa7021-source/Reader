@@ -19,6 +19,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IDocumentIndexer? _indexer;
     private readonly IPageEditService? _pageEdit;
     private readonly OpenDocumentUseCase? _openUseCase;
+    private readonly ISettingsService? _settings;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -30,6 +31,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     [NotifyPropertyChangedFor(nameof(CanMovePageDown))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCurrentPageCommand))]
     [NotifyCanExecuteChangedFor(nameof(MovePageDownCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RunOcrCommand))]
     private int _pageCount;
 
     [ObservableProperty]
@@ -66,6 +68,14 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     /// dedupe-on-open в <see cref="MainViewModel"/> и для отладочных сообщений.</summary>
     public string FilePath => _filePath;
 
+    /// <summary>Сайдбар «All Annotations» текущего документа: все аннотации, сгруппированные
+    /// по странице, с фильтрами/экспортом. Перестраивается при каждой мутации списка.</summary>
+    public AnnotationsDocumentViewModel AnnotationsDocument { get; }
+
+    /// <summary>Лента миниатюр страниц: выбор страницы и drag-reorder. Выбор синхронизирован
+    /// с <see cref="CurrentPageIndex"/>; reorder делегируется page-edit + reload.</summary>
+    public ThumbnailStripViewModel Thumbnails { get; }
+
     private readonly Lazy<DocumentMetadataViewModel> _metadataLazy;
 
     public DocumentTabViewModel(
@@ -80,7 +90,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IFileFingerprint? fingerprint = null,
         IDocumentIndexer? indexer = null,
         IPageEditService? pageEdit = null,
-        OpenDocumentUseCase? openUseCase = null)
+        OpenDocumentUseCase? openUseCase = null,
+        ISettingsService? settings = null,
+        IAnnotationExporter? annotationExporter = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -100,9 +112,14 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _indexer = indexer;
         _pageEdit = pageEdit;
         _openUseCase = openUseCase;
+        _settings = settings;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
+        AnnotationsDocument = new AnnotationsDocumentViewModel(
+            pageIndex => CurrentPageIndex = Math.Clamp(pageIndex, 0, Math.Max(0, PageCount - 1)),
+            annotationExporter);
+        Thumbnails = new ThumbnailStripViewModel(PageCount, ReorderPagesViaStripAsync, SelectPageFromStrip);
         _metadataLazy = new Lazy<DocumentMetadataViewModel>(
             () => new DocumentMetadataViewModel(_document.Metadata, _filePath, PageCount));
 
@@ -133,6 +150,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
 
     public async ValueTask DisposeAsync()
     {
+        _ocrCts?.Dispose();
         CurrentRender?.Dispose();
         CurrentRender = null;
         await _document.DisposeAsync();

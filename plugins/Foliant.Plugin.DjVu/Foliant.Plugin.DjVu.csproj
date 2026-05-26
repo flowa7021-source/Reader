@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
     <RootNamespace>Foliant.Plugin.DjVu</RootNamespace>
     <Description>Optional DjVu engine plugin. Out-of-process via DjVuLibre (ddjvu/djvused); GPL binaries stay isolated as child processes.</Description>
   </PropertyGroup>

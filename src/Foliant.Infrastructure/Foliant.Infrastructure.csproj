@@ -1,13 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <!-- Multi-target: net10.0 lets the cross-platform layer (cache/search/settings/eventstore)
+         build and unit-test on Linux; net10.0-windows carries the Windows-only DPAPI/registry
+         licensing + trial storage (built on Windows CI). -->
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
     <RootNamespace>Foliant.Infrastructure</RootNamespace>
     <Description>
       Кэш (5 слоёв), Serilog, Settings, EventStore, FileFingerprint, SqliteIndex,
       ProcessRunner для out-of-process плагинов.
     </Description>
   </PropertyGroup>
+
+  <!-- DPAPI + HKCU registry storage is Windows-only; excluded from the net10.0 build. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <Compile Remove="Licensing/DpapiLicenseStorage.cs" />
+    <Compile Remove="Storage/TrialStores.cs" />
+    <Compile Remove="Storage/TrialPersistenceService.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />

@@ -52,6 +52,7 @@ public sealed class PaddleOcrEngineTests
         public int HeightPx => 1;
         public int Stride => 4;
         public ReadOnlyMemory<byte> Bgra32 => new byte[4];
+        public PageSize PageSize => new(1, 1);
 
         public void Dispose()
         {

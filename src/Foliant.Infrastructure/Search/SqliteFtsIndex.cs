@@ -19,6 +19,7 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
     }.ToString();
 
     private readonly SemaphoreSlim _writeGate = new(1, 1);
+    private readonly Lock _initGate = new();
     private bool _initialized;
 
     public async Task IndexDocumentAsync(
@@ -203,28 +204,38 @@ public sealed class SqliteFtsIndex(string dbPath, ILogger<SqliteFtsIndex> log) :
         {
             return;
         }
-        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
-        using var conn = Open();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            CREATE TABLE IF NOT EXISTS documents (
-              id           INTEGER PRIMARY KEY AUTOINCREMENT,
-              fp           TEXT    NOT NULL UNIQUE,
-              path         TEXT    NOT NULL,
-              page_count   INTEGER NOT NULL DEFAULT 0,
-              last_indexed INTEGER NOT NULL
-            );
-            CREATE VIRTUAL TABLE IF NOT EXISTS pages_fts USING fts5(
-              doc_id UNINDEXED,
-              page_index UNINDEXED,
-              text,
-              tokenize = 'unicode61 remove_diacritics 2'
-            );
-        """;
-        cmd.ExecuteNonQuery();
+        // Serialize first-time schema creation: a concurrent SearchAsync/ListAsync must not
+        // query pages_fts/documents before the CREATE statements have run.
+        lock (_initGate)
+        {
+            if (_initialized)
+            {
+                return;
+            }
+            Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
-        _initialized = true;
+            using var conn = Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE IF NOT EXISTS documents (
+                  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                  fp           TEXT    NOT NULL UNIQUE,
+                  path         TEXT    NOT NULL,
+                  page_count   INTEGER NOT NULL DEFAULT 0,
+                  last_indexed INTEGER NOT NULL
+                );
+                CREATE VIRTUAL TABLE IF NOT EXISTS pages_fts USING fts5(
+                  doc_id UNINDEXED,
+                  page_index UNINDEXED,
+                  text,
+                  tokenize = 'unicode61 remove_diacritics 2'
+                );
+            """;
+            cmd.ExecuteNonQuery();
+
+            _initialized = true;
+        }
     }
 
     private static long ResolveOrInsertDocument(SqliteConnection conn, SqliteTransaction tx, string fp, string path)

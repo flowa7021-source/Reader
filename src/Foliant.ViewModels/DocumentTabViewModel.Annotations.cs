@@ -43,14 +43,22 @@ public sealed partial class DocumentTabViewModel
     }
 
     /// <summary>Хелпер: вызывается после любой мутации <c>_allAnnotations</c>; рейзит
-    /// <see cref="PropertyChanged"/> для всех зависимых count-property.</summary>
+    /// <c>PropertyChanged</c> для всех зависимых count-property.</summary>
     private void NotifyAnnotationCountsChanged()
     {
         OnPropertyChanged(nameof(TotalAnnotationsCount));
         OnPropertyChanged(nameof(HighlightCount));
         OnPropertyChanged(nameof(NoteCount));
         OnPropertyChanged(nameof(FreehandCount));
+        AnnotationsDocument.Rebuild(_allAnnotations);
     }
+
+    /// <summary>Видимость сайдбара «All Annotations» (toggle из меню/тулбара).</summary>
+    [ObservableProperty]
+    private bool _isAnnotationsVisible;
+
+    [RelayCommand]
+    private void ToggleAnnotations() => IsAnnotationsVisible = !IsAnnotationsVisible;
 
     /// <summary>Число аннотаций именно на текущей странице. Совпадает с <c>CurrentPageAnnotations.Count</c>,
     /// но отдельным property удобнее биндить — counter в sidebar/status-bar не должен подписываться
@@ -184,6 +192,8 @@ public sealed partial class DocumentTabViewModel
                 break;
             }
         }
+
+        AnnotationsDocument.Rebuild(_allAnnotations);
     }
 
     private void RefreshCurrentPageAnnotations()

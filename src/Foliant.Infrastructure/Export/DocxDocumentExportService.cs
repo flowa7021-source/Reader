@@ -54,7 +54,9 @@ public sealed class DocxDocumentExportService : IDocumentExportService
         }
         catch
         {
-            try { File.Delete(tmp); } catch { /* best-effort cleanup */ }
+            try { File.Delete(tmp); }
+            catch (IOException) { /* best-effort cleanup */ }
+            catch (UnauthorizedAccessException) { /* best-effort cleanup */ }
             throw;
         }
     }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Foliant.Plugin.DjVu;
 
@@ -13,6 +14,8 @@ internal static class DjvuProcessRunner
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
 
     /// <summary>Runs the tool and returns raw stdout bytes (for binary PPM output).</summary>
+    [SuppressMessage("Reliability", "CA2025:Ensure tasks using IDisposable instances complete before the instances are disposed",
+        Justification = "stdout/stderr tasks are awaited (or drained on failure) inside WaitAndCollectAsync before the using-scoped process is disposed.")]
     public static async Task<byte[]> RunForBytesAsync(
         string exePath,
         IReadOnlyList<string> args,
@@ -33,6 +36,8 @@ internal static class DjvuProcessRunner
     }
 
     /// <summary>Runs the tool and returns decoded stdout text (for djvused output).</summary>
+    [SuppressMessage("Reliability", "CA2025:Ensure tasks using IDisposable instances complete before the instances are disposed",
+        Justification = "stdout/stderr tasks are awaited (or drained on failure) inside WaitAndCollectAsync before the using-scoped process is disposed.")]
     public static async Task<string> RunForTextAsync(
         string exePath,
         IReadOnlyList<string> args,

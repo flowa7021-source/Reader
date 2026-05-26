@@ -157,6 +157,6 @@ public sealed class DocxDocumentExportServiceTests
     private static Body ReadBody(string path)
     {
         using var doc = WordprocessingDocument.Open(path, false);
-        return doc.MainDocumentPart!.Document.Body!;
+        return doc.MainDocumentPart!.Document!.Body!;
     }
 }
