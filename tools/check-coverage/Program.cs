@@ -183,7 +183,11 @@ internal static class Program
             var lines = new Dictionary<(string File, int Line), int>();
             foreach (var cls in pkg.Descendants("class"))
             {
-                var file = cls.Attribute("filename")?.Value ?? string.Empty;
+                // Разные тест-проекты пишут один и тот же исходник под разными путями
+                // (Annotation.cs / Foliant.Domain/Annotation.cs / src/Foliant.Domain/Annotation.cs),
+                // поэтому ключуем union по basename — иначе одна строка не схлопывается между
+                // отчётами и покрытие занижается вдвое.
+                var file = Path.GetFileName(cls.Attribute("filename")?.Value ?? string.Empty);
                 foreach (var line in cls.Descendants("line"))
                 {
                     if (int.TryParse(

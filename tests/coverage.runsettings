@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coverage collection settings for the §6.2 gate (tools/check-coverage).
+     Excludes declaration-only Domain types (interfaces + enums) from coverage:
+     they emit no executable IL, so coverlet otherwise counts their declaration
+     lines in the denominator and understates true (executable) coverage.
+     [ExcludeFromCodeCoverage] is not valid on interface/enum declarations (CS0592),
+     hence the filter lives here. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Exclude>[Foliant.Domain]Foliant.Domain.IDocument,[Foliant.Domain]Foliant.Domain.IDocumentCommand,[Foliant.Domain]Foliant.Domain.IDocumentEditor,[Foliant.Domain]Foliant.Domain.IDocumentLoader,[Foliant.Domain]Foliant.Domain.IFormController,[Foliant.Domain]Foliant.Domain.IPageRender,[Foliant.Domain]Foliant.Domain.ISignatureController,[Foliant.Domain]Foliant.Domain.AnnotationKind,[Foliant.Domain]Foliant.Domain.DocumentKind,[Foliant.Domain]Foliant.Domain.FormFieldKind,[Foliant.Domain]Foliant.Domain.LicenseStatus,[Foliant.Domain]Foliant.Domain.RenderTheme,[Foliant.Domain]Foliant.Domain.SignatureKind,[Foliant.Domain]Foliant.Domain.TrialStatus,[Foliant.Domain]Foliant.Domain.ViewRotation</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
