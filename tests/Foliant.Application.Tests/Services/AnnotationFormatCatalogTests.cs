@@ -13,7 +13,7 @@ public sealed class AnnotationFormatCatalogTests
             new XfdfAnnotationExporter(),
             new FdfAnnotationExporter(),
         ],
-        [new XfdfAnnotationImporter()]);
+        [new XfdfAnnotationImporter(), new JsonAnnotationImporter()]);
 
     [Fact]
     public void Exposes_AllRegisteredFormats_InOrder()
@@ -23,7 +23,7 @@ public sealed class AnnotationFormatCatalogTests
         catalog.Exporters.Select(e => e.FormatName)
             .Should().Equal("JSON", "Markdown", "XFDF", "FDF");
         catalog.Importers.Select(i => i.FormatName)
-            .Should().Equal("XFDF");
+            .Should().Equal("XFDF", "JSON");
     }
 
     [Theory]
@@ -52,9 +52,10 @@ public sealed class AnnotationFormatCatalogTests
         var catalog = BuildRealCatalog();
 
         catalog.ResolveImporter("notes.xfdf").Should().BeOfType<XfdfAnnotationImporter>();
-        // FDF/JSON/Markdown have no importer registered → null, not a throw.
+        catalog.ResolveImporter("notes.json").Should().BeOfType<JsonAnnotationImporter>();
+        // FDF/Markdown have no importer registered → null, not a throw.
         catalog.ResolveImporter("notes.fdf").Should().BeNull();
-        catalog.ResolveImporter("notes.json").Should().BeNull();
+        catalog.ResolveImporter("notes.md").Should().BeNull();
     }
 
     [Theory]

@@ -144,6 +144,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IAnnotationExporter, XfdfAnnotationExporter>();
         services.AddSingleton<IAnnotationExporter, FdfAnnotationExporter>();
         services.AddSingleton<IAnnotationImporter, XfdfAnnotationImporter>();
+        services.AddSingleton<IAnnotationImporter, JsonAnnotationImporter>();
         services.AddSingleton<IAnnotationFormatCatalog, AnnotationFormatCatalog>();
 
         // Licensing storage + trial (Windows-only persistence: DPAPI + HKCU + marker).
