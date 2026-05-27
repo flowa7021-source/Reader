@@ -20,6 +20,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IPageEditService? _pageEdit;
     private readonly OpenDocumentUseCase? _openUseCase;
     private readonly ISettingsService? _settings;
+    private readonly IAnnotatedPdfExportService? _annotatedPdfExporter;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -95,7 +96,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IPageEditService? pageEdit = null,
         OpenDocumentUseCase? openUseCase = null,
         ISettingsService? settings = null,
-        IAnnotationExporter? annotationExporter = null)
+        IAnnotationExporter? annotationExporter = null,
+        IAnnotatedPdfExportService? annotatedPdfExporter = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -116,6 +118,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _pageEdit = pageEdit;
         _openUseCase = openUseCase;
         _settings = settings;
+        _annotatedPdfExporter = annotatedPdfExporter;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;

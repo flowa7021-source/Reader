@@ -50,8 +50,43 @@ public sealed partial class DocumentTabViewModel
         OnPropertyChanged(nameof(HighlightCount));
         OnPropertyChanged(nameof(NoteCount));
         OnPropertyChanged(nameof(FreehandCount));
+        OnPropertyChanged(nameof(CanExportAnnotatedPdf));
+        ExportAnnotatedPdfCommand.NotifyCanExecuteChanged();
         AnnotationsDocument.Rebuild(_allAnnotations);
         RefreshVisiblePageAnnotations();
+    }
+
+    /// <summary>Можно ли экспортировать PDF со встроенными аннотациями: задан сервис, источник —
+    /// PDF и есть хотя бы одна аннотация. Биндится к доступности пункта меню «Export annotated PDF».</summary>
+    public bool CanExportAnnotatedPdf =>
+        _annotatedPdfExporter is not null
+        && _allAnnotations.Count > 0
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Записать копию исходного PDF со встроенными <b>редактируемыми</b> аннотациями
+    /// (/Highlight, /Text, /Ink). Путь назначения выбирает View (SaveFileDialog) и передаёт сюда.
+    /// No-op, если экспорт неприменим или путь пуст; сбой логируется и не роняет вкладку.</summary>
+    [RelayCommand(CanExecute = nameof(CanExportAnnotatedPdf))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Annotated-PDF export failure must not crash the tab.")]
+    private async Task ExportAnnotatedPdfAsync(string? targetPath, CancellationToken ct)
+    {
+        if (_annotatedPdfExporter is null || string.IsNullOrWhiteSpace(targetPath) || !CanExportAnnotatedPdf)
+        {
+            return;
+        }
+
+        try
+        {
+            await _annotatedPdfExporter.ExportAsync(_filePath, [.. _allAnnotations], targetPath, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // отменено пользователем/закрытием — игнорируем
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to export annotated PDF to '{Path}'.", targetPath);
+        }
     }
 
     /// <summary>Видимость сайдбара «All Annotations» (toggle из меню/тулбара).</summary>
