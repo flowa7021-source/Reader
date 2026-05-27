@@ -189,3 +189,93 @@ public sealed class XfdfAnnotationExporterTests
         _sut.FileExtension.Should().Be("xfdf");
     }
 }
+
+public sealed class FdfAnnotationExporterTests
+{
+    private readonly FdfAnnotationExporter _sut = new();
+
+    [Fact]
+    public void Export_Empty_IsWellFormedFdfWithEmptyAnnots()
+    {
+        var fdf = _sut.Export([]);
+
+        fdf.Should().StartWith("%FDF-1.2");
+        fdf.Should().Contain("/Annots [");
+        fdf.Should().Contain("/Root 1 0 R");
+        fdf.Should().EndWith("%%EOF\n");
+    }
+
+    [Fact]
+    public void Export_Highlight_WritesSubtypeRectColorAndQuadPoints()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(10, 20, 30, 40), "#FF0000", DateTimeOffset.UnixEpoch);
+
+        var fdf = _sut.Export([hl]);
+
+        fdf.Should().Contain("/Subtype /Highlight");
+        fdf.Should().Contain("/Page 0");
+        // Rect = xLL yLL xUR yUR = 10 20 40 60
+        fdf.Should().Contain("/Rect [10 20 40 60]");
+        fdf.Should().Contain("/C [1 0 0]");
+        // QuadPoints = TL TR BL BR
+        fdf.Should().Contain("/QuadPoints [10 60 40 60 10 20 40 20]");
+    }
+
+    [Fact]
+    public void Export_StickyNote_WritesTextSubtypeAndUtf16Contents()
+    {
+        var note = Annotation.StickyNote(2, new AnnotationRect(0, 0, 16, 16), "Привет", "#FFCC00", DateTimeOffset.UnixEpoch);
+
+        var fdf = _sut.Export([note]);
+
+        fdf.Should().Contain("/Subtype /Text");
+        fdf.Should().Contain("/Page 2");
+        // UTF-16BE hex with BOM: FEFF + 0x041F 0x0440 0x0438 0x0432 0x0435 0x0442
+        fdf.Should().Contain("/Contents <FEFF041F04400438043204350442>");
+    }
+
+    [Fact]
+    public void Export_Freehand_WritesInkSubtypeAndInkList()
+    {
+        var ink = Annotation.Freehand(
+            1,
+            [new AnnotationPoint(1, 2), new AnnotationPoint(3, 4)],
+            "#000000",
+            DateTimeOffset.UnixEpoch);
+
+        var fdf = _sut.Export([ink]);
+
+        fdf.Should().Contain("/Subtype /Ink");
+        fdf.Should().Contain("/Page 1");
+        fdf.Should().Contain("/InkList [[1 2 3 4]]");
+    }
+
+    [Fact]
+    public void Export_ThreeDigitColor_ExpandsToFullChannels()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#FF0", DateTimeOffset.UnixEpoch);
+
+        var fdf = _sut.Export([hl]);
+
+        fdf.Should().Contain("/C [1 1 0]");
+    }
+
+    [Fact]
+    public void Export_SkipsMalformedAnnotation()
+    {
+        // Highlight without bounds is not a valid FDF highlight → skipped, not crashed.
+        var broken = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Highlight, "#FFF", null, null, null, DateTimeOffset.UtcNow);
+
+        var fdf = _sut.Export([broken]);
+
+        fdf.Should().Contain("/Annots [");
+        fdf.Should().NotContain("/Subtype");
+    }
+
+    [Fact]
+    public void FormatNameAndExtension_AreReasonable()
+    {
+        _sut.FormatName.Should().Be("FDF");
+        _sut.FileExtension.Should().Be("fdf");
+    }
+}
