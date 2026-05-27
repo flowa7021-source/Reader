@@ -133,8 +133,18 @@ internal static class AppHostBuilder
         services.AddSingleton<IDocumentExportService, PlainTextDocumentExportService>();
         services.AddSingleton<IDocumentExportService, DocxDocumentExportService>();
 
-        // Annotation export (JSON) — для сайдбара «All Annotations».
-        services.AddSingleton<IAnnotationExporter, JsonAnnotationExporter>();
+        // Annotation interchange (Q-F17). All exporters/importers register here; the catalog
+        // resolves the right one by file extension for the save/open dialogs. JSON is also
+        // registered as a concrete type so the sidebar's single-exporter path stays JSON
+        // regardless of registration order (MS DI hands a bare IAnnotationExporter the LAST
+        // registration, not the first).
+        services.AddSingleton<JsonAnnotationExporter>();
+        services.AddSingleton<IAnnotationExporter>(sp => sp.GetRequiredService<JsonAnnotationExporter>());
+        services.AddSingleton<IAnnotationExporter, MarkdownAnnotationExporter>();
+        services.AddSingleton<IAnnotationExporter, XfdfAnnotationExporter>();
+        services.AddSingleton<IAnnotationExporter, FdfAnnotationExporter>();
+        services.AddSingleton<IAnnotationImporter, XfdfAnnotationImporter>();
+        services.AddSingleton<IAnnotationFormatCatalog, AnnotationFormatCatalog>();
 
         // Licensing storage + trial (Windows-only persistence: DPAPI + HKCU + marker).
         services.AddSingleton(TimeProvider.System);
@@ -193,7 +203,7 @@ internal static class AppHostBuilder
                 pageEdit: sp.GetService<IPageEditService>(),
                 openUseCase: sp.GetService<OpenDocumentUseCase>(),
                 settings: sp.GetService<ISettingsService>(),
-                annotationExporter: sp.GetService<IAnnotationExporter>()));
+                annotationExporter: sp.GetService<JsonAnnotationExporter>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.
