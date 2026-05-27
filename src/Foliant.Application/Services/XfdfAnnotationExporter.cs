@@ -50,9 +50,8 @@ public sealed class XfdfAnnotationExporter : IAnnotationExporter
 
     private static XElement Highlight(Annotation a, AnnotationRect b)
     {
-        double left = b.X, bottom = b.Y, right = b.X + b.Width, top = b.Y + b.Height;
         // QuadPoints: top-left, top-right, bottom-left, bottom-right (PDF order).
-        string coords = Join(left, top, right, top, left, bottom, right, bottom);
+        string coords = Join(AnnotationGeometry.QuadPoints(b));
         return new XElement(
             Ns + "highlight",
             CommonAttributes(a),
@@ -87,7 +86,11 @@ public sealed class XfdfAnnotationExporter : IAnnotationExporter
         new XAttribute("creationdate", "D:" + a.CreatedAt.UtcDateTime.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture) + "Z"),
     ];
 
-    private static string Rect(AnnotationRect b) => Join(b.X, b.Y, b.X + b.Width, b.Y + b.Height);
+    private static string Rect(AnnotationRect b)
+    {
+        var (xll, yll, xur, yur) = AnnotationGeometry.RectCorners(b);
+        return Join(xll, yll, xur, yur);
+    }
 
     private static string Join(params double[] values) => string.Join(',', values.Select(F));
 

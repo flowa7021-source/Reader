@@ -54,14 +54,14 @@ public sealed class FdfAnnotationExporter : IAnnotationExporter
 
     private static string Page(Annotation a) => a.PageIndex.ToString(CultureInfo.InvariantCulture);
 
-    private static string Rect(AnnotationRect b) =>
-        $"{F(b.X)} {F(b.Y)} {F(b.X + b.Width)} {F(b.Y + b.Height)}";
-
-    private static string QuadPoints(AnnotationRect b)
+    private static string Rect(AnnotationRect b)
     {
-        double left = b.X, bottom = b.Y, right = b.X + b.Width, top = b.Y + b.Height;
-        return $"{F(left)} {F(top)} {F(right)} {F(top)} {F(left)} {F(bottom)} {F(right)} {F(bottom)}";
+        var (xll, yll, xur, yur) = AnnotationGeometry.RectCorners(b);
+        return $"{F(xll)} {F(yll)} {F(xur)} {F(yur)}";
     }
+
+    private static string QuadPoints(AnnotationRect b) =>
+        string.Join(' ', AnnotationGeometry.QuadPoints(b).Select(F));
 
     private static string InkList(IReadOnlyList<AnnotationPoint> points) =>
         string.Join(' ', points.Select(p => $"{F(p.X)} {F(p.Y)}"));
@@ -72,24 +72,10 @@ public sealed class FdfAnnotationExporter : IAnnotationExporter
         return $"/C [{F(r)} {F(g)} {F(b)}]";
     }
 
-    private static (double R, double G, double B) ParseColor(string hex)
-    {
-        string h = hex.TrimStart('#');
-        if (h.Length == 3)
-        {
-            h = string.Concat(h[0], h[0], h[1], h[1], h[2], h[2]);
-        }
-
-        if (h.Length == 6
-            && int.TryParse(h.AsSpan(0, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int r)
-            && int.TryParse(h.AsSpan(2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int g)
-            && int.TryParse(h.AsSpan(4, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int b))
-        {
-            return (r / 255.0, g / 255.0, b / 255.0);
-        }
-
-        return (0, 0, 0);
-    }
+    private static (double R, double G, double B) ParseColor(string hex) =>
+        HexColor.TryParse(hex, out byte r, out byte g, out byte b)
+            ? (r / 255.0, g / 255.0, b / 255.0)
+            : (0, 0, 0);
 
     // PDF text string как UTF-16BE hex с BOM — единственный переносимый способ для не-ASCII.
     private static string PdfText(string? text)

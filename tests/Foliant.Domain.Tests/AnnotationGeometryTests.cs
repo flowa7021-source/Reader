@@ -85,4 +85,25 @@ public sealed class AnnotationGeometryTests
 
         result.Should().Equal(new AnnotationPoint(0, 0), new AnnotationPoint(2, 0));
     }
+
+    [Fact]
+    public void RectCorners_ReturnsLowerLeftAndUpperRight()
+    {
+        AnnotationGeometry.RectCorners(new AnnotationRect(10, 20, 30, 40))
+            .Should().Be((10.0, 20.0, 40.0, 60.0));
+    }
+
+    [Fact]
+    public void QuadPoints_AreTopLeftTopRightBottomLeftBottomRight()
+    {
+        // rect x=10 y=20 w=30 h=40 → left=10 bottom=20 right=40 top=60
+        AnnotationGeometry.QuadPoints(new AnnotationRect(10, 20, 30, 40))
+            .Should().Equal(10, 60, 40, 60, 10, 20, 40, 20);
+    }
+
+    [Fact]
+    public void QuadPoints_HasEightValues()
+    {
+        AnnotationGeometry.QuadPoints(new AnnotationRect(0, 0, 1, 1)).Should().HaveCount(8);
+    }
 }
