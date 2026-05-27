@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Foliant.Domain;
@@ -13,6 +14,7 @@ internal sealed class DjvuDocument : IDocument
 {
     private readonly string _path;
     private readonly DjvuToolset _tools;
+    private readonly ConcurrentDictionary<int, PageSize> _pageSizeCache = new();
     private bool _disposed;
 
     public DocumentKind Kind => DocumentKind.Djvu;
@@ -138,13 +140,22 @@ internal sealed class DjvuDocument : IDocument
         return string.Create(CultureInfo.InvariantCulture, $"-size={w}x{h}");
     }
 
+    // Размер страницы не меняется за время жизни документа — мемоизируем, чтобы не шеллить
+    // djvused повторно (GetPageSize при ресайзе колонок + size-аргумент рендера зовут это же).
     private async Task<PageSize> QueryPageSizeAsync(int pageIndex, CancellationToken ct)
     {
+        if (_pageSizeCache.TryGetValue(pageIndex, out PageSize cached))
+        {
+            return cached;
+        }
+
         string sizeOut = await DjvuProcessRunner
             .RunForTextAsync(_tools.DjvusedPath, [_path, "-e", SelectScript(pageIndex, "size")], ct)
             .ConfigureAwait(false);
 
-        return DjvusedOutput.ParsePageSize(sizeOut);
+        PageSize size = DjvusedOutput.ParsePageSize(sizeOut);
+        _pageSizeCache[pageIndex] = size;
+        return size;
     }
 
     private void ValidatePageIndex(int pageIndex)

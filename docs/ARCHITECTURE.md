@@ -133,3 +133,18 @@ Path → [PdfDocumentLoader.CanLoad?] → Yes → PdfDocument
 - Serilog → `%LOCALAPPDATA%\Foliant\Logs\foliant-{date}.log` (rolling daily, 14 файлов, 50 МБ лимит).
 - Уровни: `Information` по умолчанию; `Debug` через CLI флаг (Phase 2).
 - Никакого PII. Пути файлов — да, содержимое — никогда.
+
+## 11. Лицензирование и отзыв (revocation)
+
+- Offline-валидация (PROJECT_BOARD §2.2): лицензия — JSON, подписанный ECDSA-P256; публичный ключ
+  встроен (`LicenseKeys.PublicKeyPem`), приватный — у вендора. Проверка в `EcdsaLicenseVerifier`:
+  подпись → парсинг → expiry. Хранение — DPAPI (`DpapiLicenseStorage`), без привязки к hardware-ID.
+- **Блок-лист (revocation):** `EcdsaLicenseVerifier` принимает набор SHA-256 (hex) подписей
+  отозванных лицензий (`LicenseKeys.RevokedSignatureHashes`). После успешной проверки подписи
+  совпадение хэша → `Invalid("revoked")`. Подпись уникальна для выданной лицензии, поэтому её хэш
+  идентифицирует утёкший ключ без добавления серийника в подписанную схему.
+- **Доставка обновлений блок-листа:** список встроен в сборку и пополняется **в каждом релизе**
+  (раз в релиз, §2.2) — отдельного online-канала отзыва нет; компрометация закрывается выпуском
+  новой версии с дополненным `RevokedSignatureHashes`.
+- Триал: 30 дней, anti-tamper через тройное хранилище (DPAPI-файл + `HKCU` + marker-хэш),
+  ratchet по системному времени.
