@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Xml.Linq;
 using FluentAssertions;
 using Foliant.Application.Services;
 using Foliant.Domain;
@@ -108,5 +109,83 @@ public sealed class MarkdownAnnotationExporterTests
     {
         _sut.FormatName.Should().Be("Markdown");
         _sut.FileExtension.Should().Be("md");
+    }
+}
+
+public sealed class XfdfAnnotationExporterTests
+{
+    private static readonly XNamespace Ns = "http://ns.adobe.com/xfdf/";
+    private readonly XfdfAnnotationExporter _sut = new();
+
+    private static XElement ParseAnnots(string xfdf)
+    {
+        var doc = XDocument.Parse(xfdf);
+        doc.Root!.Name.Should().Be(Ns + "xfdf");
+        return doc.Root!.Element(Ns + "annots")!;
+    }
+
+    [Fact]
+    public void Export_Empty_IsWellFormedWithEmptyAnnots()
+    {
+        var annots = ParseAnnots(_sut.Export([]));
+
+        annots.Should().NotBeNull();
+        annots.Elements().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Export_Highlight_WritesRectAndQuadpoints()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(10, 20, 30, 40), "#FFEB3B", DateTimeOffset.UnixEpoch);
+
+        var hlEl = ParseAnnots(_sut.Export([hl])).Element(Ns + "highlight")!;
+
+        hlEl.Attribute("page")!.Value.Should().Be("0");
+        hlEl.Attribute("color")!.Value.Should().Be("#FFEB3B");
+        // rect = xLL,yLL,xUR,yUR = 10,20,40,60
+        hlEl.Attribute("rect")!.Value.Should().Be("10,20,40,60");
+        hlEl.Attribute("coords")!.Value.Should().Be("10,60,40,60,10,20,40,20");
+    }
+
+    [Fact]
+    public void Export_StickyNote_WritesContentsWithUserText()
+    {
+        var note = Annotation.StickyNote(2, new AnnotationRect(0, 0, 16, 16), "TODO — Привет!", "#FFCC00", DateTimeOffset.UtcNow);
+
+        var textEl = ParseAnnots(_sut.Export([note])).Element(Ns + "text")!;
+
+        textEl.Attribute("page")!.Value.Should().Be("2");
+        textEl.Element(Ns + "contents")!.Value.Should().Be("TODO — Привет!");
+    }
+
+    [Fact]
+    public void Export_Freehand_WritesInklistGesture()
+    {
+        var ink = Annotation.Freehand(
+            1,
+            [new AnnotationPoint(1, 2), new AnnotationPoint(3, 4)],
+            "#000000",
+            DateTimeOffset.UtcNow);
+
+        var gesture = ParseAnnots(_sut.Export([ink]))
+            .Element(Ns + "ink")!.Element(Ns + "inklist")!.Element(Ns + "gesture")!;
+
+        gesture.Value.Should().Be("1,2;3,4");
+    }
+
+    [Fact]
+    public void Export_SkipsMalformedAnnotation()
+    {
+        // Highlight without bounds is not a valid XFDF highlight → skipped, not crashed.
+        var broken = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Highlight, "#FFF", null, null, null, DateTimeOffset.UtcNow);
+
+        ParseAnnots(_sut.Export([broken])).Elements().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void FormatNameAndExtension_AreReasonable()
+    {
+        _sut.FormatName.Should().Be("XFDF");
+        _sut.FileExtension.Should().Be("xfdf");
     }
 }
