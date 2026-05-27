@@ -196,6 +196,15 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Ошибка при открытии документа</value>
   </data>
+  <data name="MenuFileExportAnnotatedPdf" xml:space="preserve">
+    <value>Экспорт PDF с _аннотациями...</value>
+  </data>
+  <data name="ExportAnnotatedPdfDialogTitle" xml:space="preserve">
+    <value>Экспорт PDF с аннотациями</value>
+  </data>
+  <data name="ExportAnnotatedPdfDialogFilter" xml:space="preserve">
+    <value>PDF-файлы (*.pdf)|*.pdf</value>
+  </data>
   <data name="SettingsTitle" xml:space="preserve">
     <value>Настройки</value>
   </data>

@@ -196,6 +196,15 @@
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Error opening document</value>
   </data>
+  <data name="MenuFileExportAnnotatedPdf" xml:space="preserve">
+    <value>Export _Annotated PDF...</value>
+  </data>
+  <data name="ExportAnnotatedPdfDialogTitle" xml:space="preserve">
+    <value>Export Annotated PDF</value>
+  </data>
+  <data name="ExportAnnotatedPdfDialogFilter" xml:space="preserve">
+    <value>PDF files (*.pdf)|*.pdf</value>
+  </data>
   <data name="SettingsTitle" xml:space="preserve">
     <value>Settings</value>
   </data>

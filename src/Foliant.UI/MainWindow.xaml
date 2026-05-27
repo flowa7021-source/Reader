@@ -163,6 +163,10 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileClearRecent]}"
                   Command="{Binding ClearRecentsCommand}" />
         <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExportAnnotatedPdf]}"
+                  IsEnabled="{Binding SelectedTab.CanExportAnnotatedPdf, FallbackValue=False}"
+                  Click="OnExportAnnotatedPdfMenuItemClick" />
+        <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExit]}"
                   Click="OnExitMenuItemClick" />
       </MenuItem>
