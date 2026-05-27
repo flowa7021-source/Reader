@@ -35,7 +35,7 @@ AppUpdatesURL={#AppURL}/releases
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
-LicenseFile=..\..\LICENSE
+LicenseFile=..\..\EULA.md
 OutputDir=Output
 OutputBaseFilename=Foliant-Setup-{#AppVersion}-{#Tier}
 ; Иконку подключаем только если файл присутствует — иначе ISCC падает на отсутствующем ресурсе.
@@ -63,9 +63,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ;    PDFiumCore, OpenCvSharp4.runtime.win, PaddleInference win64.mkl, SQLite и т.д.).
 Source: "..\..\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; 2) Лицензии: основная + третьих лиц (рядом с exe для пункта меню About/legal).
-Source: "..\..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
-Source: "..\..\NOTICE.md"; DestDir: "{app}"; Flags: ignoreversion
+; 2) Юридические документы (§12.8) — в {app}\Licenses\: ядро (MIT), EULA, privacy, третьи лица.
+Source: "..\..\LICENSE";   DestDir: "{app}\Licenses"; DestName: "LICENSE.txt"; Flags: ignoreversion
+Source: "..\..\EULA.md";    DestDir: "{app}\Licenses"; Flags: ignoreversion
+Source: "..\..\PRIVACY.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion
+Source: "..\..\NOTICE.md";  DestDir: "{app}\Licenses"; Flags: ignoreversion
 
 ; 3) Оффлайн-модели PaddleOCR. Движок ищет их в {app}\native\paddleocr\{det,cls,rec\<script>}
 ;    (см. PaddleOcrEngine: AppContext.BaseDirectory\native\paddleocr). Общие det+cls и
