@@ -43,7 +43,14 @@ jobs:
           dotnet restore Foliant.sln
           dotnet build Foliant.sln -c Release --no-restore -warnaserror
 
-      # Тесты в релизном пайплайне не гоняем — тестирование локальное при готовности альфы.
+      # Не подписываем непротестированный билд: гоняем unit+integration (без Slow/E2E —
+      # нативные движки/модели и WinAppDriver на релиз-раннере недоступны), как в verify.yml.
+      - name: Test (unit + integration)
+        run: >-
+          dotnet test Foliant.sln
+          -c Release
+          --no-build
+          --filter "Category!=Slow&Category!=E2E"
 
       - name: Publish self-contained
         run: >-

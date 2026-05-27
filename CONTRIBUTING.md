@@ -55,6 +55,23 @@ Pre-commit hook (Husky.Net, опц.) автоматически: `dotnet format`
 
 ## Запуск тестов
 
+**Одной командой перед коммитом (рекомендуется):**
+
+```bash
+tools/verify-local.sh
+```
+
+Собирает кросс-платформенный слой (`Foliant.CrossPlatform.slnf`) под `-warnaserror` и гоняет
+быстрые unit- + интеграционные (real-SQLite / ddjvu) тесты — тот же набор, что Linux-джоб
+`verify.yml`. WPF и нативка проверяются только Windows-джобом CI.
+
+Связанные блокирующие гейты (тоже в `verify.yml`):
+
+- `tools/check-coverage` — пороги покрытия §6.2 (Domain 90 / App 80 / Infra 70 / VM 60).
+- `tools/perf-compare` — сравнение BenchmarkDotNet с `baseline.json`; регрессия > 15 % p95 — блокер.
+
+Точечно:
+
 ```powershell
 # Быстрые (PR-набор)
 dotnet test --filter "Category!=Slow&Category!=E2E"
