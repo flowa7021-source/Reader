@@ -131,6 +131,7 @@ internal static class AppHostBuilder
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
         services.AddSingleton<IPageEditService, PdfPageEditService>();
+        services.AddSingleton<IPdfOutlineReader, PdfPigOutlineReader>();
 
         // Application
         services.AddSingleton<OpenDocumentUseCase>();
@@ -226,7 +227,8 @@ internal static class AppHostBuilder
                 settings: sp.GetService<ISettingsService>(),
                 annotationExporter: sp.GetService<JsonAnnotationExporter>(),
                 annotatedPdfExporter: sp.GetService<IAnnotatedPdfExportService>(),
-                bookmarkFormats: sp.GetService<IBookmarkFormatCatalog>()));
+                bookmarkFormats: sp.GetService<IBookmarkFormatCatalog>(),
+                pdfOutlineReader: sp.GetService<IPdfOutlineReader>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.

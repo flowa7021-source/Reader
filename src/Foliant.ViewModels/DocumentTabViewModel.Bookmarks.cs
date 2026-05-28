@@ -144,6 +144,12 @@ public sealed partial class DocumentTabViewModel
     /// и для пустого документа — это его основной сценарий.</summary>
     public bool CanImportBookmarks => _bookmarkFormats is not null;
 
+    /// <summary>true когда импорт PDF /Outlines применим: reader известен и текущий файл — PDF.
+    /// EPUB/DjVu/изображения не имеют /Outlines в PDF-смысле.</summary>
+    public bool CanImportPdfOutline =>
+        _pdfOutlineReader is not null
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Экспорт всех закладок в файл; формат выбирается по расширению targetPath.
     /// Путь приходит из SaveFileDialog (View). No-op при пустом пути / отсутствующем каталоге
     /// / неизвестном расширении. Сбой логируется, вкладка не падает.</summary>
@@ -219,6 +225,49 @@ public sealed partial class DocumentTabViewModel
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to import bookmarks from '{Path}'.", sourcePath);
+        }
+    }
+
+    /// <summary>Прочитать PDF /Outlines (содержание) и добавить каждый узел как пользовательскую
+    /// закладку. Идентичные дубли (page+label) с уже существующими закладками НЕ дедупятся —
+    /// пользователь видит точное содержимое импорта и сам решает, что удалить. Сбой логируется
+    /// и не роняет вкладку; отмена при shutdown молчаливая.</summary>
+    [RelayCommand(CanExecute = nameof(CanImportPdfOutline))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Outline-import failure must not crash the tab.")]
+    private async Task ImportPdfOutlineAsync(CancellationToken ct)
+    {
+        if (_pdfOutlineReader is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var entries = await _pdfOutlineReader.ReadAsync(_filePath, ct).ConfigureAwait(false);
+            if (entries.Count == 0)
+            {
+                _logger.LogInformation("PDF '{Path}' has no outline; nothing to import.", _filePath);
+                return;
+            }
+
+            foreach (var entry in entries)
+            {
+                ct.ThrowIfCancellationRequested();
+                // Глубина в заголовок не вшиваем — UI впоследствии сможет показать вложенность
+                // отдельным indent'ом. Сейчас просто берём Title как есть.
+                string label = string.IsNullOrWhiteSpace(entry.Title) ? $"Page {entry.PageIndex + 1}" : entry.Title;
+                await _bookmarkService.AddAsync(_filePath, entry.PageIndex, label, ct).ConfigureAwait(false);
+            }
+
+            await LoadBookmarksAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // shutdown / пользователь отменил
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to import PDF outline from '{Path}'.", _filePath);
         }
     }
 }
