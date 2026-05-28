@@ -54,9 +54,9 @@ public sealed class DocumentTabViewModelOutlineImportTests
 
         await vm.ImportPdfOutlineCommand.ExecuteAsync(null);
 
-        await bookmarks.Received().AddAsync(Arg.Any<string>(), 0, "Chapter 1",   Arg.Any<CancellationToken>(), 0);
+        await bookmarks.Received().AddAsync(Arg.Any<string>(), 0, "Chapter 1", Arg.Any<CancellationToken>(), 0);
         await bookmarks.Received().AddAsync(Arg.Any<string>(), 0, "Section 1.1", Arg.Any<CancellationToken>(), 1);
-        await bookmarks.Received().AddAsync(Arg.Any<string>(), 1, "Sub 1.1.1",   Arg.Any<CancellationToken>(), 2);
+        await bookmarks.Received().AddAsync(Arg.Any<string>(), 1, "Sub 1.1.1", Arg.Any<CancellationToken>(), 2);
     }
 
     [Fact]
