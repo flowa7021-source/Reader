@@ -126,6 +126,40 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnExportPageImageMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanExportCurrentPageAsImage: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var dialog = new SaveFileDialog
+        {
+            Title = loc["ExportPageImageDialogTitle"],
+            Filter = loc["ExportPageImageDialogFilter"],
+            FileName = $"{Path.GetFileNameWithoutExtension(tab.FilePath)}-p{tab.CurrentPageIndex + 1}.png",
+            DefaultExt = "png",
+            AddExtension = true,
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ExportCurrentPageAsImageCommand.ExecuteAsync(dialog.FileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error exporting page image to '{Path}'.", dialog.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnExportAnnotatedPdfMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanExportAnnotatedPdf: true } tab)
