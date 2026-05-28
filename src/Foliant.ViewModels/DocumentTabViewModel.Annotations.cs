@@ -317,6 +317,27 @@ public sealed partial class DocumentTabViewModel
         return UpdateAnnotationAsync(note with { Text = edit.Text, ModifiedAt = DateTimeOffset.UtcNow });
     }
 
+    /// <summary>Изменить <see cref="Annotation.Subject"/> любой аннотации (highlight/note/ink) —
+    /// тема не привязана к типу. Whitespace/null нормализуется к null (пустая тема = отсутствие).
+    /// <see cref="Annotation.ModifiedAt"/> бампится — round-trip через FDF/XFDF/PDF понесёт
+    /// актуальную дату. No-op, если значение не изменилось.</summary>
+    [RelayCommand]
+    private Task EditNoteSubjectAsync((Annotation Annotation, string? Subject) edit)
+    {
+        if (edit.Annotation is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        string? normalized = string.IsNullOrWhiteSpace(edit.Subject) ? null : edit.Subject.Trim();
+        if (string.Equals(edit.Annotation.Subject, normalized, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        return UpdateAnnotationAsync(edit.Annotation with { Subject = normalized, ModifiedAt = DateTimeOffset.UtcNow });
+    }
+
     private void RefreshCurrentPageAnnotations()
     {
         CurrentPageAnnotations.Clear();

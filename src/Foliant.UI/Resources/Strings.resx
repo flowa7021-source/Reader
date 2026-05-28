@@ -166,6 +166,24 @@
   <data name="BookmarkContextDelete" xml:space="preserve">
     <value>_Delete</value>
   </data>
+  <data name="BookmarkContextRename" xml:space="preserve">
+    <value>_Rename...</value>
+  </data>
+  <data name="BookmarkRenameDialogTitle" xml:space="preserve">
+    <value>Rename bookmark</value>
+  </data>
+  <data name="BookmarkRenameDialogLabel" xml:space="preserve">
+    <value>New label:</value>
+  </data>
+  <data name="AnnotationContextEditSubject" xml:space="preserve">
+    <value>Edit _subject...</value>
+  </data>
+  <data name="AnnotationEditSubjectDialogTitle" xml:space="preserve">
+    <value>Edit annotation subject</value>
+  </data>
+  <data name="AnnotationEditSubjectDialogLabel" xml:space="preserve">
+    <value>Subject:</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Light</value>
   </data>

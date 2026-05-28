@@ -460,6 +460,9 @@
                                             Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Border}}">
                                   <StackPanel.ContextMenu>
                                     <ContextMenu>
+                                      <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnnotationContextEditSubject]}"
+                                                Click="OnAnnotationEditSubjectClick"
+                                                CommandParameter="{Binding}" />
                                       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnnotationContextDelete]}"
                                                 Command="{Binding PlacementTarget.Tag.RemoveAnnotationCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                 CommandParameter="{Binding}" />
@@ -533,6 +536,9 @@
                                 MouseLeftButtonUp="OnBookmarkRowClicked">
                           <Border.ContextMenu>
                             <ContextMenu>
+                              <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BookmarkContextRename]}"
+                                        Click="OnBookmarkRenameClick"
+                                        CommandParameter="{Binding}" />
                               <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BookmarkContextDelete]}"
                                         Command="{Binding PlacementTarget.Tag.RemoveBookmarkCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                         CommandParameter="{Binding}" />
