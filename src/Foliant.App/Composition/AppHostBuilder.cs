@@ -164,7 +164,9 @@ internal static class AppHostBuilder
         services.AddSingleton<JsonBookmarkExporter>();
         services.AddSingleton<IBookmarkExporter>(sp => sp.GetRequiredService<JsonBookmarkExporter>());
         services.AddSingleton<IBookmarkExporter, MarkdownBookmarkExporter>();
+        services.AddSingleton<IBookmarkExporter, XfdfBookmarkExporter>();
         services.AddSingleton<IBookmarkImporter, JsonBookmarkImporter>();
+        services.AddSingleton<IBookmarkImporter, XfdfBookmarkImporter>();
         services.AddSingleton<IBookmarkFormatCatalog, BookmarkFormatCatalog>();
 
         // Export a PDF with sidecar annotations embedded as real editable objects (Q-F17 Phase 2).
