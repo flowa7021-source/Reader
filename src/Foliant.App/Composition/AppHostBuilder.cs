@@ -147,6 +147,9 @@ internal static class AppHostBuilder
         services.AddSingleton<IAnnotationImporter, JsonAnnotationImporter>();
         services.AddSingleton<IAnnotationFormatCatalog, AnnotationFormatCatalog>();
 
+        // Export a PDF with sidecar annotations embedded as real editable objects (Q-F17 Phase 2).
+        services.AddSingleton<IAnnotatedPdfExportService, AnnotatedPdfExportService>();
+
         // Licensing storage + trial (Windows-only persistence: DPAPI + HKCU + marker).
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ILicenseStorage, DpapiLicenseStorage>();
@@ -204,7 +207,8 @@ internal static class AppHostBuilder
                 pageEdit: sp.GetService<IPageEditService>(),
                 openUseCase: sp.GetService<OpenDocumentUseCase>(),
                 settings: sp.GetService<ISettingsService>(),
-                annotationExporter: sp.GetService<JsonAnnotationExporter>()));
+                annotationExporter: sp.GetService<JsonAnnotationExporter>(),
+                annotatedPdfExporter: sp.GetService<IAnnotatedPdfExportService>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.

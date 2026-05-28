@@ -19,6 +19,7 @@
 - [ ] **Подсветка поиска в Continuous/Two-Page**: Ctrl+F → запрос → совпадения подсвечены на всех видимых страницах; едут при скролле; очистка запроса убирает подсветку.
 - [ ] **Аннотации в Continuous/Two-Page**: highlight/note видны поверх страниц в этих режимах (не только single).
 - [ ] **All Annotations сайдбар** (View → All Annotations): список по страницам, Export пишет JSON в нижнее поле.
+- [ ] **Export Annotated PDF** (File → Export Annotated PDF…): диалог сохранения открывается; экспортированный PDF в Acrobat/Edge показывает highlight (полупрозрачный) / note (раскрывает текст) / freehand, и они редактируемы; пункт неактивен без PDF-документа или без аннотаций.
 - [ ] **Dark/HighContrast**: HC даёт усиленный контраст (не просто инверсию), альфа цела.
 - [ ] **Import License** (Tools → Import License): диалог открывается; вставка JSON+подписи (dev-ключ) → статус Valid/Invalid.
 
@@ -76,6 +77,7 @@
 - [ ] Freehand → нарисовать → сохранить.
 - [ ] Удалить страницу 5 из 10-страничного PDF, сохранить, открыть в Acrobat / Foxit — корректная структура.
 - [ ] Reorder страниц через thumb-strip — drag works, save works.
+- [ ] **Export Annotated PDF** (File → Export Annotated PDF…): на PDF с highlight + note (кириллица) + freehand → сохранить → открыть в Acrobat/Edge — highlight полупрозрачен, заметка раскрывает текст по клику, ink виден; **все аннотации редактируемы** (можно подвинуть/удалить в Acrobat). Пункт меню неактивен для не-PDF и без аннотаций.
 
 ## Редактор + конвертер (S12)
 
