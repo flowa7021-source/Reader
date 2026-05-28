@@ -155,6 +155,14 @@ internal static class AppHostBuilder
         services.AddSingleton<IAnnotationImporter, FdfAnnotationImporter>();
         services.AddSingleton<IAnnotationFormatCatalog, AnnotationFormatCatalog>();
 
+        // Bookmark exchange formats — каталог собирает по DI (см. IBookmarkFormatCatalog).
+        // Json — также первый IBookmarkExporter в порядке регистрации, что важно для UI default'а.
+        services.AddSingleton<JsonBookmarkExporter>();
+        services.AddSingleton<IBookmarkExporter>(sp => sp.GetRequiredService<JsonBookmarkExporter>());
+        services.AddSingleton<IBookmarkExporter, MarkdownBookmarkExporter>();
+        services.AddSingleton<IBookmarkImporter, JsonBookmarkImporter>();
+        services.AddSingleton<IBookmarkFormatCatalog, BookmarkFormatCatalog>();
+
         // Export a PDF with sidecar annotations embedded as real editable objects (Q-F17 Phase 2).
         services.AddSingleton<IAnnotatedPdfExportService, AnnotatedPdfExportService>();
 
@@ -217,7 +225,8 @@ internal static class AppHostBuilder
                 openUseCase: sp.GetService<OpenDocumentUseCase>(),
                 settings: sp.GetService<ISettingsService>(),
                 annotationExporter: sp.GetService<JsonAnnotationExporter>(),
-                annotatedPdfExporter: sp.GetService<IAnnotatedPdfExportService>()));
+                annotatedPdfExporter: sp.GetService<IAnnotatedPdfExportService>(),
+                bookmarkFormats: sp.GetService<IBookmarkFormatCatalog>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.
