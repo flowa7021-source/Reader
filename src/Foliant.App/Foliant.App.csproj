@@ -31,6 +31,25 @@
     <ProjectReference Include="..\Foliant.ViewModels\Foliant.ViewModels.csproj" />
   </ItemGroup>
 
+  <!-- Engine-плагины строятся как зависимость, но НЕ compile-time ссылка
+       (ReferenceOutputAssembly=false) — обнаруживаются в рантайме PluginCatalog'ом (MEF2).
+       DLL копируется в <appdir>/plugins/, откуда её сканирует AppPaths.Plugins. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\plugins\Foliant.Plugin.DjVu\Foliant.Plugin.DjVu.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false" />
+  </ItemGroup>
+
+  <Target Name="CopyEnginePlugins" AfterTargets="Build">
+    <ItemGroup>
+      <_DjvuPluginDll Include="..\..\plugins\Foliant.Plugin.DjVu\bin\$(Configuration)\$(TargetFramework)\Foliant.Plugin.DjVu.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DjvuPluginDll)"
+          DestinationFolder="$(OutDir)plugins"
+          SkipUnchangedFiles="true"
+          Condition="Exists('@(_DjvuPluginDll)')" />
+  </Target>
+
   <!-- Pro-проекты подключаются опционально, если присутствует submodule pro/ -->
   <ItemGroup Condition="Exists('..\..\pro')">
     <ProjectReference Include="..\..\pro\Foliant.Pro.AdvancedEditor\Foliant.Pro.AdvancedEditor.csproj"

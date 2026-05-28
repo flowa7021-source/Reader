@@ -37,6 +37,11 @@ public static class AppPaths
 
     public static string BookmarksDb => Path.Combine(RoamingAppData, "bookmarks.db");
 
+    /// <summary>Каталог engine-плагинов рядом с исполняемым (<c>&lt;appdir&gt;/plugins</c>).
+    /// Сборки плагинов кладутся сюда post-build; <c>PluginCatalog</c> сканирует папку в рантайме.
+    /// Не в LocalAppData — плагины поставляются с приложением, а не с пользовательскими данными.</summary>
+    public static string Plugins => EnsureExists(Path.Combine(AppContext.BaseDirectory, "plugins"));
+
     /// <summary>JSON-файл персистентной истории поиска (most-recent-first, cap 50). Лежит в
     /// Roaming, чтобы переезжать вместе с пользователем между машинами в доменной среде —
     /// как и settings.json.</summary>

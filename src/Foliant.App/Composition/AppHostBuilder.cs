@@ -14,6 +14,7 @@ using Foliant.Infrastructure.Diagnostics;
 using Foliant.Infrastructure.EventStore;
 using Foliant.Infrastructure.Export;
 using Foliant.Infrastructure.Licensing;
+using Foliant.Infrastructure.Plugins;
 using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
@@ -25,6 +26,7 @@ using Foliant.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Serilog;
 
 namespace Foliant.App.Composition;
@@ -131,6 +133,16 @@ internal static class AppHostBuilder
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
+
+        // Engine-плагины (MEF2) из <appdir>/plugins: каждый IEnginePlugin.Loader становится
+        // IDocumentLoader. Так подключается DjVu (и будущие форматы) без compile-time ссылки.
+        // Discovery — eager (на старте композиции); NullLogger т.к. DI-провайдера ещё нет.
+        var pluginCatalog = new PluginCatalog(NullLogger<PluginCatalog>.Instance);
+        foreach (var plugin in pluginCatalog.Discover(AppPaths.Plugins))
+        {
+            services.AddSingleton<IDocumentLoader>(plugin.Loader);
+        }
+
         services.AddSingleton<IPageEditService, PdfPageEditService>();
         services.AddSingleton<IPageRangeExtractor, PdfPigPageRangeExtractor>();
         services.AddSingleton<IWatermarkService, PdfiumWatermarkService>();
