@@ -66,7 +66,7 @@ public sealed class OcrPipelineService(
             IPageRender render;
             try
             {
-                render = await document.RenderPageAsync(i, new RenderOptions(Zoom: 1.0), ct)
+                render = await document.RenderPageAsync(i, new RenderOptions(Zoom: options.RenderZoom), ct)
                     .ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

@@ -22,4 +22,17 @@ public sealed class OcrOptionsTests
 
         opts.MinConfidence.Should().Be(0.6);
     }
+
+    [Fact]
+    public void Default_RenderZoom_IsTwo()
+    {
+        // 2.0 = 192 DPI — sweet spot для PaddleOCR; явный default защищает от регрессии.
+        new OcrOptions().RenderZoom.Should().Be(2.0);
+    }
+
+    [Fact]
+    public void Explicit_RenderZoom_Roundtrips()
+    {
+        new OcrOptions(RenderZoom: 1.5).RenderZoom.Should().Be(1.5);
+    }
 }
