@@ -184,6 +184,12 @@
   <data name="AnnotationEditSubjectDialogLabel" xml:space="preserve">
     <value>Тема:</value>
   </data>
+  <data name="BookmarkContextExtract" xml:space="preserve">
+    <value>_Извлечь страницы...</value>
+  </data>
+  <data name="ExtractPagesDialogTitle" xml:space="preserve">
+    <value>Извлечь главу в PDF</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Светлая</value>
   </data>

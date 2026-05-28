@@ -539,6 +539,10 @@
                               <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BookmarkContextRename]}"
                                         Click="OnBookmarkRenameClick"
                                         CommandParameter="{Binding}" />
+                              <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BookmarkContextExtract]}"
+                                        Click="OnBookmarkExtractClick"
+                                        CommandParameter="{Binding}" />
+                              <Separator />
                               <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BookmarkContextDelete]}"
                                         Command="{Binding PlacementTarget.Tag.RemoveBookmarkCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                         CommandParameter="{Binding}" />
