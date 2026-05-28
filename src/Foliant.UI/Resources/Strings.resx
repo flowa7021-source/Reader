@@ -172,6 +172,15 @@
   <data name="ExtractPagesDialogTitle" xml:space="preserve">
     <value>Extract chapter to PDF</value>
   </data>
+  <data name="MenuFileExportPageImage" xml:space="preserve">
+    <value>Export current page as _image...</value>
+  </data>
+  <data name="ExportPageImageDialogTitle" xml:space="preserve">
+    <value>Export page as image</value>
+  </data>
+  <data name="ExportPageImageDialogFilter" xml:space="preserve">
+    <value>PNG (*.png)|*.png|JPEG (*.jpg;*.jpeg)|*.jpg;*.jpeg</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Light</value>
   </data>

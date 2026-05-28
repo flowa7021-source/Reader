@@ -169,6 +169,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExportAnnotatedPdf]}"
                   IsEnabled="{Binding SelectedTab.CanExportAnnotatedPdf, FallbackValue=False}"
                   Click="OnExportAnnotatedPdfMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExportPageImage]}"
+                  IsEnabled="{Binding SelectedTab.CanExportCurrentPageAsImage, FallbackValue=False}"
+                  Click="OnExportPageImageMenuItemClick" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExportBookmarks]}"
                   IsEnabled="{Binding SelectedTab.CanExportBookmarks, FallbackValue=False}"
                   Click="OnExportBookmarksMenuItemClick" />
