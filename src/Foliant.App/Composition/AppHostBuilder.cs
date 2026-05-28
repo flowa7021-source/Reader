@@ -180,6 +180,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IFormDataImporter, FdfFormDataImporter>();
         services.AddSingleton<IFormDataImporter, XfdfFormDataImporter>();
         services.AddSingleton<IFormDataFormatCatalog, FormDataFormatCatalog>();
+        services.AddSingleton<IPdfFormReader, PdfPigFormReader>();
 
         // Export a PDF with sidecar annotations embedded as real editable objects (Q-F17 Phase 2).
         services.AddSingleton<IAnnotatedPdfExportService, AnnotatedPdfExportService>();
