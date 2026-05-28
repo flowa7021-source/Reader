@@ -23,6 +23,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IAnnotatedPdfExportService? _annotatedPdfExporter;
     private readonly IBookmarkFormatCatalog? _bookmarkFormats;
     private readonly IPageRangeExtractor? _pageRangeExtractor;
+    private readonly IPageImageExporter? _pageImageExporter;
     private readonly IPdfOutlineReader? _pdfOutlineReader;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
@@ -103,7 +104,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IAnnotatedPdfExportService? annotatedPdfExporter = null,
         IBookmarkFormatCatalog? bookmarkFormats = null,
         IPdfOutlineReader? pdfOutlineReader = null,
-        IPageRangeExtractor? pageRangeExtractor = null)
+        IPageRangeExtractor? pageRangeExtractor = null,
+        IPageImageExporter? pageImageExporter = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -128,6 +130,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _bookmarkFormats = bookmarkFormats;
         _pdfOutlineReader = pdfOutlineReader;
         _pageRangeExtractor = pageRangeExtractor;
+        _pageImageExporter = pageImageExporter;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;

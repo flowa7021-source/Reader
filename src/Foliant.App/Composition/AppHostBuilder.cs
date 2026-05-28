@@ -19,6 +19,7 @@ using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
 using Foliant.Infrastructure.Updates;
 using Foliant.UI;
+using Foliant.UI.Imaging;
 using Foliant.UI.Localization;
 using Foliant.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -132,6 +133,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
         services.AddSingleton<IPageEditService, PdfPageEditService>();
         services.AddSingleton<IPageRangeExtractor, PdfPigPageRangeExtractor>();
+        services.AddSingleton<IPageImageExporter, WpfPageImageExporter>();
         services.AddSingleton<IPdfOutlineReader, PdfPigOutlineReader>();
 
         // Application
@@ -230,7 +232,8 @@ internal static class AppHostBuilder
                 annotatedPdfExporter: sp.GetService<IAnnotatedPdfExportService>(),
                 bookmarkFormats: sp.GetService<IBookmarkFormatCatalog>(),
                 pdfOutlineReader: sp.GetService<IPdfOutlineReader>(),
-                pageRangeExtractor: sp.GetService<IPageRangeExtractor>()));
+                pageRangeExtractor: sp.GetService<IPageRangeExtractor>(),
+                pageImageExporter: sp.GetService<IPageImageExporter>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.
