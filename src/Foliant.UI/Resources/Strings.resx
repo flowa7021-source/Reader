@@ -157,6 +157,15 @@
   <data name="MenuViewThumbnails" xml:space="preserve">
     <value>Thum_bnails</value>
   </data>
+  <data name="MenuViewBookmarks" xml:space="preserve">
+    <value>Book_marks</value>
+  </data>
+  <data name="BookmarksSidebarHeader" xml:space="preserve">
+    <value>Bookmarks</value>
+  </data>
+  <data name="BookmarkContextDelete" xml:space="preserve">
+    <value>_Delete</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Light</value>
   </data>

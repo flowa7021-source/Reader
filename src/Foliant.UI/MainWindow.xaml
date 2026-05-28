@@ -15,6 +15,8 @@
   <Window.Resources>
     <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
     <converters:AnnotationMetadataLineConverter x:Key="AnnotationMetadataLineConverter" />
+    <converters:DepthToIndentConverter x:Key="DepthToIndentConverter" />
+    <converters:OneBasedPageConverter x:Key="OneBasedPageConverter" />
     <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
   </Window.Resources>
 
@@ -216,6 +218,8 @@
         </MenuItem>
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewAnnotations]}"
                   Command="{Binding SelectedTab.ToggleAnnotationsCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewBookmarks]}"
+                  Command="{Binding SelectedTab.ToggleBookmarksCommand}" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewFitWidth]}"
                   Command="{Binding SelectedTab.FitWidthCommand}" />
@@ -255,6 +259,7 @@
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="Auto" />
@@ -493,8 +498,64 @@
               </Grid>
             </Border>
 
-            <!-- Thumbnail strip (toggled via View menu); click navigates, image renders lazily -->
+            <!-- Bookmark sidebar (toggled via View → Bookmarks); click navigates, right-click deletes.
+                 Depth-indented through DepthToIndentConverter so imported TOCs visually retain hierarchy. -->
             <Border Grid.Column="3"
+                    Width="260"
+                    BorderBrush="{DynamicResource Foreground}"
+                    BorderThickness="1,0,0,0"
+                    Background="{DynamicResource PageBackground}"
+                    Visibility="{Binding IsBookmarksVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+              <Grid Margin="8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource Foreground}">
+                  <Run Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BookmarksSidebarHeader], Mode=OneWay}" />
+                  <Run Text=": " />
+                  <Run Text="{Binding BookmarksCount, Mode=OneWay}" />
+                </TextBlock>
+
+                <ScrollViewer Grid.Row="1"
+                              Margin="0,8,0,0"
+                              VerticalScrollBarVisibility="Auto">
+                  <ItemsControl Tag="{Binding}"
+                                ItemsSource="{Binding Bookmarks}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border Padding="{Binding Depth, Converter={StaticResource DepthToIndentConverter}}"
+                                Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                Background="Transparent"
+                                MouseLeftButtonUp="OnBookmarkRowClicked">
+                          <Border.ContextMenu>
+                            <ContextMenu>
+                              <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BookmarkContextDelete]}"
+                                        Command="{Binding PlacementTarget.Tag.RemoveBookmarkCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                        CommandParameter="{Binding}" />
+                            </ContextMenu>
+                          </Border.ContextMenu>
+                          <TextBlock TextWrapping="Wrap"
+                                     Foreground="{DynamicResource Foreground}"
+                                     Margin="0,2">
+                            <Run Text="{Binding PageIndex, Converter={StaticResource OneBasedPageConverter}, Mode=OneWay}"
+                                 FontWeight="SemiBold" />
+                            <Run Text="  " />
+                            <Run Text="{Binding Label, Mode=OneWay}" />
+                          </TextBlock>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Grid>
+            </Border>
+
+            <!-- Thumbnail strip (toggled via View menu); click navigates, image renders lazily -->
+            <Border Grid.Column="4"
                     Width="168"
                     BorderBrush="{DynamicResource Foreground}"
                     BorderThickness="1,0,0,0"

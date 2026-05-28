@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Foliant.Application.Services;
 using Foliant.Domain;
@@ -14,6 +15,14 @@ public sealed partial class DocumentTabViewModel
 
     /// <summary>Число закладок в документе.</summary>
     public int BookmarksCount => Bookmarks.Count;
+
+    /// <summary>Видимость sidebar'а с закладками (toggle из меню/тулбара). По умолчанию скрыт,
+    /// чтобы не отжимать пространство страницы; пользователь включает через View → Bookmarks.</summary>
+    [ObservableProperty]
+    private bool _isBookmarksVisible;
+
+    [RelayCommand]
+    private void ToggleBookmarks() => IsBookmarksVisible = !IsBookmarksVisible;
 
     /// <summary><c>true</c> if the current page has at least one bookmark. Updates when
     /// <see cref="CurrentPageIndex"/> changes or when <see cref="Bookmarks"/> changes.</summary>
@@ -108,6 +117,40 @@ public sealed partial class DocumentTabViewModel
             return;
         }
         CurrentPageIndex = bookmark.PageIndex;
+    }
+
+    /// <summary>Удалить указанную закладку из sidecar'а и убрать из <see cref="Bookmarks"/>.
+    /// No-op если bookmark null или такого Id уже нет. Сбой логируется, не роняет вкладку.</summary>
+    [RelayCommand]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Bookmark removal failure must not crash the tab.")]
+    private async Task RemoveBookmarkAsync(Bookmark? bookmark)
+    {
+        if (bookmark is null)
+        {
+            return;
+        }
+
+        try
+        {
+            bool removed = await _bookmarkService.RemoveAsync(_filePath, bookmark.Id, CancellationToken.None).ConfigureAwait(false);
+            if (!removed)
+            {
+                return;
+            }
+
+            for (int i = Bookmarks.Count - 1; i >= 0; i--)
+            {
+                if (Bookmarks[i].Id == bookmark.Id)
+                {
+                    Bookmarks.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to remove bookmark {Id} from '{Path}'.", bookmark.Id, _filePath);
+        }
     }
 
     /// <summary>Прыгает на ближайшую закладку с PageIndex &gt; CurrentPageIndex; wrap к первой.</summary>
