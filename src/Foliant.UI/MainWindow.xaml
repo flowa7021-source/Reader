@@ -173,6 +173,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileImportBookmarks]}"
                   IsEnabled="{Binding SelectedTab.CanImportBookmarks, FallbackValue=False}"
                   Click="OnImportBookmarksMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileImportPdfOutline]}"
+                  IsEnabled="{Binding SelectedTab.CanImportPdfOutline, FallbackValue=False}"
+                  Command="{Binding SelectedTab.ImportPdfOutlineCommand}" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExit]}"
                   Click="OnExitMenuItemClick" />

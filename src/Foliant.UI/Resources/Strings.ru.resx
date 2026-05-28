@@ -220,6 +220,9 @@
   <data name="BookmarksDialogFilter" xml:space="preserve">
     <value>JSON (*.json)|*.json|Markdown (*.md)|*.md|Все файлы (*.*)|*.*</value>
   </data>
+  <data name="MenuFileImportPdfOutline" xml:space="preserve">
+    <value>Импорт _оглавления PDF в закладки</value>
+  </data>
   <data name="SettingsTitle" xml:space="preserve">
     <value>Настройки</value>
   </data>
