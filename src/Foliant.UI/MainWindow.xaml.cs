@@ -358,4 +358,56 @@ public partial class MainWindow : Window
             tab.JumpToBookmarkCommand.Execute(bm);
         }
     }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnBookmarkExtractClick(object sender, RoutedEventArgs e)
+    {
+        // Извлекаем VM + Bookmark через те же пути, что и rename/delete контекст: MenuItem.PlacementTarget = Border row.
+        if (sender is not MenuItem { CommandParameter: Foliant.Domain.Bookmark bm } mi
+            || mi.Parent is not ContextMenu cm
+            || cm.PlacementTarget is not FrameworkElement host
+            || host.Tag is not DocumentTabViewModel tab
+            || !tab.CanExtractPagesFromBookmark)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var dialog = new SaveFileDialog
+        {
+            Title = loc["ExtractPagesDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],   // тот же фильтр "PDF files (*.pdf)|*.pdf" — экономим строку.
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + " - " + SanitizeFileName(bm.Label) + ".pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ExtractPagesFromBookmarkCommand.ExecuteAsync(new ExtractBookmarkRangeRequest(bm, dialog.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error extracting pages from bookmark '{Label}' → '{Target}'.", bm.Label, dialog.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private static string SanitizeFileName(string label)
+    {
+        // SaveFileDialog отбрасывает невалидные символы тихо, но мы заранее убираем,
+        // чтобы дефолтное имя выглядело осмысленно.
+        char[] invalid = Path.GetInvalidFileNameChars();
+        var sb = new System.Text.StringBuilder(label.Length);
+        foreach (char c in label)
+        {
+            sb.Append(Array.IndexOf(invalid, c) >= 0 ? '_' : c);
+        }
+        return sb.ToString();
+    }
 }

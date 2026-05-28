@@ -313,7 +313,73 @@ public sealed partial class DocumentTabViewModel
             _logger.LogWarning(ex, "Failed to import PDF outline from '{Path}'.", _filePath);
         }
     }
+
+    /// <summary>true когда extract-by-bookmark применим: extractor известен, документ — PDF.
+    /// На уровне отдельной закладки CanExecute считаем без неё (нужна сама команда), а вот
+    /// доступность пункта меню вообще должна быть привязана к этому флагу.</summary>
+    public bool CanExtractPagesFromBookmark =>
+        _pageRangeExtractor is not null
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Извлечь страницы от <see cref="ExtractBookmarkRangeRequest.Start"/> (inclusive)
+    /// до страницы перед следующей по PageIndex закладкой (или до конца документа, если следующей
+    /// нет) в новый PDF по <see cref="ExtractBookmarkRangeRequest.TargetPath"/>. Это «extract
+    /// этой главы» — UX, ожидаемый от sidebar'а: правой кнопкой на bookmark, save as. Сбой
+    /// логируется, вкладка не падает.</summary>
+    [RelayCommand(CanExecute = nameof(CanExtractPagesFromBookmark))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Page extraction failure must not crash the tab.")]
+    private async Task ExtractPagesFromBookmarkAsync(ExtractBookmarkRangeRequest? request, CancellationToken ct)
+    {
+        if (_pageRangeExtractor is null || request is null || string.IsNullOrWhiteSpace(request.TargetPath))
+        {
+            return;
+        }
+
+        int firstPage = request.Start.PageIndex;
+        if (firstPage < 0 || firstPage >= PageCount)
+        {
+            return;
+        }
+
+        // Последняя страница = (следующая по PageIndex закладка) - 1; иначе — конец документа.
+        // Берём именно nextByPageIndex (sortedAscByPage), а не nextByListPosition, иначе вложенные
+        // depth-N закладки сбили бы границу главы.
+        int? nextStartPage = Bookmarks
+            .Where(b => b.PageIndex > firstPage)
+            .Select(b => (int?)b.PageIndex)
+            .DefaultIfEmpty(null)
+            .Min();
+
+        int lastPage = (nextStartPage ?? PageCount) - 1;
+        if (lastPage < firstPage)
+        {
+            // Граничный случай: следующая закладка стоит на той же странице, что и текущая —
+            // получили бы пустой диапазон. Сводим к одной странице firstPage.
+            lastPage = firstPage;
+        }
+
+        try
+        {
+            await _pageRangeExtractor.ExtractAsync(_filePath, firstPage, lastPage, request.TargetPath, ct).ConfigureAwait(false);
+            _logger.LogInformation("Extracted pages {First}-{Last} from '{Source}' to '{Target}'.",
+                firstPage, lastPage, _filePath, request.TargetPath);
+        }
+        catch (OperationCanceledException)
+        {
+            // отменено пользователем/закрытием
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to extract pages from bookmark '{Label}' (page {Page}) → '{Target}'.",
+                request.Start.Label, firstPage, request.TargetPath);
+        }
+    }
 }
+
+/// <summary>Запрос извлечения диапазона страниц «эта глава» — start-закладка + куда сохранить
+/// результат. End-страница вычисляется VM из следующей по PageIndex закладки (или конца документа).
+/// </summary>
+public sealed record ExtractBookmarkRangeRequest(Bookmark Start, string TargetPath);
 
 /// <summary>Запрос переименования закладки, передаваемый в
 /// <see cref="DocumentTabViewModel.RenameBookmarkCommand"/>.</summary>

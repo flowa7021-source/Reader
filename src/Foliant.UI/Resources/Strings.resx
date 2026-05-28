@@ -166,6 +166,12 @@
   <data name="BookmarkContextDelete" xml:space="preserve">
     <value>_Delete</value>
   </data>
+  <data name="BookmarkContextExtract" xml:space="preserve">
+    <value>_Extract pages...</value>
+  </data>
+  <data name="ExtractPagesDialogTitle" xml:space="preserve">
+    <value>Extract chapter to PDF</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Light</value>
   </data>
