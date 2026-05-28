@@ -133,6 +133,8 @@ internal static class AppHostBuilder
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
         services.AddSingleton<IPageEditService, PdfPageEditService>();
         services.AddSingleton<IPageRangeExtractor, PdfPigPageRangeExtractor>();
+        services.AddSingleton<IWatermarkService, PdfiumWatermarkService>();
+        services.AddSingleton<IHeaderFooterService, PdfiumHeaderFooterService>();
         services.AddSingleton<IPageImageExporter, WpfPageImageExporter>();
         services.AddSingleton<IPdfOutlineReader, PdfPigOutlineReader>();
 
@@ -164,8 +166,21 @@ internal static class AppHostBuilder
         services.AddSingleton<JsonBookmarkExporter>();
         services.AddSingleton<IBookmarkExporter>(sp => sp.GetRequiredService<JsonBookmarkExporter>());
         services.AddSingleton<IBookmarkExporter, MarkdownBookmarkExporter>();
+        services.AddSingleton<IBookmarkExporter, XfdfBookmarkExporter>();
         services.AddSingleton<IBookmarkImporter, JsonBookmarkImporter>();
+        services.AddSingleton<IBookmarkImporter, XfdfBookmarkImporter>();
         services.AddSingleton<IBookmarkFormatCatalog, BookmarkFormatCatalog>();
+
+        // Form-data exchange formats (Q-F24). JSON / FDF / XFDF. PDFium-side reader (фактическое
+        // чтение значений из открытого PDF) — следующий PR; здесь только plumbing форматов.
+        services.AddSingleton<IFormDataExporter, JsonFormDataExporter>();
+        services.AddSingleton<IFormDataExporter, FdfFormDataExporter>();
+        services.AddSingleton<IFormDataExporter, XfdfFormDataExporter>();
+        services.AddSingleton<IFormDataImporter, JsonFormDataImporter>();
+        services.AddSingleton<IFormDataImporter, FdfFormDataImporter>();
+        services.AddSingleton<IFormDataImporter, XfdfFormDataImporter>();
+        services.AddSingleton<IFormDataFormatCatalog, FormDataFormatCatalog>();
+        services.AddSingleton<IPdfFormReader, PdfPigFormReader>();
 
         // Export a PDF with sidecar annotations embedded as real editable objects (Q-F17 Phase 2).
         services.AddSingleton<IAnnotatedPdfExportService, AnnotatedPdfExportService>();

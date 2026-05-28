@@ -31,7 +31,70 @@ public sealed class WpfPageImageExporter : IPageImageExporter
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(zoom);
 
         string ext = ResolveExtension(targetPath);
-        BitmapEncoder encoder = CreateEncoder(ext);
+        await ExportOnePageAsync(document, pageIndex, zoom, targetPath, ext, ct).ConfigureAwait(false);
+    }
+
+    public async Task<int> ExportRangeAsync(
+        IDocument document,
+        int firstPageIndex,
+        int lastPageIndexInclusive,
+        double zoom,
+        string targetDirectory,
+        string format,
+        string namePrefix,
+        IProgress<int>? progress,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetDirectory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(format);
+        ArgumentException.ThrowIfNullOrWhiteSpace(namePrefix);
+        ArgumentOutOfRangeException.ThrowIfNegative(firstPageIndex);
+        ArgumentOutOfRangeException.ThrowIfLessThan(lastPageIndexInclusive, firstPageIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(lastPageIndexInclusive, document.PageCount);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(zoom);
+
+        string upper = format.ToUpperInvariant();
+        if (Array.IndexOf(SupportedFormatsUpper, upper) < 0)
+        {
+            throw new NotSupportedException($"Unsupported image format '{format}'. Use one of: png, jpg, jpeg.");
+        }
+
+        Directory.CreateDirectory(targetDirectory);
+
+        int total = lastPageIndexInclusive - firstPageIndex + 1;
+        // Width — число знаков для zero-padded имени файла. Берём от общего числа страниц
+        // документа, а не диапазона: 1000-страничный документ всегда даёт «p001», даже если
+        // экспортируется только 5 страниц — сортировка по имени остаётся стабильной с
+        // другими батчами того же документа.
+        int width = Math.Max(3, (document.PageCount + 1).ToString(System.Globalization.CultureInfo.InvariantCulture).Length);
+        string ext = upper switch
+        {
+            "JPG" or "JPEG" => "jpg",
+            _ => "png",
+        };
+
+        int written = 0;
+        for (int i = 0; i < total; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            int pageIndex = firstPageIndex + i;
+            string fileName = $"{namePrefix}-p{(pageIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(width, '0')}.{ext}";
+            string targetPath = Path.Combine(targetDirectory, fileName);
+
+            await ExportOnePageAsync(document, pageIndex, zoom, targetPath, upper, ct).ConfigureAwait(false);
+            written++;
+            progress?.Report(written);
+        }
+
+        return written;
+    }
+
+    private static readonly string[] SupportedFormatsUpper = ["PNG", "JPG", "JPEG"];
+
+    private static async Task ExportOnePageAsync(IDocument document, int pageIndex, double zoom, string targetPath, string extUpper, CancellationToken ct)
+    {
+        BitmapEncoder encoder = CreateEncoder(extUpper);
 
         using IPageRender render = await document.RenderPageAsync(pageIndex, new Foliant.Domain.RenderOptions(Zoom: zoom), ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
