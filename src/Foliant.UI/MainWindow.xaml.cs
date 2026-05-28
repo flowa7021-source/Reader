@@ -347,4 +347,15 @@ public partial class MainWindow : Window
         }
         return (current as ListBoxItem)?.DataContext as PageThumbnailViewModel;
     }
+
+    private void OnBookmarkRowClicked(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Row — Border; его Tag — DocumentTabViewModel (через AncestorType=ItemsControl),
+        // DataContext — конкретный Bookmark. Прыгаем через VM-команду, чтобы пройти всю
+        // навигационную обвязку (history, multi-page sync).
+        if (sender is FrameworkElement { Tag: DocumentTabViewModel tab, DataContext: Foliant.Domain.Bookmark bm })
+        {
+            tab.JumpToBookmarkCommand.Execute(bm);
+        }
+    }
 }
