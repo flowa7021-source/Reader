@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.Input;
+using Foliant.Application.Services;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging;
 
@@ -133,6 +134,92 @@ public sealed partial class DocumentTabViewModel
         Bookmark? target = Bookmarks.LastOrDefault(b => b.PageIndex < CurrentPageIndex);
         target ??= Bookmarks[^1];
         CurrentPageIndex = target.PageIndex;
+    }
+
+    /// <summary>true когда экспорт закладок применим: каталог форматов известен и есть, что
+    /// экспортировать. Биндится к доступности пункта меню «Export bookmarks».</summary>
+    public bool CanExportBookmarks => _bookmarkFormats is not null && Bookmarks.Count > 0;
+
+    /// <summary>true когда импорт закладок применим: каталог форматов известен. Импорт работает
+    /// и для пустого документа — это его основной сценарий.</summary>
+    public bool CanImportBookmarks => _bookmarkFormats is not null;
+
+    /// <summary>Экспорт всех закладок в файл; формат выбирается по расширению targetPath.
+    /// Путь приходит из SaveFileDialog (View). No-op при пустом пути / отсутствующем каталоге
+    /// / неизвестном расширении. Сбой логируется, вкладка не падает.</summary>
+    [RelayCommand(CanExecute = nameof(CanExportBookmarks))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Bookmark export failure must not crash the tab.")]
+    private async Task ExportBookmarksAsync(string? targetPath, CancellationToken ct)
+    {
+        if (_bookmarkFormats is null || string.IsNullOrWhiteSpace(targetPath))
+        {
+            return;
+        }
+
+        IBookmarkExporter? exporter = _bookmarkFormats.ResolveExporter(targetPath);
+        if (exporter is null)
+        {
+            _logger.LogWarning("No bookmark exporter for '{Path}' (unknown extension).", targetPath);
+            return;
+        }
+
+        try
+        {
+            string text = exporter.Export([.. Bookmarks]);
+            await File.WriteAllTextAsync(targetPath, text, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // отменено пользователем/закрытием
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to export bookmarks to '{Path}'.", targetPath);
+        }
+    }
+
+    /// <summary>Импортировать закладки из файла; формат — по расширению sourcePath.
+    /// Каждая импортированная запись добавляется через сервис (получает новый Id; перси-
+    /// стируется в sidecar). Список в UI обновляется в порядке возрастания PageIndex.
+    /// Дубликаты НЕ дедупятся — это решение наслоения, юзер хочет видеть всё.</summary>
+    [RelayCommand(CanExecute = nameof(CanImportBookmarks))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Bookmark import failure must not crash the tab.")]
+    private async Task ImportBookmarksAsync(string? sourcePath, CancellationToken ct)
+    {
+        if (_bookmarkFormats is null || string.IsNullOrWhiteSpace(sourcePath))
+        {
+            return;
+        }
+
+        IBookmarkImporter? importer = _bookmarkFormats.ResolveImporter(sourcePath);
+        if (importer is null)
+        {
+            _logger.LogWarning("No bookmark importer for '{Path}' (unknown extension).", sourcePath);
+            return;
+        }
+
+        try
+        {
+            string text = await File.ReadAllTextAsync(sourcePath, ct).ConfigureAwait(false);
+            var imported = importer.Import(text);
+            foreach (var bm in imported)
+            {
+                ct.ThrowIfCancellationRequested();
+                // Сервис генерирует свежий Id и привязывает к fingerprint текущего документа —
+                // импортированный Id из формата обмена намеренно отбрасывается (контракт IBookmarkImporter).
+                await _bookmarkService.AddAsync(_filePath, bm.PageIndex, bm.Label, ct).ConfigureAwait(false);
+            }
+
+            await LoadBookmarksAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // отменено пользователем/закрытием
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to import bookmarks from '{Path}'.", sourcePath);
+        }
     }
 }
 

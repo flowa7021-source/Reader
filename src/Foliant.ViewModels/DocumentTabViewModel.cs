@@ -21,6 +21,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly OpenDocumentUseCase? _openUseCase;
     private readonly ISettingsService? _settings;
     private readonly IAnnotatedPdfExportService? _annotatedPdfExporter;
+    private readonly IBookmarkFormatCatalog? _bookmarkFormats;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -97,7 +98,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         OpenDocumentUseCase? openUseCase = null,
         ISettingsService? settings = null,
         IAnnotationExporter? annotationExporter = null,
-        IAnnotatedPdfExportService? annotatedPdfExporter = null)
+        IAnnotatedPdfExportService? annotatedPdfExporter = null,
+        IBookmarkFormatCatalog? bookmarkFormats = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -119,6 +121,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _openUseCase = openUseCase;
         _settings = settings;
         _annotatedPdfExporter = annotatedPdfExporter;
+        _bookmarkFormats = bookmarkFormats;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
@@ -147,6 +150,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         {
             OnPropertyChanged(nameof(BookmarksCount));
             OnPropertyChanged(nameof(IsCurrentPageBookmarked));
+            OnPropertyChanged(nameof(CanExportBookmarks));
+            ExportBookmarksCommand.NotifyCanExecuteChanged();
         };
         SearchResults.CollectionChanged += (_, _) =>
         {

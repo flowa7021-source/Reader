@@ -205,6 +205,21 @@
   <data name="ExportAnnotatedPdfDialogFilter" xml:space="preserve">
     <value>PDF-файлы (*.pdf)|*.pdf</value>
   </data>
+  <data name="MenuFileExportBookmarks" xml:space="preserve">
+    <value>Экспорт _закладок...</value>
+  </data>
+  <data name="MenuFileImportBookmarks" xml:space="preserve">
+    <value>Импорт закладок...</value>
+  </data>
+  <data name="ExportBookmarksDialogTitle" xml:space="preserve">
+    <value>Экспорт закладок</value>
+  </data>
+  <data name="ImportBookmarksDialogTitle" xml:space="preserve">
+    <value>Импорт закладок</value>
+  </data>
+  <data name="BookmarksDialogFilter" xml:space="preserve">
+    <value>JSON (*.json)|*.json|Markdown (*.md)|*.md|Все файлы (*.*)|*.*</value>
+  </data>
   <data name="SettingsTitle" xml:space="preserve">
     <value>Настройки</value>
   </data>

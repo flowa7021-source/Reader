@@ -159,6 +159,72 @@ public partial class MainWindow : Window
         }
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnExportBookmarksMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanExportBookmarks: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var dialog = new SaveFileDialog
+        {
+            Title = loc["ExportBookmarksDialogTitle"],
+            Filter = loc["BookmarksDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-bookmarks.json",
+            DefaultExt = "json",
+            AddExtension = true,
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ExportBookmarksCommand.ExecuteAsync(dialog.FileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error exporting bookmarks to '{Path}'.", dialog.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnImportBookmarksMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanImportBookmarks: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var dialog = new OpenFileDialog
+        {
+            Title = loc["ImportBookmarksDialogTitle"],
+            Filter = loc["BookmarksDialogFilter"],
+            CheckFileExists = true,
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ImportBookmarksCommand.ExecuteAsync(dialog.FileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error importing bookmarks from '{Path}'.", dialog.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void OnSettingsMenuItemClick(object sender, RoutedEventArgs e)
     {
         var settingsWin = _settingsWindowFactory();
