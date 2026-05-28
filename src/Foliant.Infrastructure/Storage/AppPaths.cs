@@ -37,6 +37,11 @@ public static class AppPaths
 
     public static string BookmarksDb => Path.Combine(RoamingAppData, "bookmarks.db");
 
+    /// <summary>JSON-файл персистентной истории поиска (most-recent-first, cap 50). Лежит в
+    /// Roaming, чтобы переезжать вместе с пользователем между машинами в доменной среде —
+    /// как и settings.json.</summary>
+    public static string SearchHistoryFile => Path.Combine(RoamingAppData, "search-history.json");
+
     private static string EnsureExists(string path)
     {
         Directory.CreateDirectory(path);

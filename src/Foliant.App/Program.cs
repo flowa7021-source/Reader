@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using Foliant.App.Composition;
 using Foliant.Application.Services;
+using Foliant.Infrastructure.Search;
 using Foliant.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,6 +34,13 @@ internal static class Program
             settings.LoadAsync(default).GetAwaiter().GetResult();
             var localization = host.Services.GetRequiredService<ILocalizationService>();
             localization.SetCulture(settings.Current.Language);
+
+            // История поиска — best-effort: при сбое старт продолжается с пустой историей
+            // (сама JsonSearchHistoryService.LoadAsync ловит исключения и логирует).
+            if (host.Services.GetService<ISearchHistoryService>() is JsonSearchHistoryService searchHistory)
+            {
+                searchHistory.LoadAsync(default).GetAwaiter().GetResult();
+            }
 
             // Auto-backup пользовательских данных при первом запуске после апгрейда (§7.4).
             var currentVersion = typeof(Program).Assembly.GetName().Version?.ToString();

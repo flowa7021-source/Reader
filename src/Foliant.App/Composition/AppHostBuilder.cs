@@ -100,6 +100,13 @@ internal static class AppHostBuilder
             new JsonBookmarkStore(AppPaths.Bookmarks, sp.GetRequiredService<ILogger<JsonBookmarkStore>>()));
         services.AddSingleton<IBookmarkService, BookmarkService>();
 
+        // Search history — персистируется между сессиями (Program.cs вызывает LoadAsync на старте,
+        // мутации сохраняются fire-and-forget). Singleton — общая история для всех вкладок.
+        services.AddSingleton<ISearchHistoryService>(sp =>
+            new JsonSearchHistoryService(
+                AppPaths.SearchHistoryFile,
+                sp.GetRequiredService<ILogger<JsonSearchHistoryService>>()));
+
         // Cache janitor — фоновая эвикция.
         services.AddSingleton(new CacheJanitorOptions());
         services.AddHostedService<CacheJanitor>();
@@ -202,6 +209,7 @@ internal static class AppHostBuilder
                 sp.GetRequiredService<IAnnotationService>(),
                 sp.GetRequiredService<IBookmarkService>(),
                 sp.GetRequiredService<ILoggerFactory>().CreateLogger<DocumentTabViewModel>(),
+                searchHistory: sp.GetService<ISearchHistoryService>(),
                 ocr: sp.GetService<IOcrPipelineService>(),
                 fingerprint: sp.GetService<IFileFingerprint>(),
                 indexer: sp.GetService<IDocumentIndexer>(),
