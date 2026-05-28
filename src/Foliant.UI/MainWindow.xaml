@@ -14,6 +14,7 @@
 
   <Window.Resources>
     <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+    <converters:AnnotationMetadataLineConverter x:Key="AnnotationMetadataLineConverter" />
     <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
   </Window.Resources>
 
@@ -441,19 +442,27 @@
                                         ItemsSource="{Binding Annotations}">
                             <ItemsControl.ItemTemplate>
                               <DataTemplate>
-                                <TextBlock Margin="0,1"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource Foreground}"
-                                           Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Border}}"
-                                           Text="{Binding Text, TargetNullValue='(highlight)'}">
-                                  <TextBlock.ContextMenu>
+                                <StackPanel Margin="0,1"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Border}}">
+                                  <StackPanel.ContextMenu>
                                     <ContextMenu>
                                       <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnnotationContextDelete]}"
                                                 Command="{Binding PlacementTarget.Tag.RemoveAnnotationCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                 CommandParameter="{Binding}" />
                                     </ContextMenu>
-                                  </TextBlock.ContextMenu>
-                                </TextBlock>
+                                  </StackPanel.ContextMenu>
+                                  <TextBlock TextWrapping="Wrap"
+                                             Foreground="{DynamicResource Foreground}"
+                                             Text="{Binding Text, TargetNullValue='(highlight)'}" />
+                                  <!-- Метаданные (Author · Subject · Modified): отдельной мелкой строкой, скрыта если пуста. -->
+                                  <TextBlock x:Name="MetadataLine"
+                                             TextWrapping="Wrap"
+                                             FontSize="10"
+                                             Opacity="0.65"
+                                             Foreground="{DynamicResource Foreground}"
+                                             Text="{Binding Converter={StaticResource AnnotationMetadataLineConverter}}"
+                                             Visibility="{Binding Text, RelativeSource={RelativeSource Self}, Converter={StaticResource NullToVisibilityConverter}}" />
+                                </StackPanel>
                               </DataTemplate>
                             </ItemsControl.ItemTemplate>
                           </ItemsControl>

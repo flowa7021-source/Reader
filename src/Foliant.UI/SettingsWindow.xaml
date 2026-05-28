@@ -88,13 +88,25 @@
       </StackPanel>
 
       <!-- Crash reporting (opt-in) -->
-      <StackPanel Orientation="Horizontal">
+      <StackPanel Orientation="Horizontal"
+                  Margin="0,0,0,8">
         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsCrashReporting]}"
                    Width="170"
                    VerticalAlignment="Center"
                    Foreground="{DynamicResource Foreground}" />
         <CheckBox IsChecked="{Binding CrashReportingEnabled}"
                   VerticalAlignment="Center" />
+      </StackPanel>
+
+      <!-- Default annotation author (stamps Annotation.Author on creation; round-trips to PDF /T). -->
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsDefaultAnnotationAuthor]}"
+                   Width="170"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource Foreground}" />
+        <TextBox Width="200"
+                 VerticalAlignment="Center"
+                 Text="{Binding DefaultAnnotationAuthor, UpdateSourceTrigger=PropertyChanged}" />
       </StackPanel>
     </StackPanel>
 

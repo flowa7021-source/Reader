@@ -232,6 +232,9 @@
   <data name="SettingsCrashReporting" xml:space="preserve">
     <value>Отправлять отчёты о сбоях:</value>
   </data>
+  <data name="SettingsDefaultAnnotationAuthor" xml:space="preserve">
+    <value>Автор аннотаций по умолчанию:</value>
+  </data>
   <data name="DialogOk" xml:space="preserve">
     <value>ОК</value>
   </data>

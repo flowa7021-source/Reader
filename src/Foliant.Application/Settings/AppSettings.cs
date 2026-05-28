@@ -33,6 +33,10 @@ public sealed record AppSettings
     /// auto-backup пользовательских данных (§7.4). <c>null</c> — первый запуск (бэкап не нужен).</summary>
     public string? LastRunVersion { get; init; }
 
+    /// <summary>Имя автора по умолчанию для новых аннотаций — попадает в <c>Annotation.Author</c>
+    /// и оттуда в PDF /T, FDF /T, XFDF <c>name</c>. <c>null</c>/пустая строка — без атрибуции.</summary>
+    public string? DefaultAnnotationAuthor { get; init; }
+
     public static AppSettings Default { get; } = new();
 }
 
