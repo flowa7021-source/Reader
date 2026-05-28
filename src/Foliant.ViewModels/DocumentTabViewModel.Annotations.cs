@@ -144,7 +144,10 @@ public sealed partial class DocumentTabViewModel
         ArgumentNullException.ThrowIfNull(bounds);
         ArgumentNullException.ThrowIfNull(colorHex);
 
-        var hl = Annotation.Highlight(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow);
+        var hl = Annotation.Highlight(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow) with
+        {
+            Author = ReadDefaultAuthor(),
+        };
         await _annotationService.AddAsync(_filePath, hl, ct);
         _allAnnotations.Add(hl);
         NotifyAnnotationCountsChanged();
@@ -160,7 +163,10 @@ public sealed partial class DocumentTabViewModel
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(colorHex);
 
-        var note = Annotation.StickyNote(pageIndex, bounds, text, colorHex, DateTimeOffset.UtcNow);
+        var note = Annotation.StickyNote(pageIndex, bounds, text, colorHex, DateTimeOffset.UtcNow) with
+        {
+            Author = ReadDefaultAuthor(),
+        };
         await _annotationService.AddAsync(_filePath, note, ct);
         _allAnnotations.Add(note);
         NotifyAnnotationCountsChanged();
@@ -168,6 +174,12 @@ public sealed partial class DocumentTabViewModel
         {
             CurrentPageAnnotations.Add(note);
         }
+    }
+
+    private string? ReadDefaultAuthor()
+    {
+        string? raw = _settings?.Current.DefaultAnnotationAuthor;
+        return string.IsNullOrWhiteSpace(raw) ? null : raw.Trim();
     }
 
     /// <summary>Зафиксировать freehand-обводку — вызывается WPF-слоем на pointer-up с собранными
@@ -184,7 +196,10 @@ public sealed partial class DocumentTabViewModel
             return;
         }
 
-        var ink = Annotation.Freehand(pageIndex, [.. points], colorHex, DateTimeOffset.UtcNow);
+        var ink = Annotation.Freehand(pageIndex, [.. points], colorHex, DateTimeOffset.UtcNow) with
+        {
+            Author = ReadDefaultAuthor(),
+        };
         await _annotationService.AddAsync(_filePath, ink, ct);
         _allAnnotations.Add(ink);
         NotifyAnnotationCountsChanged();
@@ -297,7 +312,9 @@ public sealed partial class DocumentTabViewModel
             return Task.CompletedTask;
         }
 
-        return UpdateAnnotationAsync(note with { Text = edit.Text });
+        // Любая правка содержимого — обновляем ModifiedAt; иначе /M и FDF/XFDF date останутся
+        // в момент создания, что для рецензента бесполезно.
+        return UpdateAnnotationAsync(note with { Text = edit.Text, ModifiedAt = DateTimeOffset.UtcNow });
     }
 
     private void RefreshCurrentPageAnnotations()

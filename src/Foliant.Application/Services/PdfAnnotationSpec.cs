@@ -28,4 +28,8 @@ public sealed record PdfAnnotationSpec(
     PdfRgba Color,
     IReadOnlyList<double>? QuadPoints = null,
     IReadOnlyList<AnnotationPoint>? InkPoints = null,
-    string? Contents = null);
+    string? Contents = null,
+    DateTimeOffset? CreatedAt = null,
+    DateTimeOffset? ModifiedAt = null,
+    string? Author = null,
+    string? Subject = null);

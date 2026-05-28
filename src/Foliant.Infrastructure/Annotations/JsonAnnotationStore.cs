@@ -207,14 +207,20 @@ public sealed class JsonAnnotationStore : IAnnotationStore, IDisposable
             a.Bounds is null ? null : new RectDto(a.Bounds.X, a.Bounds.Y, a.Bounds.Width, a.Bounds.Height),
             a.Text,
             a.InkPoints is null ? null : [.. a.InkPoints.Select(p => new PointDto(p.X, p.Y))],
-            a.CreatedAt);
+            a.CreatedAt,
+            a.ModifiedAt,
+            a.Author,
+            a.Subject);
 
     private static Annotation FromDto(AnnotationDto d) =>
         new(d.Id, d.PageIndex, d.Kind, d.ColorHex,
             d.Bounds is null ? null : new AnnotationRect(d.Bounds.X, d.Bounds.Y, d.Bounds.Width, d.Bounds.Height),
             d.Text,
             d.InkPoints is null ? null : [.. d.InkPoints.Select(p => new AnnotationPoint(p.X, p.Y))],
-            d.CreatedAt);
+            d.CreatedAt,
+            d.ModifiedAt,
+            d.Author,
+            d.Subject);
 }
 
 internal sealed record AnnotationsFile(int Version, IReadOnlyList<AnnotationDto> Annotations);
@@ -227,7 +233,10 @@ internal sealed record AnnotationDto(
     RectDto? Bounds,
     string? Text,
     IReadOnlyList<PointDto>? InkPoints,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ModifiedAt = null,
+    string? Author = null,
+    string? Subject = null);
 
 internal sealed record RectDto(double X, double Y, double Width, double Height);
 

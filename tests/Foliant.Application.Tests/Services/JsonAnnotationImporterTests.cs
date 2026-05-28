@@ -88,4 +88,28 @@ public sealed class JsonAnnotationImporterTests
         _sut.FormatName.Should().Be("JSON");
         _sut.FileExtension.Should().Be("json");
     }
+
+    [Fact]
+    public void Roundtrip_WithMetadata_PreservesAuthorSubjectModifiedAt()
+    {
+        var created = new DateTimeOffset(2024, 1, 15, 10, 30, 45, TimeSpan.Zero);
+        var modified = new DateTimeOffset(2024, 6, 20, 16, 0, 0, TimeSpan.Zero);
+        var source = new[]
+        {
+            Annotation.StickyNote(0, new AnnotationRect(1, 2, 3, 4), "note", "#FF0000", created) with
+            {
+                ModifiedAt = modified,
+                Author = "Reviewer",
+                Subject = "Question",
+            },
+        };
+
+        var json = new JsonAnnotationExporter().Export(source);
+        var imported = _sut.Import(json);
+
+        var a = imported.Should().ContainSingle().Subject;
+        a.Author.Should().Be("Reviewer");
+        a.Subject.Should().Be("Question");
+        a.ModifiedAt.Should().Be(modified);
+    }
 }

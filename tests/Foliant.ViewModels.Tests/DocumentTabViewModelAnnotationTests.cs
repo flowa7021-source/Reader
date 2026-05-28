@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Foliant.Application.Services;
+using Foliant.Application.Settings;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -9,7 +10,7 @@ namespace Foliant.ViewModels.Tests;
 
 public sealed class DocumentTabViewModelAnnotationTests
 {
-    private static DocumentTabViewModel CreateVm(IAnnotationService annotations)
+    private static DocumentTabViewModel CreateVm(IAnnotationService annotations, ISettingsService? settings = null)
     {
         var doc = Substitute.For<IDocument>();
         doc.PageCount.Returns(1);
@@ -20,7 +21,15 @@ public sealed class DocumentTabViewModelAnnotationTests
             Substitute.For<ISearchService>(),
             annotations,
             Substitute.For<IBookmarkService>(),
-            NullLogger<DocumentTabViewModel>.Instance);
+            NullLogger<DocumentTabViewModel>.Instance,
+            settings: settings);
+    }
+
+    private static ISettingsService SettingsWithAuthor(string? author)
+    {
+        var s = Substitute.For<ISettingsService>();
+        s.Current.Returns(AppSettings.Default with { DefaultAnnotationAuthor = author });
+        return s;
     }
 
     [Fact]
@@ -194,5 +203,76 @@ public sealed class DocumentTabViewModelAnnotationTests
 
         await ann.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
         vm.FreehandCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AddHighlight_StampsAuthorFromSettings()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann, SettingsWithAuthor("Иван Петров"));
+
+        await vm.AddHighlightAsync(0, new AnnotationRect(0, 0, 10, 10), "#FFEB3B", default);
+
+        await ann.Received().AddAsync(Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Author == "Иван Петров"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AddNote_StampsAuthorFromSettings()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann, SettingsWithAuthor("Reviewer"));
+
+        await vm.AddNoteAsync(0, new AnnotationRect(0, 0, 10, 10), "hi", "#FFEB3B", default);
+
+        await ann.Received().AddAsync(Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Author == "Reviewer"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AddFreehand_StampsAuthorFromSettings()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann, SettingsWithAuthor("Reviewer"));
+
+        await vm.AddFreehandAsync(0,
+            [new AnnotationPoint(0, 0), new AnnotationPoint(5, 5)],
+            "#000000", default);
+
+        await ann.Received().AddAsync(Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Author == "Reviewer"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AddHighlight_WhenSettingsAuthorIsBlank_AuthorIsNull()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann, SettingsWithAuthor("   "));
+
+        await vm.AddHighlightAsync(0, new AnnotationRect(0, 0, 10, 10), "#FFEB3B", default);
+
+        await ann.Received().AddAsync(Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Author == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EditNoteText_BumpsModifiedAt()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 10, 10), "old", "#FF0", DateTimeOffset.UnixEpoch);
+        await vm.AddNoteAsync(note.PageIndex, note.Bounds!, note.Text!, note.ColorHex, default);
+        var seeded = vm.CurrentPageAnnotations.Should().ContainSingle().Subject;
+
+        var before = DateTimeOffset.UtcNow;
+        await vm.EditNoteTextCommand.ExecuteAsync((seeded, "new"));
+
+        await ann.Received().UpdateAsync(Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Text == "new" && a.ModifiedAt != null && a.ModifiedAt >= before),
+            Arg.Any<CancellationToken>());
     }
 }

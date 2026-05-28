@@ -26,4 +26,18 @@ public sealed class TextLayerTests
 
         layer.ToPlainText().Should().Be("Hello, Foliant!");
     }
+
+    [Fact]
+    public void TextRun_Confidence_DefaultsToOne_ForVectorTextCallers()
+    {
+        // Backward-compat: vector-text слой собирает TextRun без передачи confidence — должен
+        // оставаться полностью достоверным.
+        new TextRun("hello", 0, 0, 10, 10).Confidence.Should().Be(1.0);
+    }
+
+    [Fact]
+    public void TextRun_Confidence_CanBeSpecifiedExplicitly()
+    {
+        new TextRun("ocr-text", 0, 0, 10, 10, Confidence: 0.42).Confidence.Should().Be(0.42);
+    }
 }

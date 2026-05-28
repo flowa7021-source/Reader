@@ -17,6 +17,10 @@ public sealed record AnnotationPoint(double X, double Y);
 /// (Highlight: только Bounds; StickyNote: Bounds + Text; Freehand: InkPoints).
 /// Фабрики <see cref="Highlight"/>/<see cref="StickyNote"/>/<see cref="Freehand"/>
 /// гарантируют корректную форму.
+///
+/// Метаданные (<see cref="ModifiedAt"/>/<see cref="Author"/>/<see cref="Subject"/>) опциональны
+/// и round-trip'ятся через все форматы обмена (PDF /M /T /Subj, XFDF date/name/subject,
+/// FDF /M /T /Subj, JSON). По умолчанию <c>null</c> — фабрики не требуют их менять.
 /// </summary>
 public sealed record Annotation(
     Guid Id,
@@ -26,7 +30,10 @@ public sealed record Annotation(
     AnnotationRect? Bounds,
     string? Text,
     IReadOnlyList<AnnotationPoint>? InkPoints,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ModifiedAt = null,
+    string? Author = null,
+    string? Subject = null)
 {
     public static Annotation Highlight(int pageIndex, AnnotationRect bounds, string colorHex, DateTimeOffset createdAt) =>
         new(Guid.NewGuid(), pageIndex, AnnotationKind.Highlight, colorHex, bounds, null, null, createdAt);

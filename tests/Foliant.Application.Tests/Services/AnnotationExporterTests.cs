@@ -105,6 +105,36 @@ public sealed class MarkdownAnnotationExporterTests
     }
 
     [Fact]
+    public void Export_WithMetadata_AppendsAuthorSubjectModifiedAsSubBullets()
+    {
+        var modified = new DateTimeOffset(2024, 6, 20, 16, 30, 45, TimeSpan.Zero);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 16, 16), "text", "#FFC", DateTimeOffset.UnixEpoch) with
+        {
+            ModifiedAt = modified,
+            Author = "Иван Петров",
+            Subject = "Замечание",
+        };
+
+        var md = _sut.Export([note]);
+
+        md.Should().Contain("  - _author_: Иван Петров");
+        md.Should().Contain("  - _subject_: Замечание");
+        md.Should().Contain("  - _modified_: 2024-06-20 16:30:45 UTC");
+    }
+
+    [Fact]
+    public void Export_WithoutMetadata_OmitsSubBullets()
+    {
+        var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#FF0", DateTimeOffset.UtcNow);
+
+        var md = _sut.Export([hl]);
+
+        md.Should().NotContain("_author_");
+        md.Should().NotContain("_subject_");
+        md.Should().NotContain("_modified_");
+    }
+
+    [Fact]
     public void FormatNameAndExtension_AreReasonable()
     {
         _sut.FormatName.Should().Be("Markdown");

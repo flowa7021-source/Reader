@@ -10,9 +10,7 @@ namespace Foliant.Application.Services;
 /// <c>/Annots</c>. Координаты — PDF user space; цвет — массив <c>[r g b]</c> 0..1; текст —
 /// UTF-16BE hex-строка (корректно для кириллицы). Stateless, без I/O.
 ///
-/// Только ЭКСПОРТ: импорт FDF требует парсера PDF-объектов и отложен — round-trip-обмен
-/// покрывает XFDF (<see cref="XfdfAnnotationImporter"/>), FDF-вывод нужен лишь как
-/// Acrobat-совместимый экспорт.
+/// Round-trip: импорт обратно делает <see cref="FdfAnnotationImporter"/>.
 /// </summary>
 public sealed class FdfAnnotationExporter : IAnnotationExporter
 {
@@ -41,13 +39,44 @@ public sealed class FdfAnnotationExporter : IAnnotationExporter
     private static string? AnnotDict(Annotation a) => a.Kind switch
     {
         AnnotationKind.Highlight when a.Bounds is { } b =>
-            $"<< /Type /Annot /Subtype /Highlight {PageRectColor(a, b)} /QuadPoints [{QuadPoints(b)}] >>",
+            $"<< /Type /Annot /Subtype /Highlight {PageRectColor(a, b)} /QuadPoints [{QuadPoints(b)}]{Metadata(a)} >>",
         AnnotationKind.StickyNote when a.Bounds is { } b =>
-            $"<< /Type /Annot /Subtype /Text {PageRectColor(a, b)} /Contents {PdfText(a.Text)} >>",
+            $"<< /Type /Annot /Subtype /Text {PageRectColor(a, b)} /Contents {PdfText(a.Text)}{Metadata(a)} >>",
         AnnotationKind.Freehand when a.InkPoints is { Count: > 0 } points =>
-            $"<< /Type /Annot /Subtype /Ink /Page {Page(a)} {ColorEntry(a.ColorHex)} /InkList [[{InkList(points)}]] >>",
+            $"<< /Type /Annot /Subtype /Ink /Page {Page(a)} {ColorEntry(a.ColorHex)} /InkList [[{InkList(points)}]]{Metadata(a)} >>",
         _ => null,
     };
+
+    // Метаданные пишем только если поля заполнены — пустые /T/Subj бесполезны, /M/CreationDate
+    // имеют смысл лишь как реальные временные метки. /CreationDate всегда есть (домен требует),
+    // /M пишется только при наличии ModifiedAt.
+    private static string Metadata(Annotation a)
+    {
+        var sb = new StringBuilder();
+        sb.Append(" /CreationDate ").Append(PdfDate(a.CreatedAt));
+        if (a.ModifiedAt is { } m)
+        {
+            sb.Append(" /M ").Append(PdfDate(m));
+        }
+
+        if (!string.IsNullOrEmpty(a.Author))
+        {
+            sb.Append(" /T ").Append(PdfText(a.Author));
+        }
+
+        if (!string.IsNullOrEmpty(a.Subject))
+        {
+            sb.Append(" /Subj ").Append(PdfText(a.Subject));
+        }
+
+        return sb.ToString();
+    }
+
+    private static string PdfDate(DateTimeOffset when)
+    {
+        var utc = when.ToUniversalTime();
+        return $"(D:{utc.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture)}Z)";
+    }
 
     private static string PageRectColor(Annotation a, AnnotationRect b) =>
         $"/Page {Page(a)} /Rect [{Rect(b)}] {ColorEntry(a.ColorHex)}";

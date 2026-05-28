@@ -145,6 +145,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IAnnotationExporter, FdfAnnotationExporter>();
         services.AddSingleton<IAnnotationImporter, XfdfAnnotationImporter>();
         services.AddSingleton<IAnnotationImporter, JsonAnnotationImporter>();
+        services.AddSingleton<IAnnotationImporter, FdfAnnotationImporter>();
         services.AddSingleton<IAnnotationFormatCatalog, AnnotationFormatCatalog>();
 
         // Export a PDF with sidecar annotations embedded as real editable objects (Q-F17 Phase 2).

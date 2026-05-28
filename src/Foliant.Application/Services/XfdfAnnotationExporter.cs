@@ -79,12 +79,37 @@ public sealed class XfdfAnnotationExporter : IAnnotationExporter
             new XElement(Ns + "inklist", new XElement(Ns + "gesture", gesture)));
     }
 
-    private static object[] CommonAttributes(Annotation a) =>
-    [
-        new XAttribute("page", a.PageIndex.ToString(CultureInfo.InvariantCulture)),
-        new XAttribute("color", a.ColorHex),
-        new XAttribute("creationdate", "D:" + a.CreatedAt.UtcDateTime.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture) + "Z"),
-    ];
+    private static object[] CommonAttributes(Annotation a)
+    {
+        // page/color/creationdate — обязательные; name/subject/date — опциональные (Acrobat
+        // пишет их тоже опционально). Все три карты на /T /Subj /M в PDF аннотации.
+        var attrs = new List<object>
+        {
+            new XAttribute("page", a.PageIndex.ToString(CultureInfo.InvariantCulture)),
+            new XAttribute("color", a.ColorHex),
+            new XAttribute("creationdate", XfdfDate(a.CreatedAt)),
+        };
+
+        if (a.ModifiedAt is { } modified)
+        {
+            attrs.Add(new XAttribute("date", XfdfDate(modified)));
+        }
+
+        if (!string.IsNullOrEmpty(a.Author))
+        {
+            attrs.Add(new XAttribute("name", a.Author));
+        }
+
+        if (!string.IsNullOrEmpty(a.Subject))
+        {
+            attrs.Add(new XAttribute("subject", a.Subject));
+        }
+
+        return [.. attrs];
+    }
+
+    private static string XfdfDate(DateTimeOffset when) =>
+        "D:" + when.UtcDateTime.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture) + "Z";
 
     private static string Rect(AnnotationRect b)
     {
