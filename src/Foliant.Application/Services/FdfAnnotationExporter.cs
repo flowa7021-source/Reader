@@ -10,9 +10,7 @@ namespace Foliant.Application.Services;
 /// <c>/Annots</c>. Координаты — PDF user space; цвет — массив <c>[r g b]</c> 0..1; текст —
 /// UTF-16BE hex-строка (корректно для кириллицы). Stateless, без I/O.
 ///
-/// Только ЭКСПОРТ: импорт FDF требует парсера PDF-объектов и отложен — round-trip-обмен
-/// покрывает XFDF (<see cref="XfdfAnnotationImporter"/>), FDF-вывод нужен лишь как
-/// Acrobat-совместимый экспорт.
+/// Round-trip: импорт обратно делает <see cref="FdfAnnotationImporter"/>.
 /// </summary>
 public sealed class FdfAnnotationExporter : IAnnotationExporter
 {
