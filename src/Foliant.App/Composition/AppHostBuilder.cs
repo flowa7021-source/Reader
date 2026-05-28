@@ -133,6 +133,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
         services.AddSingleton<IPageEditService, PdfPageEditService>();
         services.AddSingleton<IPageRangeExtractor, PdfPigPageRangeExtractor>();
+        services.AddSingleton<IWatermarkService, PdfiumWatermarkService>();
         services.AddSingleton<IPageImageExporter, WpfPageImageExporter>();
         services.AddSingleton<IPdfOutlineReader, PdfPigOutlineReader>();
 
