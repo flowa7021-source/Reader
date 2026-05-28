@@ -225,4 +225,68 @@ public sealed class SearchServiceTests
         }
         return doc;
     }
+
+    [Fact]
+    public async Task FoldDiacritics_Off_LiteralMatch_DoesNotMatchAccentedText()
+    {
+        // Sanity: без folding'а "cafe" не найдёт "café".
+        var doc = MakeDoc(["Visit the café tonight."]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("cafe", FoldDiacritics: false), default);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task FoldDiacritics_On_MatchesAcrossAccents()
+    {
+        var doc = MakeDoc(["Visit the café tonight.", "Naïve approach.", "Über alles."]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("cafe", FoldDiacritics: true), default);
+
+        var hit = result.Should().ContainSingle().Subject;
+        hit.PageIndex.Should().Be(0);
+        // Snippet строится из нормализованного pageText — диакритика в нём уже снята.
+        hit.Snippet.Should().Contain("cafe");
+    }
+
+    [Fact]
+    public async Task FoldDiacritics_On_FindsAllAccentedVariantsInDocument()
+    {
+        var doc = MakeDoc(["naive naïve naïvety"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("naive", FoldDiacritics: true), default);
+
+        // "naive", "naïve", "naïvety" — все начинаются с "naive" после folding'а; ожидаем 3 hits
+        // (один на каждое вхождение, MatchWholeWord не выставлен).
+        result.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task FoldDiacritics_On_StillRespectsMatchWholeWord()
+    {
+        var doc = MakeDoc(["naive naïvety"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("naive", FoldDiacritics: true, MatchWholeWord: true), default);
+
+        // "naive" — whole word; "naïvety" — нет (после folding'а "naivety", не word-boundary
+        // после "naive"). Ожидаем только первый.
+        result.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task FoldDiacritics_On_StillRespectsMatchCase()
+    {
+        var doc = MakeDoc(["Café CAFÉ café"]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf",
+            new SearchQuery("cafe", FoldDiacritics: true, MatchCase: true), default);
+
+        // Только последнее ("café" → "cafe") совпадает; "Café"/"CAFÉ" — другой case.
+        result.Should().ContainSingle();
+    }
 }
