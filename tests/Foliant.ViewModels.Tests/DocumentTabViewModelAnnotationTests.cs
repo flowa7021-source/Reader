@@ -275,4 +275,60 @@ public sealed class DocumentTabViewModelAnnotationTests
             Arg.Is<Annotation>(a => a.Text == "new" && a.ModifiedAt != null && a.ModifiedAt >= before),
             Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task EditNoteSubject_SetsSubjectAndBumpsModifiedAt()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 10, 10), "txt", "#FF0", DateTimeOffset.UnixEpoch);
+        await vm.AddNoteAsync(note.PageIndex, note.Bounds!, note.Text!, note.ColorHex, default);
+        var seeded = vm.CurrentPageAnnotations.Should().ContainSingle().Subject;
+
+        var before = DateTimeOffset.UtcNow;
+        await vm.EditNoteSubjectCommand.ExecuteAsync((seeded, (string?)"Important"));
+
+        await ann.Received().UpdateAsync(Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Subject == "Important" && a.ModifiedAt != null && a.ModifiedAt >= before),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EditNoteSubject_WhitespaceInput_NormalizesToNull()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 10, 10), "txt", "#FF0", DateTimeOffset.UnixEpoch) with
+        {
+            Subject = "Existing",
+        };
+        await vm.AddNoteAsync(note.PageIndex, note.Bounds!, note.Text!, note.ColorHex, default);
+        // The seeded note doesn't carry the Subject (AddNote constructs a fresh one). Override
+        // via UpdateAnnotation to mirror "user set a subject earlier" state.
+        var seeded = vm.CurrentPageAnnotations.Should().ContainSingle().Subject with { Subject = "Existing" };
+        await vm.UpdateAnnotationCommand.ExecuteAsync(seeded);
+
+        await vm.EditNoteSubjectCommand.ExecuteAsync((seeded, (string?)"   "));
+
+        await ann.Received().UpdateAsync(Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Subject == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EditNoteSubject_UnchangedValue_IsNoOp()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var note = Annotation.StickyNote(0, new AnnotationRect(0, 0, 10, 10), "txt", "#FF0", DateTimeOffset.UnixEpoch);
+        await vm.AddNoteAsync(note.PageIndex, note.Bounds!, note.Text!, note.ColorHex, default);
+        var seeded = vm.CurrentPageAnnotations.Should().ContainSingle().Subject;
+
+        ann.ClearReceivedCalls();
+
+        // seeded.Subject is null; passing null / whitespace should be no-op.
+        await vm.EditNoteSubjectCommand.ExecuteAsync((seeded, (string?)null));
+
+        await ann.DidNotReceive().UpdateAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+    }
 }

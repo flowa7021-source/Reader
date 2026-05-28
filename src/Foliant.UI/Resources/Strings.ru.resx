@@ -166,6 +166,24 @@
   <data name="BookmarkContextDelete" xml:space="preserve">
     <value>_Удалить</value>
   </data>
+  <data name="BookmarkContextRename" xml:space="preserve">
+    <value>_Переименовать...</value>
+  </data>
+  <data name="BookmarkRenameDialogTitle" xml:space="preserve">
+    <value>Переименовать закладку</value>
+  </data>
+  <data name="BookmarkRenameDialogLabel" xml:space="preserve">
+    <value>Новая метка:</value>
+  </data>
+  <data name="AnnotationContextEditSubject" xml:space="preserve">
+    <value>Изменить _тему...</value>
+  </data>
+  <data name="AnnotationEditSubjectDialogTitle" xml:space="preserve">
+    <value>Изменить тему аннотации</value>
+  </data>
+  <data name="AnnotationEditSubjectDialogLabel" xml:space="preserve">
+    <value>Тема:</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Светлая</value>
   </data>

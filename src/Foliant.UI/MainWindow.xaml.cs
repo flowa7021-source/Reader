@@ -358,4 +358,69 @@ public partial class MainWindow : Window
             tab.JumpToBookmarkCommand.Execute(bm);
         }
     }
+
+    private void OnBookmarkRenameClick(object sender, RoutedEventArgs e)
+    {
+        if (!TryResolveContextTarget<Foliant.Domain.Bookmark>(sender, out var tab, out var bm))
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        string? input = InputDialog.Prompt(this, loc["BookmarkRenameDialogTitle"], loc["BookmarkRenameDialogLabel"], bm.Label);
+        if (input is null)
+        {
+            return;
+        }
+
+        string trimmed = input.Trim();
+        if (string.IsNullOrEmpty(trimmed) || string.Equals(trimmed, bm.Label, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        tab.RenameBookmarkCommand.Execute(new RenameBookmarkRequest(bm, trimmed));
+    }
+
+    private void OnAnnotationEditSubjectClick(object sender, RoutedEventArgs e)
+    {
+        if (!TryResolveContextTarget<Foliant.Domain.Annotation>(sender, out var tab, out var annotation))
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        string? input = InputDialog.Prompt(
+            this,
+            loc["AnnotationEditSubjectDialogTitle"],
+            loc["AnnotationEditSubjectDialogLabel"],
+            annotation.Subject ?? string.Empty);
+
+        if (input is null)
+        {
+            return;
+        }
+
+        tab.EditNoteSubjectCommand.Execute((annotation, (string?)input));
+    }
+
+    // CommandParameter — сам элемент (Bookmark/Annotation); VM достаём через PlacementTarget.Tag,
+    // как и остальные context-menu обработчики в этом окне.
+    private static bool TryResolveContextTarget<T>(object sender, out DocumentTabViewModel tab, out T target)
+        where T : class
+    {
+        tab = null!;
+        target = null!;
+        if (sender is MenuItem { CommandParameter: T item } mi
+            && mi.Parent is ContextMenu cm
+            && cm.PlacementTarget is FrameworkElement host
+            && host.Tag is DocumentTabViewModel resolvedTab)
+        {
+            tab = resolvedTab;
+            target = item;
+            return true;
+        }
+
+        return false;
+    }
 }
