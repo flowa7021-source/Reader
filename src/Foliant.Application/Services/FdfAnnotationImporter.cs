@@ -88,22 +88,38 @@ file static class FdfAnnotationMapping
 
         int pageIndex = (int)page.Value;
         string color = ReadColor(d);
-        DateTimeOffset createdAt = ReadCreationDate(d) ?? DateTimeOffset.UtcNow;
+        DateTimeOffset createdAt = ReadDate(d, "CreationDate") ?? DateTimeOffset.UtcNow;
 
-        return subtype.Value switch
+        Annotation? core = subtype.Value switch
         {
             "Highlight" => ReadRect(d) is { } b
                 ? Annotation.Highlight(pageIndex, b, color, createdAt)
                 : null,
             "Text" => ReadRect(d) is { } b
-                ? Annotation.StickyNote(pageIndex, b, ReadText(d), color, createdAt)
+                ? Annotation.StickyNote(pageIndex, b, ReadText(d, "Contents"), color, createdAt)
                 : null,
             "Ink" => ReadInkPoints(d) is { Count: > 0 } pts
                 ? Annotation.Freehand(pageIndex, pts, color, createdAt)
                 : null,
             _ => null,
         };
+
+        if (core is null)
+        {
+            return null;
+        }
+
+        // Метаданные навешиваем поверх — оставляем дефолтный null, если соответствующий ключ
+        // в FDF отсутствует или пуст.
+        return core with
+        {
+            ModifiedAt = ReadDate(d, "M"),
+            Author = NonEmpty(ReadText(d, "T")),
+            Subject = NonEmpty(ReadText(d, "Subj")),
+        };
     }
+
+    private static string? NonEmpty(string s) => string.IsNullOrEmpty(s) ? null : s;
 
     private static AnnotationRect? ReadRect(CosDict d)
     {
@@ -138,8 +154,8 @@ file static class FdfAnnotationMapping
 
     private static byte ToByte(double channel01) => (byte)Math.Clamp((int)Math.Round(channel01 * 255.0), 0, 255);
 
-    private static string ReadText(CosDict d) =>
-        d.Get<CosString>("Contents") is { } s ? DecodePdfText(s.Bytes) : string.Empty;
+    private static string ReadText(CosDict d, string key) =>
+        d.Get<CosString>(key) is { } s ? DecodePdfText(s.Bytes) : string.Empty;
 
     private static List<AnnotationPoint>? ReadInkPoints(CosDict d)
     {
@@ -168,9 +184,9 @@ file static class FdfAnnotationMapping
         return points.Count == 0 ? null : points;
     }
 
-    private static DateTimeOffset? ReadCreationDate(CosDict d)
+    private static DateTimeOffset? ReadDate(CosDict d, string key)
     {
-        if (d.Get<CosString>("CreationDate") is not { } s)
+        if (d.Get<CosString>(key) is not { } s)
         {
             return null;
         }

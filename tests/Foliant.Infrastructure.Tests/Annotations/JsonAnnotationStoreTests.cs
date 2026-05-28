@@ -148,6 +148,26 @@ public sealed class JsonAnnotationStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task PersistsOptionalMetadata_AuthorSubjectModifiedAt()
+    {
+        var modified = new DateTimeOffset(2024, 6, 20, 16, 0, 0, TimeSpan.Zero);
+        var a = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#ABCDEF", DateTimeOffset.UtcNow) with
+        {
+            ModifiedAt = modified,
+            Author = "Reviewer",
+            Subject = "Subj",
+        };
+        await _sut.AddAsync(Fp, a, default);
+
+        using var fresh = new JsonAnnotationStore(_tmp.Path, NullLogger<JsonAnnotationStore>.Instance);
+        var loaded = (await fresh.ListAsync(Fp, default)).Should().ContainSingle().Subject;
+
+        loaded.Author.Should().Be("Reviewer");
+        loaded.Subject.Should().Be("Subj");
+        loaded.ModifiedAt.Should().Be(modified);
+    }
+
+    [Fact]
     public async Task Survives_Restart()
     {
         var hl = Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#ABCDEF", DateTimeOffset.UtcNow);

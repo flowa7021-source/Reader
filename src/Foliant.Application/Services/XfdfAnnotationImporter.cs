@@ -48,7 +48,7 @@ public sealed class XfdfAnnotationImporter : IAnnotationImporter
             return null;
         }
 
-        return Annotation.Highlight(page, bounds, Color(el), Created(el));
+        return WithMetadata(Annotation.Highlight(page, bounds, Color(el), Created(el)), el);
     }
 
     private static Annotation? ParseText(XElement el)
@@ -59,7 +59,7 @@ public sealed class XfdfAnnotationImporter : IAnnotationImporter
         }
 
         string text = el.Elements().FirstOrDefault(c => c.Name.LocalName == "contents")?.Value ?? string.Empty;
-        return Annotation.StickyNote(page, bounds, text, Color(el), Created(el));
+        return WithMetadata(Annotation.StickyNote(page, bounds, text, Color(el), Created(el)), el);
     }
 
     private static Annotation? ParseInk(XElement el)
@@ -81,7 +81,32 @@ public sealed class XfdfAnnotationImporter : IAnnotationImporter
             }
         }
 
-        return points.Count >= 2 ? Annotation.Freehand(page, points, Color(el), Created(el)) : null;
+        return points.Count >= 2 ? WithMetadata(Annotation.Freehand(page, points, Color(el), Created(el)), el) : null;
+    }
+
+    private static Annotation WithMetadata(Annotation core, XElement el) =>
+        core with
+        {
+            ModifiedAt = OptionalDate(el.Attribute("date")?.Value),
+            Author = NonEmpty(el.Attribute("name")?.Value),
+            Subject = NonEmpty(el.Attribute("subject")?.Value),
+        };
+
+    private static string? NonEmpty(string? s) => string.IsNullOrEmpty(s) ? null : s;
+
+    private static DateTimeOffset? OptionalDate(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+        {
+            return null;
+        }
+
+        string s = raw.StartsWith("D:", StringComparison.Ordinal) ? raw[2..] : raw;
+        s = s.TrimEnd('Z');
+        return DateTimeOffset.TryParseExact(
+            s, "yyyyMMddHHmmss", CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTimeOffset dt)
+            ? dt : null;
     }
 
     private static int? Page(XElement el) =>

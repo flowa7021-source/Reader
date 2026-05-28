@@ -196,6 +196,7 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
                     return false;
             }
 
+            WriteMetadata(annot, spec);
             return true;
         }
         finally
@@ -257,6 +258,34 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
     private static void SetColor(FpdfAnnotationT annot, PdfRgba color) =>
         fpdf_annot.FPDFAnnotSetColor(
             annot, FPDFANNOT_COLORTYPE.FPDFANNOT_COLORTYPE_Color, color.R, color.G, color.B, color.A);
+
+    private static void WriteMetadata(FpdfAnnotationT annot, PdfAnnotationSpec spec)
+    {
+        // /CreationDate, /M — даты в PDF-формате "D:YYYYMMDDHHMMSSZ".
+        // /T — автор; /Subj — тема. Все четыре опциональны; пишем только заполненные.
+        if (spec.CreatedAt is { } created)
+        {
+            SetStringValue(annot, "CreationDate", PdfDateString(created));
+        }
+
+        if (spec.ModifiedAt is { } modified)
+        {
+            SetStringValue(annot, "M", PdfDateString(modified));
+        }
+
+        if (!string.IsNullOrEmpty(spec.Author))
+        {
+            SetStringValue(annot, "T", spec.Author);
+        }
+
+        if (!string.IsNullOrEmpty(spec.Subject))
+        {
+            SetStringValue(annot, "Subj", spec.Subject);
+        }
+    }
+
+    private static string PdfDateString(DateTimeOffset when) =>
+        "D:" + when.ToUniversalTime().ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture) + "Z";
 
     private static void SetStringValue(FpdfAnnotationT annot, string key, string value)
     {

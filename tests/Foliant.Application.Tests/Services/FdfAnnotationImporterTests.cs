@@ -160,6 +160,44 @@ public sealed class FdfAnnotationImporterTests
     }
 
     [Fact]
+    public void RoundTrip_WithMetadata_PreservesAuthorSubjectAndModifiedAt()
+    {
+        var modified = new DateTimeOffset(2024, 6, 15, 12, 30, 45, TimeSpan.Zero);
+        var original = new[]
+        {
+            Annotation.Highlight(0, new AnnotationRect(10, 20, 30, 40), "#FF0000", T0) with
+            {
+                ModifiedAt = modified,
+                Author = "Иван Петров",
+                Subject = "Замечание",
+            },
+        };
+
+        string fdf = new FdfAnnotationExporter().Export(original);
+        var imported = new FdfAnnotationImporter().Import(fdf);
+
+        var a = imported.Should().ContainSingle().Subject;
+        a.Author.Should().Be("Иван Петров");
+        a.Subject.Should().Be("Замечание");
+        a.ModifiedAt.Should().Be(modified);
+        a.CreatedAt.Should().Be(T0);
+    }
+
+    [Fact]
+    public void Import_WithMissingOptionalMetadata_LeavesFieldsNull()
+    {
+        // Round-trip без метаданных: ModifiedAt/Author/Subject должны остаться null.
+        string fdf = new FdfAnnotationExporter().Export(
+            [Annotation.Highlight(0, new AnnotationRect(0, 0, 10, 10), "#000000", T0)]);
+
+        var a = new FdfAnnotationImporter().Import(fdf).Should().ContainSingle().Subject;
+
+        a.ModifiedAt.Should().BeNull();
+        a.Author.Should().BeNull();
+        a.Subject.Should().BeNull();
+    }
+
+    [Fact]
     public void Import_MalformedAnnotationDict_IsSkipped_NotFatal()
     {
         // Highlight без /Rect — пропустить; следом нормальная аннотация попадает.

@@ -117,4 +117,28 @@ public sealed class XfdfAnnotationImporterTests
         _sut.FormatName.Should().Be("XFDF");
         _sut.FileExtension.Should().Be("xfdf");
     }
+
+    [Fact]
+    public void Roundtrip_WithMetadata_PreservesAuthorSubjectModifiedAt()
+    {
+        var created = new DateTimeOffset(2024, 1, 15, 10, 30, 45, TimeSpan.Zero);
+        var modified = new DateTimeOffset(2024, 6, 20, 16, 0, 0, TimeSpan.Zero);
+        var source = new[]
+        {
+            Annotation.Highlight(0, new AnnotationRect(10, 20, 30, 40), "#FFEB3B", created) with
+            {
+                ModifiedAt = modified,
+                Author = "Иван Петров",
+                Subject = "Замечание",
+            },
+        };
+
+        var imported = _sut.Import(new XfdfAnnotationExporter().Export(source));
+
+        var a = imported.Should().ContainSingle().Subject;
+        a.Author.Should().Be("Иван Петров");
+        a.Subject.Should().Be("Замечание");
+        a.ModifiedAt.Should().Be(modified);
+        a.CreatedAt.Should().Be(created);
+    }
 }

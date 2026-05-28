@@ -44,16 +44,28 @@ public static class AnnotationToPdfSpec
     }
 
     private static PdfAnnotationSpec Highlight(Annotation a, AnnotationRect b) =>
-        new(a.PageIndex, PdfAnnotationSubtype.Highlight, Rect(b), Color(a.ColorHex, HighlightAlpha),
-            QuadPoints: AnnotationGeometry.QuadPoints(b));
+        WithMetadata(a, new PdfAnnotationSpec(
+            a.PageIndex, PdfAnnotationSubtype.Highlight, Rect(b), Color(a.ColorHex, HighlightAlpha),
+            QuadPoints: AnnotationGeometry.QuadPoints(b)));
 
     private static PdfAnnotationSpec Note(Annotation a, AnnotationRect b) =>
-        new(a.PageIndex, PdfAnnotationSubtype.Text, Rect(b), Color(a.ColorHex, OpaqueAlpha),
-            Contents: a.Text ?? string.Empty);
+        WithMetadata(a, new PdfAnnotationSpec(
+            a.PageIndex, PdfAnnotationSubtype.Text, Rect(b), Color(a.ColorHex, OpaqueAlpha),
+            Contents: a.Text ?? string.Empty));
 
     private static PdfAnnotationSpec Ink(Annotation a, IReadOnlyList<AnnotationPoint> points) =>
-        new(a.PageIndex, PdfAnnotationSubtype.Ink, InkBounds(points), Color(a.ColorHex, OpaqueAlpha),
-            InkPoints: [.. points]);
+        WithMetadata(a, new PdfAnnotationSpec(
+            a.PageIndex, PdfAnnotationSubtype.Ink, InkBounds(points), Color(a.ColorHex, OpaqueAlpha),
+            InkPoints: [.. points]));
+
+    private static PdfAnnotationSpec WithMetadata(Annotation a, PdfAnnotationSpec spec) =>
+        spec with
+        {
+            CreatedAt = a.CreatedAt,
+            ModifiedAt = a.ModifiedAt,
+            Author = a.Author,
+            Subject = a.Subject,
+        };
 
     private static PdfRect Rect(AnnotationRect b)
     {
