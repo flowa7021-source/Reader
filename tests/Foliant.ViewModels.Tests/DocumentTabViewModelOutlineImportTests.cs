@@ -29,6 +29,37 @@ public sealed class DocumentTabViewModelOutlineImportTests
     }
 
     [Fact]
+    public async Task ImportPdfOutline_PassesDepthThroughToService()
+    {
+        var bookmarks = Substitute.For<IBookmarkService>();
+        bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+                 .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
+        bookmarks.AddAsync(
+                Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(),
+                Arg.Any<CancellationToken>(), Arg.Any<int>())
+            .Returns(callInfo => Task.FromResult(new Bookmark(
+                Guid.NewGuid(), callInfo.ArgAt<int>(1), callInfo.ArgAt<string>(2), DateTimeOffset.UnixEpoch,
+                callInfo.ArgAt<int>(4))));
+
+        var outline = Substitute.For<IPdfOutlineReader>();
+        outline.ReadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+               .Returns(Task.FromResult<IReadOnlyList<DocumentOutlineEntry>>(
+                   [
+                       new DocumentOutlineEntry(0, "Chapter 1", 0),
+                       new DocumentOutlineEntry(0, "Section 1.1", 1),
+                       new DocumentOutlineEntry(1, "Sub 1.1.1", 2),
+                   ]));
+
+        var vm = CreateVm(bookmarks, outline);
+
+        await vm.ImportPdfOutlineCommand.ExecuteAsync(null);
+
+        await bookmarks.Received().AddAsync(Arg.Any<string>(), 0, "Chapter 1", Arg.Any<CancellationToken>(), 0);
+        await bookmarks.Received().AddAsync(Arg.Any<string>(), 0, "Section 1.1", Arg.Any<CancellationToken>(), 1);
+        await bookmarks.Received().AddAsync(Arg.Any<string>(), 1, "Sub 1.1.1", Arg.Any<CancellationToken>(), 2);
+    }
+
+    [Fact]
     public async Task ImportPdfOutline_AddsEachEntryViaService_AndReloads()
     {
         var bookmarks = Substitute.For<IBookmarkService>();

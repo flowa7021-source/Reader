@@ -253,10 +253,10 @@ public sealed partial class DocumentTabViewModel
             foreach (var entry in entries)
             {
                 ct.ThrowIfCancellationRequested();
-                // Глубина в заголовок не вшиваем — UI впоследствии сможет показать вложенность
-                // отдельным indent'ом. Сейчас просто берём Title как есть.
+                // Depth прокидываем как есть — Markdown-экспорт отрисует indent, sidebar (когда
+                // появится) — иерархический отступ.
                 string label = string.IsNullOrWhiteSpace(entry.Title) ? $"Page {entry.PageIndex + 1}" : entry.Title;
-                await _bookmarkService.AddAsync(_filePath, entry.PageIndex, label, ct).ConfigureAwait(false);
+                await _bookmarkService.AddAsync(_filePath, entry.PageIndex, label, ct, depth: entry.Depth).ConfigureAwait(false);
             }
 
             await LoadBookmarksAsync(ct).ConfigureAwait(false);

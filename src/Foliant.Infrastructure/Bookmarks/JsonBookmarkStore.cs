@@ -202,10 +202,10 @@ public sealed class JsonBookmarkStore : IBookmarkStore, IDisposable
     }
 
     private static BookmarkDto ToDto(Bookmark b) =>
-        new(b.Id, b.PageIndex, b.Label, b.CreatedAt);
+        new(b.Id, b.PageIndex, b.Label, b.CreatedAt, b.Depth);
 
     private static Bookmark FromDto(BookmarkDto d) =>
-        new(d.Id, d.PageIndex, d.Label, d.CreatedAt);
+        new(d.Id, d.PageIndex, d.Label, d.CreatedAt, d.Depth);
 }
 
 internal sealed record BookmarksFile(int Version, IReadOnlyList<BookmarkDto> Bookmarks);
@@ -214,7 +214,8 @@ internal sealed record BookmarkDto(
     Guid Id,
     int PageIndex,
     string Label,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    int Depth = 0);
 
 [JsonSourceGenerationOptions(
     WriteIndented = true,

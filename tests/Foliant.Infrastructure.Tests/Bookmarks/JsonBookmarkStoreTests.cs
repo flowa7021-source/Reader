@@ -141,4 +141,15 @@ public sealed class JsonBookmarkStoreTests : IDisposable
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
     }
+
+    [Fact]
+    public async Task PersistsAndRestoresDepth()
+    {
+        var withDepth = Bookmark.Create(2, "Section", DateTimeOffset.UtcNow, depth: 1);
+        await _sut.AddAsync(Fp, withDepth, default);
+
+        var loaded = (await _sut.ListAsync(Fp, default)).Should().ContainSingle().Subject;
+
+        loaded.Depth.Should().Be(1);
+    }
 }

@@ -15,13 +15,13 @@ public sealed class BookmarkService(
         return await store.ListAsync(fp, ct).ConfigureAwait(false);
     }
 
-    public async Task<Bookmark> AddAsync(string documentPath, int pageIndex, string label, CancellationToken ct)
+    public async Task<Bookmark> AddAsync(string documentPath, int pageIndex, string label, CancellationToken ct, int depth = 0)
     {
         ArgumentNullException.ThrowIfNull(label);
         var fp = await fingerprint.ComputeAsync(documentPath, ct).ConfigureAwait(false);
-        var bm = Bookmark.Create(pageIndex, label, DateTimeOffset.UtcNow);
+        var bm = Bookmark.Create(pageIndex, label, DateTimeOffset.UtcNow, depth);
         await store.AddAsync(fp, bm, ct).ConfigureAwait(false);
-        log.LogDebug("Bookmark added: {Path} page={Page}", documentPath, pageIndex);
+        log.LogDebug("Bookmark added: {Path} page={Page} depth={Depth}", documentPath, pageIndex, depth);
         return bm;
     }
 

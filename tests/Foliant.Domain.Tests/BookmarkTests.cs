@@ -49,4 +49,16 @@ public sealed class BookmarkTests
         moved.Label.Should().Be(bookmark.Label);
         moved.CreatedAt.Should().Be(bookmark.CreatedAt);
     }
+
+    [Fact]
+    public void Depth_DefaultsToZero_ForBackwardCompatibility()
+    {
+        Bookmark.Create(0, "x", Now).Depth.Should().Be(0);
+    }
+
+    [Fact]
+    public void Depth_RoundTripsThroughCreateFactory()
+    {
+        Bookmark.Create(0, "x", Now, depth: 3).Depth.Should().Be(3);
+    }
 }

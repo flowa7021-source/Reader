@@ -125,4 +125,44 @@ public sealed class MarkdownBookmarkExporterTests
 
         md.Should().Contain("Глава — Введение");
     }
+
+    [Fact]
+    public void Export_WhenAnyDepthGreaterThanZero_PreservesInsertionOrder_AndIndentsByDepth()
+    {
+        // TOC-форма: depth-first из reader'а. Чтобы вложенность не ломалась,
+        // мы НЕ сортируем по странице — pages из outline могут идти не по возрастанию.
+        var ch1 = Bookmark.Create(1, "Chapter 1", DateTimeOffset.UtcNow, depth: 0);
+        var sec = Bookmark.Create(1, "Section 1.1", DateTimeOffset.UtcNow, depth: 1);
+        var sub = Bookmark.Create(2, "Sub 1.1.1", DateTimeOffset.UtcNow, depth: 2);
+        var ch2 = Bookmark.Create(5, "Chapter 2", DateTimeOffset.UtcNow, depth: 0);
+
+        var md = _sut.Export([ch1, sec, sub, ch2]);
+
+        // Каждый bullet — два пробела на уровень глубины.
+        md.Should().Contain("- Page 2 — Chapter 1");
+        md.Should().Contain("  - Page 2 — Section 1.1");
+        md.Should().Contain("    - Page 3 — Sub 1.1.1");
+        md.Should().Contain("- Page 6 — Chapter 2");
+
+        // Порядок: chapter 1 → section → sub → chapter 2 (depth-first, не sorted by page).
+        int ch1Idx = md.IndexOf("Chapter 1", StringComparison.Ordinal);
+        int secIdx = md.IndexOf("Section 1.1", StringComparison.Ordinal);
+        int subIdx = md.IndexOf("Sub 1.1.1", StringComparison.Ordinal);
+        int ch2Idx = md.IndexOf("Chapter 2", StringComparison.Ordinal);
+        ch1Idx.Should().BeLessThan(secIdx);
+        secIdx.Should().BeLessThan(subIdx);
+        subIdx.Should().BeLessThan(ch2Idx);
+    }
+
+    [Fact]
+    public void Export_AllDepthZero_StillSortsByPageIndex_BackwardCompatible()
+    {
+        // Без depth коллекция ведёт себя как раньше — сортировка по странице.
+        var b3 = Bookmark.Create(3, "Three", DateTimeOffset.UtcNow);
+        var b1 = Bookmark.Create(1, "One", DateTimeOffset.UtcNow);
+
+        var md = _sut.Export([b3, b1]);
+
+        md.IndexOf("One", StringComparison.Ordinal).Should().BeLessThan(md.IndexOf("Three", StringComparison.Ordinal));
+    }
 }
