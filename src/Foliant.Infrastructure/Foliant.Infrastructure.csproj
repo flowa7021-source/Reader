@@ -31,12 +31,15 @@
     <PackageReference Include="Serilog.Extensions.Hosting" />
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="Serilog.Sinks.Console" />
+    <!-- MEF2 host для обнаружения engine-плагинов ([Export(typeof(IEnginePlugin))]). -->
+    <PackageReference Include="System.Composition" />
     <!-- System.Text.Json — часть .NET 10 runtime, не нужен явно. -->
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Foliant.Application\Foliant.Application.csproj" />
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\Foliant.Plugins.Contracts\Foliant.Plugins.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

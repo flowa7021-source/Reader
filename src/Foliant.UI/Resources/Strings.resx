@@ -239,7 +239,7 @@
     <value>Open Document</value>
   </data>
   <data name="OpenDocumentDialogFilter" xml:space="preserve">
-    <value>PDF files (*.pdf)|*.pdf|All files (*.*)|*.*</value>
+    <value>Documents (*.pdf;*.djvu;*.djv)|*.pdf;*.djvu;*.djv|PDF files (*.pdf)|*.pdf|DjVu files (*.djvu;*.djv)|*.djvu;*.djv|All files (*.*)|*.*</value>
   </data>
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Error opening document</value>
