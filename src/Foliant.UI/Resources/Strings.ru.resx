@@ -70,8 +70,59 @@
   <data name="MenuFileClearRecent" xml:space="preserve">
     <value>_Очистить список недавних</value>
   </data>
+  <data name="MenuFileAddWatermark" xml:space="preserve">
+    <value>Добавить _водяной знак...</value>
+  </data>
+  <data name="MenuFileAddHeaderFooter" xml:space="preserve">
+    <value>Добавить _колонтитулы...</value>
+  </data>
   <data name="MenuFileExit" xml:space="preserve">
     <value>В_ыход</value>
+  </data>
+  <data name="WatermarkDialogTitle" xml:space="preserve">
+    <value>Добавить водяной знак</value>
+  </data>
+  <data name="WatermarkText" xml:space="preserve">
+    <value>Текст:</value>
+  </data>
+  <data name="WatermarkFontSize" xml:space="preserve">
+    <value>Размер шрифта:</value>
+  </data>
+  <data name="WatermarkOpacity" xml:space="preserve">
+    <value>Прозрачность:</value>
+  </data>
+  <data name="WatermarkAngle" xml:space="preserve">
+    <value>Угол:</value>
+  </data>
+  <data name="WatermarkColorR" xml:space="preserve">
+    <value>Цвет R:</value>
+  </data>
+  <data name="WatermarkColorG" xml:space="preserve">
+    <value>Цвет G:</value>
+  </data>
+  <data name="WatermarkColorB" xml:space="preserve">
+    <value>Цвет B:</value>
+  </data>
+  <data name="AddWatermarkSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с водяным знаком как</value>
+  </data>
+  <data name="HeaderFooterDialogTitle" xml:space="preserve">
+    <value>Добавить колонтитулы</value>
+  </data>
+  <data name="HeaderFooterHeader" xml:space="preserve">
+    <value>Верхний колонтитул:</value>
+  </data>
+  <data name="HeaderFooterFooter" xml:space="preserve">
+    <value>Нижний колонтитул:</value>
+  </data>
+  <data name="HeaderFooterFontSize" xml:space="preserve">
+    <value>Размер шрифта:</value>
+  </data>
+  <data name="HeaderFooterPlaceholdersHint" xml:space="preserve">
+    <value>Подстановки: {page}, {total}, {filename}, {date}. Пустое поле — полоса не рисуется.</value>
+  </data>
+  <data name="AddHeaderFooterSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с колонтитулами как</value>
   </data>
   <data name="MenuTools" xml:space="preserve">
     <value>_Инструменты</value>
@@ -318,6 +369,15 @@
   </data>
   <data name="SearchInProgress" xml:space="preserve">
     <value>Поиск...</value>
+  </data>
+  <data name="SearchMatchCase" xml:space="preserve">
+    <value>С учётом регистра</value>
+  </data>
+  <data name="SearchMatchWholeWord" xml:space="preserve">
+    <value>Слово целиком</value>
+  </data>
+  <data name="SearchFoldDiacritics" xml:space="preserve">
+    <value>Игнорировать диакритику</value>
   </data>
   <data name="AnnotationContextDelete" xml:space="preserve">
     <value>Удалить</value>

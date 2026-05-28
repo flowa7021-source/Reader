@@ -70,8 +70,59 @@
   <data name="MenuFileClearRecent" xml:space="preserve">
     <value>_Clear Recent Files</value>
   </data>
+  <data name="MenuFileAddWatermark" xml:space="preserve">
+    <value>Add _Watermark...</value>
+  </data>
+  <data name="MenuFileAddHeaderFooter" xml:space="preserve">
+    <value>Add _Header / Footer...</value>
+  </data>
   <data name="MenuFileExit" xml:space="preserve">
     <value>E_xit</value>
+  </data>
+  <data name="WatermarkDialogTitle" xml:space="preserve">
+    <value>Add Watermark</value>
+  </data>
+  <data name="WatermarkText" xml:space="preserve">
+    <value>Text:</value>
+  </data>
+  <data name="WatermarkFontSize" xml:space="preserve">
+    <value>Font size:</value>
+  </data>
+  <data name="WatermarkOpacity" xml:space="preserve">
+    <value>Opacity:</value>
+  </data>
+  <data name="WatermarkAngle" xml:space="preserve">
+    <value>Angle:</value>
+  </data>
+  <data name="WatermarkColorR" xml:space="preserve">
+    <value>Color R:</value>
+  </data>
+  <data name="WatermarkColorG" xml:space="preserve">
+    <value>Color G:</value>
+  </data>
+  <data name="WatermarkColorB" xml:space="preserve">
+    <value>Color B:</value>
+  </data>
+  <data name="AddWatermarkSaveDialogTitle" xml:space="preserve">
+    <value>Save watermarked PDF as</value>
+  </data>
+  <data name="HeaderFooterDialogTitle" xml:space="preserve">
+    <value>Add Header / Footer</value>
+  </data>
+  <data name="HeaderFooterHeader" xml:space="preserve">
+    <value>Header:</value>
+  </data>
+  <data name="HeaderFooterFooter" xml:space="preserve">
+    <value>Footer:</value>
+  </data>
+  <data name="HeaderFooterFontSize" xml:space="preserve">
+    <value>Font size:</value>
+  </data>
+  <data name="HeaderFooterPlaceholdersHint" xml:space="preserve">
+    <value>Placeholders: {page}, {total}, {filename}, {date}. Leave a field blank to skip it.</value>
+  </data>
+  <data name="AddHeaderFooterSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with header / footer as</value>
   </data>
   <data name="MenuTools" xml:space="preserve">
     <value>_Tools</value>
@@ -318,6 +369,15 @@
   </data>
   <data name="SearchInProgress" xml:space="preserve">
     <value>Searching...</value>
+  </data>
+  <data name="SearchMatchCase" xml:space="preserve">
+    <value>Match case</value>
+  </data>
+  <data name="SearchMatchWholeWord" xml:space="preserve">
+    <value>Whole word</value>
+  </data>
+  <data name="SearchFoldDiacritics" xml:space="preserve">
+    <value>Ignore diacritics</value>
   </data>
   <data name="AnnotationContextDelete" xml:space="preserve">
     <value>Delete</value>

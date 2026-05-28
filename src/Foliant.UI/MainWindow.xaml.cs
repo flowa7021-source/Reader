@@ -313,6 +313,86 @@ public partial class MainWindow : Window
         System.Windows.Application.Current.Shutdown();
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnAddWatermarkMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanAddWatermark: true } tab)
+        {
+            return;
+        }
+
+        var spec = WatermarkDialog.Prompt(this);
+        if (spec is null)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["AddWatermarkSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-watermarked.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ApplyWatermarkCommand.ExecuteAsync(new Foliant.ViewModels.ApplyWatermarkRequest(spec, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error applying watermark to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnAddHeaderFooterMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanAddHeaderFooter: true } tab)
+        {
+            return;
+        }
+
+        var spec = HeaderFooterDialog.Prompt(this);
+        if (spec is null)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["AddHeaderFooterSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-headerfooter.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ApplyHeaderFooterCommand.ExecuteAsync(new Foliant.ViewModels.ApplyHeaderFooterRequest(spec, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error applying header/footer to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     // Reports the page viewport size to the active tab so Fit Width / Fit Page can compute zoom.
     private void OnPageAreaSizeChanged(object sender, SizeChangedEventArgs e)
     {

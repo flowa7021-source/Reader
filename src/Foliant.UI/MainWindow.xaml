@@ -185,6 +185,13 @@
                   IsEnabled="{Binding SelectedTab.CanImportPdfOutline, FallbackValue=False}"
                   Command="{Binding SelectedTab.ImportPdfOutlineCommand}" />
         <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAddWatermark]}"
+                  IsEnabled="{Binding SelectedTab.CanAddWatermark, FallbackValue=False}"
+                  Click="OnAddWatermarkMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAddHeaderFooter]}"
+                  IsEnabled="{Binding SelectedTab.CanAddHeaderFooter, FallbackValue=False}"
+                  Click="OnAddHeaderFooterMenuItemClick" />
+        <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExit]}"
                   Click="OnExitMenuItemClick" />
       </MenuItem>
@@ -373,6 +380,7 @@
                 <Grid.RowDefinitions>
                   <RowDefinition Height="Auto" />
                   <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
                   <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -390,15 +398,33 @@
                            ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchPlaceholder]}" />
                 </DockPanel>
 
+                <!-- Options (match case / whole word / fold diacritics) -->
+                <WrapPanel Grid.Row="1"
+                           Margin="0,6,0,0"
+                           Orientation="Horizontal">
+                  <CheckBox Margin="0,2,12,2"
+                            IsChecked="{Binding SearchMatchCase, Mode=TwoWay}"
+                            Foreground="{DynamicResource Foreground}"
+                            Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchMatchCase]}" />
+                  <CheckBox Margin="0,2,12,2"
+                            IsChecked="{Binding SearchMatchWholeWord, Mode=TwoWay}"
+                            Foreground="{DynamicResource Foreground}"
+                            Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchMatchWholeWord]}" />
+                  <CheckBox Margin="0,2,12,2"
+                            IsChecked="{Binding SearchFoldDiacritics, Mode=TwoWay}"
+                            Foreground="{DynamicResource Foreground}"
+                            Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchFoldDiacritics]}" />
+                </WrapPanel>
+
                 <!-- Status -->
-                <TextBlock Grid.Row="1"
+                <TextBlock Grid.Row="2"
                            Margin="0,8,0,4"
                            Foreground="{DynamicResource Foreground}"
                            Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SearchInProgress]}"
                            Visibility="{Binding IsSearching, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
                 <!-- Results -->
-                <ListBox Grid.Row="2"
+                <ListBox Grid.Row="3"
                          ItemsSource="{Binding SearchResults}"
                          SelectedItem="{Binding SelectedSearchHit}"
                          Background="Transparent"

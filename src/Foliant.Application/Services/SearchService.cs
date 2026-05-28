@@ -76,8 +76,8 @@ public sealed class SearchService : ISearchService
         // этого "café" и "cafe" совпадут, но positional offset в нормализованной строке != в
         // оригинальной → снипет тоже строим из нормализованного pageText, чтобы UI не плыл.
         // Trade-off: пользователь видит снипет без диакритики; он явно opt-in'ался на это.
-        string hayPlain = query.FoldDiacritics ? FoldDiacritics(pageText) : pageText;
-        string needlePlain = query.FoldDiacritics ? FoldDiacritics(needle) : needle;
+        string hayPlain = query.FoldDiacritics ? DiacriticFolder.Fold(pageText) : pageText;
+        string needlePlain = query.FoldDiacritics ? DiacriticFolder.Fold(needle) : needle;
 
         int from = 0;
         while (hits.Count < query.MaxResults)
@@ -100,30 +100,6 @@ public sealed class SearchService : ISearchService
 
             from = pos + needlePlain.Length;
         }
-    }
-
-    /// <summary>NFD-нормализация + удаление combining marks (Unicode category Mn). Превращает
-    /// "café" → "cafe", "Ñ" → "N", "ё" → "е" — последнее спорно для русского, но именно такого
-    /// поведения ждут от Unicode folding. Если пользователь хочет сохранить ё/й — пусть
-    /// выключает <see cref="SearchQuery.FoldDiacritics"/>.</summary>
-    private static string FoldDiacritics(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return value;
-        }
-
-        string nfd = value.Normalize(System.Text.NormalizationForm.FormD);
-        var sb = new System.Text.StringBuilder(nfd.Length);
-        foreach (char c in nfd)
-        {
-            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
-            {
-                sb.Append(c);
-            }
-        }
-
-        return sb.ToString();
     }
 
     /// <summary>Считаем «whole word» если соседние позиции либо вне строки, либо не letter/digit (Unicode-aware).</summary>

@@ -21,6 +21,12 @@ public sealed partial class DocumentTabViewModel
     [ObservableProperty]
     private bool _searchMatchWholeWord;
 
+    /// <summary>Diacritic-folding поиск (café==cafe, ё==е); default false. Биндится к чекбоксу в search-sidebar.
+    /// При включённой опции и в результат-листе, и в overlay-подсветке игнорируется
+    /// разница в комбинирующих знаках — обеспечивается общим <see cref="DiacriticFolder"/>.</summary>
+    [ObservableProperty]
+    private bool _searchFoldDiacritics;
+
     [ObservableProperty]
     private bool _isSearchVisible;
 
@@ -172,7 +178,8 @@ public sealed partial class DocumentTabViewModel
             var query = new SearchQuery(
                 trimmed,
                 MatchCase: SearchMatchCase,
-                MatchWholeWord: SearchMatchWholeWord);
+                MatchWholeWord: SearchMatchWholeWord,
+                FoldDiacritics: SearchFoldDiacritics);
             IReadOnlyList<SearchHit> hits = await _searchService
                 .SearchInDocumentAsync(_document, _filePath, query, CancellationToken.None);
 
@@ -185,6 +192,7 @@ public sealed partial class DocumentTabViewModel
             _activeHighlightQuery = trimmed;
             _activeHighlightMatchCase = SearchMatchCase;
             _activeHighlightWholeWord = SearchMatchWholeWord;
+            _activeHighlightFoldDiacritics = SearchFoldDiacritics;
             await RefreshSearchHighlightsAsync(CancellationToken.None);
         }
         catch (OperationCanceledException)

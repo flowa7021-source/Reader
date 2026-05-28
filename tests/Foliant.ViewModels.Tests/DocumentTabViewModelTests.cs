@@ -819,6 +819,29 @@ public sealed class DocumentTabViewModelTests
     }
 
     [Fact]
+    public async Task RunSearch_PassesFoldDiacritics_To_SearchQuery()
+    {
+        SearchQuery? captured = null;
+        var search = Substitute.For<ISearchService>();
+        search.SearchInDocumentAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<SearchQuery>(), Arg.Any<CancellationToken>())
+              .Returns(call =>
+              {
+                  captured = (SearchQuery)call[2];
+                  return Task.FromResult<IReadOnlyList<SearchHit>>([]);
+              });
+        var vm = CreateVm(search: search);
+        vm.SearchFoldDiacritics = true;
+        vm.SearchText = "cafe";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        captured.Should().NotBeNull();
+        captured!.FoldDiacritics.Should().BeTrue();
+        captured.MatchCase.Should().BeFalse();
+        captured.MatchWholeWord.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task RunSearch_DefaultOptions_AreFalse()
     {
         SearchQuery? captured = null;
@@ -836,6 +859,7 @@ public sealed class DocumentTabViewModelTests
 
         captured!.MatchCase.Should().BeFalse();
         captured.MatchWholeWord.Should().BeFalse();
+        captured.FoldDiacritics.Should().BeFalse();
     }
 
     // ───── Per-kind counts (S11/S) ─────
