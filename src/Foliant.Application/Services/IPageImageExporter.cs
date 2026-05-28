@@ -24,4 +24,23 @@ public interface IPageImageExporter
     IReadOnlyList<string> SupportedFormats { get; }
 
     Task ExportAsync(IDocument document, int pageIndex, double zoom, string targetPath, CancellationToken ct);
+
+    /// <summary>Batch-вариант: рендерит и пишет диапазон страниц в указанную папку. Имена файлов —
+    /// <c>{namePrefix}-p{NNN}.{format}</c> с zero-padded шириной по числу страниц диапазона.
+    /// <paramref name="progress"/> репортит количество завершённых страниц (для UI бара). Останов
+    /// по cancellation token проверяется между страницами. Возвращает фактически записанное
+    /// количество (= диапазон при успехе, &lt; при ранней отмене).
+    ///
+    /// Контракт: <paramref name="targetDirectory"/> создаётся при отсутствии; существующие файлы
+    /// перезаписываются (по тому же atomic temp + Move паттерну, что у single-page).</summary>
+    Task<int> ExportRangeAsync(
+        IDocument document,
+        int firstPageIndex,
+        int lastPageIndexInclusive,
+        double zoom,
+        string targetDirectory,
+        string format,
+        string namePrefix,
+        IProgress<int>? progress,
+        CancellationToken ct);
 }

@@ -81,4 +81,80 @@ public sealed class DocumentTabViewModelPageImageExportTests
         await exporter.Received(1).ExportAsync(
             Arg.Any<IDocument>(), Arg.Any<int>(), Arg.Any<double>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public void CanExportAllPagesAsImages_FalseWithoutExporter_FalseWhenEmpty_FalseWhileRunning_TrueOtherwise()
+    {
+        var exporter = Substitute.For<IPageImageExporter>();
+
+        CreateVm(exporter: null).CanExportAllPagesAsImages.Should().BeFalse();
+        CreateVm(exporter, pageCount: 0).CanExportAllPagesAsImages.Should().BeFalse();
+
+        var vm = CreateVm(exporter, pageCount: 3);
+        vm.CanExportAllPagesAsImages.Should().BeTrue();
+
+        // Симулируем "идёт batch" через ObservableProperty.
+        vm.PageImageExportTotal = 3;
+        vm.CanExportAllPagesAsImages.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExportAllPagesAsImages_CallsExporterOverFullRange_AndPassesPngFormat()
+    {
+        var exporter = Substitute.For<IPageImageExporter>();
+        exporter.ExportRangeAsync(
+                Arg.Any<IDocument>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<double>(),
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<IProgress<int>?>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(7));
+        var vm = CreateVm(exporter, pageCount: 7, filePath: "/tmp/book.pdf");
+        vm.Zoom = 2.0;
+
+        await vm.ExportAllPagesAsImagesCommand.ExecuteAsync("/tmp/out");
+
+        await exporter.Received().ExportRangeAsync(
+            Arg.Any<IDocument>(),
+            firstPageIndex: 0,
+            lastPageIndexInclusive: 6,
+            zoom: 2.0,
+            targetDirectory: "/tmp/out",
+            format: "png",
+            namePrefix: "book",
+            progress: Arg.Any<IProgress<int>?>(),
+            ct: Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExportAllPagesAsImages_EmptyPath_IsNoOp()
+    {
+        var exporter = Substitute.For<IPageImageExporter>();
+        var vm = CreateVm(exporter);
+
+        await vm.ExportAllPagesAsImagesCommand.ExecuteAsync("   ");
+
+        await exporter.DidNotReceive().ExportRangeAsync(
+            Arg.Any<IDocument>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<double>(),
+            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Any<IProgress<int>?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExportAllPagesAsImages_ExporterThrows_TabSurvivesAndResetsProgress()
+    {
+        var exporter = Substitute.For<IPageImageExporter>();
+        exporter.ExportRangeAsync(
+                Arg.Any<IDocument>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<double>(),
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<IProgress<int>?>(), Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new IOException("disk full"));
+
+        var vm = CreateVm(exporter, pageCount: 5);
+
+        await vm.ExportAllPagesAsImagesCommand.ExecuteAsync("/tmp/out");
+
+        vm.PageImageExportTotal.Should().Be(0);
+        vm.PageImageExportProgress.Should().Be(0);
+        vm.IsPageImageExportRunning.Should().BeFalse();
+        vm.CanExportAllPagesAsImages.Should().BeTrue();
+    }
 }
