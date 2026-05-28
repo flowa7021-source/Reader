@@ -5,6 +5,7 @@ using Foliant.Application.Services;
 using Foliant.Application.Settings;
 using Foliant.Application.UseCases;
 using Foliant.Domain;
+using Foliant.Engines.Image;
 using Foliant.Engines.Ocr;
 using Foliant.Engines.Pdf;
 using Foliant.Infrastructure.Annotations;
@@ -133,6 +134,8 @@ internal static class AppHostBuilder
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
+        // In-box image loader (PNG/JPEG/BMP/TIFF/GIF) — ImageSharp, pure managed.
+        services.AddSingleton<IDocumentLoader, ImageDocumentLoader>();
 
         // Engine-плагины (MEF2) из <appdir>/plugins: каждый IEnginePlugin.Loader становится
         // IDocumentLoader. Так подключается DjVu (и будущие форматы) без compile-time ссылки.
