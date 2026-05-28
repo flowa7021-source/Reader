@@ -64,7 +64,7 @@ public sealed class PaddleOcrEngine : IOcrEngine, IDisposable
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            return await Task.Run(() => RecognizeCore(render, pageIndex, kind), ct).ConfigureAwait(false);
+            return await Task.Run(() => RecognizeCore(render, pageIndex, kind, options.MinConfidence), ct).ConfigureAwait(false);
         }
         finally
         {
@@ -72,23 +72,33 @@ public sealed class PaddleOcrEngine : IOcrEngine, IDisposable
         }
     }
 
-    private TextLayer RecognizeCore(IPageRender render, int pageIndex, OcrModelKind kind)
+    private TextLayer RecognizeCore(IPageRender render, int pageIndex, OcrModelKind kind, double minConfidence)
     {
         using Mat bgr = ToBgrMat(render);
         PaddleOcrAll engine = GetEngine(kind);
         PaddleOcrResult result = engine.Run(bgr);
 
-        var runs = result.Regions
-            .Select(r =>
+        // PaddleOCR возвращает Score ∈ [0..1] — нормализуем и фильтруем низко-достоверные регионы
+        // (обычно мусор по краям сканов). Threshold 0 пропускает всё, как раньше.
+        int dropped = 0;
+        var runs = new List<TextRun>(result.Regions.Length);
+        foreach (var r in result.Regions)
+        {
+            double confidence = Math.Clamp(r.Score, 0.0, 1.0);
+            if (confidence < minConfidence)
             {
-                Rect box = r.Rect.BoundingRect();
-                return new TextRun(r.Text, box.X, box.Y, box.Width, box.Height);
-            })
-            .OrderBy(r => r.Y)
-            .ThenBy(r => r.X)
-            .ToList();
+                dropped++;
+                continue;
+            }
 
-        _log.LogDebug("PaddleOCR page {Page}: {Count} regions ({Kind})", pageIndex, runs.Count, kind);
+            Rect box = r.Rect.BoundingRect();
+            runs.Add(new TextRun(r.Text, box.X, box.Y, box.Width, box.Height, confidence));
+        }
+
+        runs.Sort(static (a, b) => a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.X.CompareTo(b.X));
+
+        _log.LogDebug("PaddleOCR page {Page}: {Kept} kept, {Dropped} dropped @ ≥{Threshold} ({Kind})",
+            pageIndex, runs.Count, dropped, minConfidence, kind);
         return runs.Count == 0 ? TextLayer.Empty(pageIndex) : new TextLayer(pageIndex, runs);
     }
 

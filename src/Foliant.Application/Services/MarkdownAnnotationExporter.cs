@@ -70,6 +70,32 @@ public sealed class MarkdownAnnotationExporter : IAnnotationExporter
                 sb.AppendLine(" points)");
                 break;
         }
+
+        AppendMetadata(sb, a);
+    }
+
+    // Метаданные (author/subject/modified) — sub-list под основным пунктом, по строке на поле.
+    // Пишем только заполненные, чтобы старые аннотации (без author/subject/modifiedAt) выглядели
+    // как раньше — gate'ом становится сам факт наличия поля.
+    private static void AppendMetadata(StringBuilder sb, Annotation a)
+    {
+        if (!string.IsNullOrEmpty(a.Author))
+        {
+            sb.Append("  - _author_: ");
+            sb.AppendLine(EscapeMarkdown(a.Author));
+        }
+
+        if (!string.IsNullOrEmpty(a.Subject))
+        {
+            sb.Append("  - _subject_: ");
+            sb.AppendLine(EscapeMarkdown(a.Subject));
+        }
+
+        if (a.ModifiedAt is { } m)
+        {
+            sb.Append("  - _modified_: ");
+            sb.AppendLine(m.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture));
+        }
     }
 
     private static string EscapeMarkdown(string raw)
