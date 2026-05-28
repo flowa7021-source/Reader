@@ -12,7 +12,10 @@ public interface IBookmarkService
 {
     Task<IReadOnlyList<Bookmark>> ListAsync(string documentPath, CancellationToken ct);
 
-    Task<Bookmark> AddAsync(string documentPath, int pageIndex, string label, CancellationToken ct);
+    /// <summary>Создать закладку. <paramref name="depth"/> опционален и сохраняется как есть —
+    /// нужен для импорта PDF /Outlines, где TOC иерархичен; обычные toggle-закладки оставляют
+    /// дефолт 0.</summary>
+    Task<Bookmark> AddAsync(string documentPath, int pageIndex, string label, CancellationToken ct, int depth = 0);
 
     Task<bool> RemoveAsync(string documentPath, Guid bookmarkId, CancellationToken ct);
 
