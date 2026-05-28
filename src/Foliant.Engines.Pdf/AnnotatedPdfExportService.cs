@@ -101,11 +101,12 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
 
             try
             {
+                PdfPageBox box = ReadPageBox(page);
                 bool any = false;
                 foreach (var spec in group)
                 {
                     ct.ThrowIfCancellationRequested();
-                    any |= AddAnnotation(doc, page, spec);
+                    any |= AddAnnotation(doc, page, PdfPageCoordinateTransform.ToUserSpace(spec, box));
                 }
 
                 if (any)
@@ -118,6 +119,27 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
                 fpdfview.FPDF_ClosePage(page);
             }
         }
+    }
+
+    private static PdfPageBox ReadPageBox(FpdfPageT page)
+    {
+        // FPDFPageGetMediaBox: returns 0 on failure. PDFium считает с MediaBox в PDF user space
+        // (origin/Rotate не применяет — то, что нужно для собственного transform'а).
+        float l = 0;
+        float bottom = 0;
+        float r = 0;
+        float t = 0;
+        if (fpdf_transformpage.FPDFPageGetMediaBox(page, ref l, ref bottom, ref r, ref t) != 0)
+        {
+            int rotation = fpdf_edit.FPDFPageGetRotation(page);
+            return new PdfPageBox(l, bottom, r, t, rotation);
+        }
+
+        // Fallback: если MediaBox недоступен, считаем страницу «канонической» (origin 0,0, без
+        // rotate). Это сохраняет старое поведение для странных PDF, а не падает.
+        float w = fpdfview.FPDF_GetPageWidthF(page);
+        float h = fpdfview.FPDF_GetPageHeightF(page);
+        return PdfPageBox.Identity(w, h);
     }
 
     private static bool AddAnnotation(FpdfDocumentT doc, FpdfPageT page, PdfAnnotationSpec spec)
@@ -143,8 +165,8 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
 
         try
         {
-            // TODO: координаты передаются как есть (PDF user space). Страницы с ненулевым
-            // origin MediaBox/CropBox или /Rotate требуют сдвига/поворота — отдельный follow-up.
+            // Spec уже в PDF user space благодаря PdfPageCoordinateTransform — учтены MediaBox
+            // origin и /Rotate страницы. Прямая запись /Rect без доп. преобразований.
             using (var rect = ToRect(spec.Rect))
             {
                 fpdf_annot.FPDFAnnotSetRect(annot, rect);
