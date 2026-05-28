@@ -55,7 +55,7 @@ public sealed class OcrPageUseCaseTests
                 k.DocFingerprint == Fingerprint &&
                 k.PageIndex == PageIndex &&
                 k.EngineVersion == EngineVersion &&
-                k.ZoomBucket == 0 &&
+                k.ZoomBucket == 20 &&   // default OcrOptions.RenderZoom 2.0 → bucket 20
                 k.Flags == OcrPageUseCase.OcrFlag),
             produced,
             Arg.Any<CancellationToken>());
@@ -114,5 +114,26 @@ public sealed class OcrPageUseCaseTests
         await act1.Should().ThrowAsync<ArgumentNullException>();
         await act2.Should().ThrowAsync<ArgumentNullException>();
         await act3.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Theory]
+    [InlineData(1.0, 10)]
+    [InlineData(1.5, 15)]
+    [InlineData(2.0, 20)]
+    [InlineData(3.0, 30)]
+    public async Task Execute_CacheKey_ZoomBucket_EncodesRenderZoom_TimesTen(double zoom, int expectedBucket)
+    {
+        // Различные zoom — разные cache key'и; PaddleOCR-апгрейд default'а не должен возвращать
+        // старые низкокачественные результаты.
+        _cache.TryGetAsync(Arg.Any<CacheKey>(), Arg.Any<CancellationToken>()).Returns((TextLayer?)null);
+        _engine.RecognizeAsync(_render, PageIndex, Arg.Any<OcrOptions>(), Arg.Any<CancellationToken>())
+               .Returns(Task.FromResult(TextLayer.Empty(PageIndex)));
+
+        await _sut.ExecuteAsync(_render, Fingerprint, PageIndex, new OcrOptions(RenderZoom: zoom), default);
+
+        await _cache.Received().PutAsync(
+            Arg.Is<CacheKey>(k => k.ZoomBucket == expectedBucket),
+            Arg.Any<TextLayer>(),
+            Arg.Any<CancellationToken>());
     }
 }

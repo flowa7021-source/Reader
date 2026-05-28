@@ -199,6 +199,12 @@
   <data name="ExportPageImageDialogFilter" xml:space="preserve">
     <value>PNG (*.png)|*.png|JPEG (*.jpg;*.jpeg)|*.jpg;*.jpeg</value>
   </data>
+  <data name="MenuFileExportAllPagesAsImages" xml:space="preserve">
+    <value>Экспорт всех с_траниц как PNG...</value>
+  </data>
+  <data name="ExportAllPagesDialogTitle" xml:space="preserve">
+    <value>Папка для изображений страниц</value>
+  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>_Светлая</value>
   </data>

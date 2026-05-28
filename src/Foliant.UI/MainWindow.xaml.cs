@@ -126,6 +126,36 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnExportAllPagesAsImagesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanExportAllPagesAsImages: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var dialog = new OpenFolderDialog
+        {
+            Title = loc["ExportAllPagesDialogTitle"],
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ExportAllPagesAsImagesCommand.ExecuteAsync(dialog.FolderName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error exporting all pages to '{Path}'.", dialog.FolderName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnExportPageImageMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanExportCurrentPageAsImage: true } tab)

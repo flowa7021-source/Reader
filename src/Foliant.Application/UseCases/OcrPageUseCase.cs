@@ -29,11 +29,15 @@ public sealed class OcrPageUseCase(
         ArgumentNullException.ThrowIfNull(docFingerprint);
         ArgumentNullException.ThrowIfNull(options);
 
+        // ZoomBucket кодирует RenderZoom с шагом 0.1 — этого достаточно чтобы 1.0 / 1.5 / 2.0 /
+        // 3.0 имели разные cache key'ы, при этом случайный jitter не плодил кэш-промахи. Шаг 0.1
+        // = 9.6 DPI, что меньше любого визуально различимого quality bucket'а.
+        int zoomBucket = (int)Math.Round(options.RenderZoom * 10);
         var key = new CacheKey(
             DocFingerprint: docFingerprint,
             PageIndex: pageIndex,
             EngineVersion: engine.Version,
-            ZoomBucket: 0,
+            ZoomBucket: zoomBucket,
             Flags: OcrFlag);
 
         var cached = await cache.TryGetAsync(key, ct).ConfigureAwait(false);

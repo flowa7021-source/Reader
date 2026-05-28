@@ -16,7 +16,8 @@ public sealed record SearchQuery(
     int MaxResults = 100,
     string? RestrictToDocFingerprint = null,
     bool MatchCase = false,
-    bool MatchWholeWord = false)
+    bool MatchWholeWord = false,
+    bool FoldDiacritics = false)
 {
     public bool IsEmpty => string.IsNullOrWhiteSpace(Text);
 }

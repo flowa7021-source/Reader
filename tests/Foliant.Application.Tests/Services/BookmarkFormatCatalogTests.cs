@@ -7,21 +7,22 @@ namespace Foliant.Application.Tests.Services;
 public sealed class BookmarkFormatCatalogTests
 {
     private static BookmarkFormatCatalog BuildRealCatalog() => new(
-        [new JsonBookmarkExporter(), new MarkdownBookmarkExporter()],
-        [new JsonBookmarkImporter()]);
+        [new JsonBookmarkExporter(), new MarkdownBookmarkExporter(), new XfdfBookmarkExporter()],
+        [new JsonBookmarkImporter(), new XfdfBookmarkImporter()]);
 
     [Fact]
     public void Exposes_AllRegisteredFormats_InOrder()
     {
         var catalog = BuildRealCatalog();
 
-        catalog.Exporters.Select(e => e.FormatName).Should().Equal("JSON", "Markdown");
-        catalog.Importers.Select(i => i.FormatName).Should().Equal("JSON");
+        catalog.Exporters.Select(e => e.FormatName).Should().Equal("JSON", "Markdown", "XFDF");
+        catalog.Importers.Select(i => i.FormatName).Should().Equal("JSON", "XFDF");
     }
 
     [Theory]
     [InlineData("json", "JSON")]
     [InlineData("md", "Markdown")]
+    [InlineData("xfdf", "XFDF")]
     public void ResolveExporter_ByBareExtension_FindsImplementation(string ext, string expectedFormat)
     {
         BuildRealCatalog().ResolveExporter(ext)!.FormatName.Should().Be(expectedFormat);
@@ -43,6 +44,7 @@ public sealed class BookmarkFormatCatalogTests
         var catalog = BuildRealCatalog();
 
         catalog.ResolveImporter("bookmarks.json").Should().BeOfType<JsonBookmarkImporter>();
+        catalog.ResolveImporter("bookmarks.xfdf").Should().BeOfType<XfdfBookmarkImporter>();
         // Markdown — экспорт-only по дизайну (lossy для импорта); ожидаемо null.
         catalog.ResolveImporter("bookmarks.md").Should().BeNull();
     }
