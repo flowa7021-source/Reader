@@ -305,5 +305,10 @@ internal static class AppHostBuilder
         services.AddTransient<Func<CrashRecoveryWindow>>(sp => () => sp.GetRequiredService<CrashRecoveryWindow>());
         services.AddTransient<LicenseImportWindow>();
         services.AddTransient<Func<LicenseImportWindow>>(sp => () => sp.GetRequiredService<LicenseImportWindow>());
+        services.AddTransient(sp => new BatchViewModel(
+            sp.GetRequiredService<IBatchJobRunner>(),
+            sp.GetRequiredService<ILoggerFactory>().CreateLogger<BatchViewModel>()));
+        services.AddTransient<BatchWindow>();
+        services.AddTransient<Func<BatchWindow>>(sp => () => sp.GetRequiredService<BatchWindow>());
     }
 }

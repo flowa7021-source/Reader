@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly Func<SettingsWindow> _settingsWindowFactory;
     private readonly Func<CrashRecoveryWindow> _crashRecoveryWindowFactory;
     private readonly Func<LicenseImportWindow> _licenseWindowFactory;
+    private readonly Func<BatchWindow>? _batchWindowFactory;
     private readonly ILogger<MainWindow> _logger;
 
     public MainWindow(
@@ -25,7 +26,8 @@ public partial class MainWindow : Window
         Func<SettingsWindow> settingsWindowFactory,
         Func<CrashRecoveryWindow> crashRecoveryWindowFactory,
         Func<LicenseImportWindow> licenseWindowFactory,
-        ILogger<MainWindow> logger)
+        ILogger<MainWindow> logger,
+        Func<BatchWindow>? batchWindowFactory = null)
     {
         ArgumentNullException.ThrowIfNull(vm);
         ArgumentNullException.ThrowIfNull(settingsWindowFactory);
@@ -37,6 +39,7 @@ public partial class MainWindow : Window
         _settingsWindowFactory = settingsWindowFactory;
         _crashRecoveryWindowFactory = crashRecoveryWindowFactory;
         _licenseWindowFactory = licenseWindowFactory;
+        _batchWindowFactory = batchWindowFactory;
         _logger = logger;
 
         InitializeComponent();
@@ -285,6 +288,28 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled error importing bookmarks from '{Path}'.", dialog.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private void OnBatchMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_batchWindowFactory is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var batchWin = _batchWindowFactory();
+            batchWin.Owner = this;
+            batchWin.Show();
+        }
+        catch (Exception ex)
+        {
+            var loc = LocalizationManager.Instance;
+            _logger.LogError(ex, "Failed to open batch window.");
             MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
