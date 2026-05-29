@@ -151,6 +151,21 @@
   <data name="PageRangeHint" xml:space="preserve">
     <value>напр. 1-3,5,7-10 — пусто = все страницы</value>
   </data>
+  <data name="WatermarkImageLabel" xml:space="preserve">
+    <value>Изображение (опц.):</value>
+  </data>
+  <data name="WatermarkImageBrowse" xml:space="preserve">
+    <value>Обзор...</value>
+  </data>
+  <data name="WatermarkImageHint" xml:space="preserve">
+    <value>Выбор изображения переключает водяной знак с текста на изображение.</value>
+  </data>
+  <data name="WatermarkImagePickTitle" xml:space="preserve">
+    <value>Выберите изображение для водяного знака</value>
+  </data>
+  <data name="WatermarkImagePickFilter" xml:space="preserve">
+    <value>Изображения (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|Все файлы (*.*)|*.*</value>
+  </data>
   <data name="AddWatermarkSaveDialogTitle" xml:space="preserve">
     <value>Сохранить PDF с водяным знаком как</value>
   </data>

@@ -21,6 +21,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="140" />
@@ -103,7 +104,20 @@
              ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageRangeHint]}"
              Text="{Binding PageRangeText, UpdateSourceTrigger=PropertyChanged}" />
 
-    <StackPanel Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="3"
+    <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkImageLabel]}" />
+    <DockPanel Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2"
+               Margin="0,4" LastChildFill="True">
+      <Button DockPanel.Dock="Right" Padding="8,2" Margin="4,0,0,0"
+              Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkImageBrowse]}"
+              Click="OnBrowseImageClick" />
+      <TextBox VerticalContentAlignment="Center" Padding="4"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkImageHint]}"
+               Text="{Binding ImagePath, UpdateSourceTrigger=PropertyChanged}" />
+    </DockPanel>
+
+    <StackPanel Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="3"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 Margin="0,16,0,0">

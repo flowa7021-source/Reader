@@ -151,6 +151,21 @@
   <data name="PageRangeHint" xml:space="preserve">
     <value>e.g. 1-3,5,7-10 — empty = all pages</value>
   </data>
+  <data name="WatermarkImageLabel" xml:space="preserve">
+    <value>Image (optional):</value>
+  </data>
+  <data name="WatermarkImageBrowse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="WatermarkImageHint" xml:space="preserve">
+    <value>Picking an image switches the watermark from text to image mode.</value>
+  </data>
+  <data name="WatermarkImagePickTitle" xml:space="preserve">
+    <value>Pick watermark image</value>
+  </data>
+  <data name="WatermarkImagePickFilter" xml:space="preserve">
+    <value>Images (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|All files (*.*)|*.*</value>
+  </data>
   <data name="AddWatermarkSaveDialogTitle" xml:space="preserve">
     <value>Save watermarked PDF as</value>
   </data>
