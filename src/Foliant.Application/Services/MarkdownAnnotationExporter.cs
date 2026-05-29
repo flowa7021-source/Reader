@@ -69,6 +69,18 @@ public sealed class MarkdownAnnotationExporter : IAnnotationExporter
                 sb.Append(points.ToString(CultureInfo.InvariantCulture));
                 sb.AppendLine(" points)");
                 break;
+
+            case AnnotationKind.Underline:
+                sb.Append("- **Underline** (");
+                sb.Append(a.ColorHex);
+                sb.AppendLine(")");
+                break;
+
+            case AnnotationKind.Strikethrough:
+                sb.Append("- **Strikethrough** (");
+                sb.Append(a.ColorHex);
+                sb.AppendLine(")");
+                break;
         }
 
         AppendMetadata(sb, a);
