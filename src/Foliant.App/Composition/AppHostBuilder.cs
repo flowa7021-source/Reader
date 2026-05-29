@@ -152,6 +152,11 @@ internal static class AppHostBuilder
         services.AddSingleton<IHeaderFooterService, PdfiumHeaderFooterService>();
         services.AddSingleton<IPdfCropService, PdfiumCropService>();
         services.AddSingleton<IPdfMergeService, PdfiumMergeService>();
+        services.AddSingleton<IBatchJobRunner>(sp => new BatchJobRunner(
+            sp.GetRequiredService<ILoggerFactory>().CreateLogger<BatchJobRunner>(),
+            watermark: sp.GetService<IWatermarkService>(),
+            headerFooter: sp.GetService<IHeaderFooterService>(),
+            crop: sp.GetService<IPdfCropService>()));
         services.AddSingleton<IPageImageExporter, WpfPageImageExporter>();
         services.AddSingleton<IPdfOutlineReader, PdfPigOutlineReader>();
 
