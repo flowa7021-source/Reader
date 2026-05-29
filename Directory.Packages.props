@@ -30,6 +30,7 @@
     <PackageVersion Include="PDFiumCore" Version="146.0.7678.1" />
     <PackageVersion Include="PdfPig" Version="0.1.10" />
     <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageVersion Include="VersOne.Epub" Version="3.3.4" />
   </ItemGroup>
 
   <!-- OCR: PaddleOCR через Sdcb (in-process), 2.7-линия. Версии выровнены по реальному графу

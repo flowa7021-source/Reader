@@ -425,7 +425,7 @@
     <value>Открыть документ</value>
   </data>
   <data name="OpenDocumentDialogFilter" xml:space="preserve">
-    <value>Документы (*.pdf;*.djvu;*.djv;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff)|*.pdf;*.djvu;*.djv;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|PDF-файлы (*.pdf)|*.pdf|DjVu (*.djvu;*.djv)|*.djvu;*.djv|Изображения (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|Все файлы (*.*)|*.*</value>
+    <value>Документы (*.pdf;*.djvu;*.djv;*.epub;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff)|*.pdf;*.djvu;*.djv;*.epub;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|PDF-файлы (*.pdf)|*.pdf|DjVu (*.djvu;*.djv)|*.djvu;*.djv|EPUB (*.epub)|*.epub|Изображения (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|Все файлы (*.*)|*.*</value>
   </data>
   <data name="ErrorDialogTitle" xml:space="preserve">
     <value>Ошибка при открытии документа</value>
