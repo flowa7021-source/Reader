@@ -191,6 +191,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAddHeaderFooter]}"
                   IsEnabled="{Binding SelectedTab.CanAddHeaderFooter, FallbackValue=False}"
                   Click="OnAddHeaderFooterMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileCropPages]}"
+                  IsEnabled="{Binding SelectedTab.CanCropPages, FallbackValue=False}"
+                  Click="OnCropPagesMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExit]}"
                   Click="OnExitMenuItemClick" />

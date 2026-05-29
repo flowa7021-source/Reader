@@ -23,6 +23,11 @@ public sealed partial class DocumentTabViewModel
         _headerFooterService is not null
         && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Can the current document be cropped: service present and source is a PDF.</summary>
+    public bool CanCropPages =>
+        _cropService is not null
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Apply <paramref name="request"/>'s watermark spec to the source PDF and write the
     /// result to <see cref="ApplyWatermarkRequest.TargetPath"/>. View supplies both pieces; we don't
     /// guess paths or specs. No-op when the service is absent or the source is not a PDF.</summary>
@@ -80,6 +85,36 @@ public sealed partial class DocumentTabViewModel
             _logger.LogWarning(ex, "Failed to apply header/footer to '{Path}'.", request.TargetPath);
         }
     }
+
+    /// <summary>Apply <paramref name="request"/>'s crop spec to the source PDF (reversible
+    /// /CropBox per Q-F15) and write the result to <see cref="CropPagesRequest.TargetPath"/>.
+    /// No-op when service is absent, source is not a PDF, or spec has no effect.</summary>
+    [RelayCommand(CanExecute = nameof(CanCropPages))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Crop failure must not crash the tab.")]
+    private async Task CropPagesAsync(CropPagesRequest? request, CancellationToken ct)
+    {
+        if (_cropService is null
+            || request is null
+            || string.IsNullOrWhiteSpace(request.TargetPath)
+            || !CanCropPages
+            || !request.Spec.HasEffect)
+        {
+            return;
+        }
+
+        try
+        {
+            await _cropService.ApplyAsync(_filePath, request.Spec, request.TargetPath, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // user-cancelled — ignore
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to crop pages to '{Path}'.", request.TargetPath);
+        }
+    }
 }
 
 /// <summary>View-supplied envelope for ApplyWatermarkCommand: spec collected in dialog + target path
@@ -88,3 +123,6 @@ public sealed record ApplyWatermarkRequest(WatermarkSpec Spec, string TargetPath
 
 /// <summary>View-supplied envelope for ApplyHeaderFooterCommand: spec + target path.</summary>
 public sealed record ApplyHeaderFooterRequest(HeaderFooterSpec Spec, string TargetPath);
+
+/// <summary>View-supplied envelope for CropPagesCommand: spec collected via dialog + target path picked via Save-As.</summary>
+public sealed record CropPagesRequest(CropSpec Spec, string TargetPath);
