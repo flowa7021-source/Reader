@@ -89,4 +89,28 @@ public sealed class DocumentTabViewModelSearchHighlightTests
 
         vm.CurrentPageSearchHighlights.Should().HaveCount(1); // only "the cat sat"
     }
+
+    [Fact]
+    public async Task RunSearch_FoldDiacritics_HighlightsAccentedLines()
+    {
+        var vm = CreateVm(LayerWith("café au lait", "plain coffee"));
+        vm.SearchFoldDiacritics = true;
+        vm.SearchText = "cafe";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.CurrentPageSearchHighlights.Should().HaveCount(1); // "café au lait" matches under fold
+    }
+
+    [Fact]
+    public async Task RunSearch_FoldDiacriticsOff_DoesNotHighlightAccentedLine()
+    {
+        var vm = CreateVm(LayerWith("café au lait"));
+        vm.SearchFoldDiacritics = false;
+        vm.SearchText = "cafe";
+
+        await vm.RunSearchCommand.ExecuteAsync(null);
+
+        vm.CurrentPageSearchHighlights.Should().BeEmpty();
+    }
 }

@@ -11,6 +11,7 @@ public sealed partial class DocumentTabViewModel
     private string? _activeHighlightQuery;
     private bool _activeHighlightMatchCase;
     private bool _activeHighlightWholeWord;
+    private bool _activeHighlightFoldDiacritics;
     private int _searchHighlightGeneration;
 
     /// <summary>Прямоугольники (PDF-точки) строк текущей страницы, содержащих активный
@@ -61,7 +62,8 @@ public sealed partial class DocumentTabViewModel
             }
 
             IReadOnlyList<AnnotationRect> rects = SearchHighlight.MatchRects(
-                layer ?? TextLayer.Empty(pageIndex), query, _activeHighlightMatchCase, _activeHighlightWholeWord);
+                layer ?? TextLayer.Empty(pageIndex), query,
+                _activeHighlightMatchCase, _activeHighlightWholeWord, _activeHighlightFoldDiacritics);
 
             CurrentPageSearchHighlights.Clear();
             foreach (AnnotationRect rect in rects)

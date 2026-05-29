@@ -21,9 +21,12 @@ public static class SearchHighlight
     /// <param name="matchCase">When <c>true</c>, comparison is case-sensitive (Ordinal).</param>
     /// <param name="matchWholeWord">When <c>true</c>, the query must appear delimited by
     /// non-alphanumeric boundaries — keeps highlights consistent with whole-word search results.</param>
+    /// <param name="foldDiacritics">When <c>true</c>, both run text and query are NFD-folded
+    /// (combining marks stripped) before comparison — keeps overlay highlights consistent with
+    /// the search-results list under <see cref="SearchQuery.FoldDiacritics"/>.</param>
     /// <returns>The matching runs' rectangles in PDF points, preserving run order.</returns>
     public static IReadOnlyList<AnnotationRect> MatchRects(
-        TextLayer layer, string query, bool matchCase = false, bool matchWholeWord = false)
+        TextLayer layer, string query, bool matchCase = false, bool matchWholeWord = false, bool foldDiacritics = false)
     {
         ArgumentNullException.ThrowIfNull(layer);
         ArgumentNullException.ThrowIfNull(query);
@@ -34,13 +37,15 @@ public static class SearchHighlight
         }
 
         var comparison = matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        string needle = foldDiacritics ? DiacriticFolder.Fold(query) : query;
         var rects = new List<AnnotationRect>();
 
         foreach (var run in layer.Runs)
         {
+            string hay = foldDiacritics ? DiacriticFolder.Fold(run.Text) : run.Text;
             bool matches = matchWholeWord
-                ? ContainsWord(run.Text, query, comparison)
-                : run.Text.Contains(query, comparison);
+                ? ContainsWord(hay, needle, comparison)
+                : hay.Contains(needle, comparison);
             if (matches)
             {
                 rects.Add(new AnnotationRect(run.X, run.Y, run.W, run.H));

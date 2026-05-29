@@ -263,7 +263,9 @@ internal static class AppHostBuilder
                 bookmarkFormats: sp.GetService<IBookmarkFormatCatalog>(),
                 pdfOutlineReader: sp.GetService<IPdfOutlineReader>(),
                 pageRangeExtractor: sp.GetService<IPageRangeExtractor>(),
-                pageImageExporter: sp.GetService<IPageImageExporter>()));
+                pageImageExporter: sp.GetService<IPageImageExporter>(),
+                watermarkService: sp.GetService<IWatermarkService>(),
+                headerFooterService: sp.GetService<IHeaderFooterService>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.

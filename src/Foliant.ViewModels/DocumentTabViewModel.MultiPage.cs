@@ -69,7 +69,8 @@ public sealed partial class DocumentTabViewModel
 
         TextLayer? layer = await _document.GetTextLayerAsync(pageIndex, ct);
         return SearchHighlight.MatchRects(
-            layer ?? TextLayer.Empty(pageIndex), query, _activeHighlightMatchCase, _activeHighlightWholeWord);
+            layer ?? TextLayer.Empty(pageIndex), query,
+            _activeHighlightMatchCase, _activeHighlightWholeWord, _activeHighlightFoldDiacritics);
     }
 
     /// <summary>Обновить снимки аннотаций видимых страниц (multi-page) после add/remove/update.</summary>
