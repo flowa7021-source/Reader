@@ -53,9 +53,14 @@ public sealed class PdfiumWatermarkService : IWatermarkService
                 try
                 {
                     int pageCount = fpdfview.FPDF_GetPageCount(doc);
+                    PageRange range = spec.Range ?? PageRange.All;
                     for (int i = 0; i < pageCount; i++)
                     {
                         ct.ThrowIfCancellationRequested();
+                        if (!range.Includes(i))
+                        {
+                            continue;
+                        }
                         StampPage(doc, i, spec);
                     }
 

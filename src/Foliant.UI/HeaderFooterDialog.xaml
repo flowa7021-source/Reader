@@ -20,6 +20,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="140" />
@@ -87,7 +88,15 @@
                Foreground="{DynamicResource Foreground}"
                Text="{Binding B, StringFormat={}{0:0}}" />
 
-    <StackPanel Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3"
+    <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageRangeLabel]}" />
+    <TextBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2"
+             Margin="0,4" Padding="4"
+             ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageRangeHint]}"
+             Text="{Binding PageRangeText, UpdateSourceTrigger=PropertyChanged}" />
+
+    <StackPanel Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="3"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 Margin="0,16,0,0">
