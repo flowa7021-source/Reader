@@ -29,6 +29,12 @@ public sealed partial class DocumentTabViewModel
     /// <summary>Сколько freehand-аннотаций.</summary>
     public int FreehandCount => CountByKind(AnnotationKind.Freehand);
 
+    /// <summary>Сколько underline-аннотаций.</summary>
+    public int UnderlineCount => CountByKind(AnnotationKind.Underline);
+
+    /// <summary>Сколько strikethrough-аннотаций.</summary>
+    public int StrikethroughCount => CountByKind(AnnotationKind.Strikethrough);
+
     private int CountByKind(AnnotationKind kind)
     {
         int count = 0;
@@ -50,6 +56,8 @@ public sealed partial class DocumentTabViewModel
         OnPropertyChanged(nameof(HighlightCount));
         OnPropertyChanged(nameof(NoteCount));
         OnPropertyChanged(nameof(FreehandCount));
+        OnPropertyChanged(nameof(UnderlineCount));
+        OnPropertyChanged(nameof(StrikethroughCount));
         OnPropertyChanged(nameof(CanExportAnnotatedPdf));
         ExportAnnotatedPdfCommand.NotifyCanExecuteChanged();
         AnnotationsDocument.Rebuild(_allAnnotations);
@@ -154,6 +162,45 @@ public sealed partial class DocumentTabViewModel
         if (pageIndex == CurrentPageIndex && MatchesFilter(hl))
         {
             CurrentPageAnnotations.Add(hl);
+        }
+    }
+
+    /// <summary>Добавить underline-аннотацию: тонкая линия по нижней границе bounds. Bounds
+    /// предоставляет AnnotationLayer на основе текущего selection / drag-rect.</summary>
+    public async Task AddUnderlineAsync(int pageIndex, AnnotationRect bounds, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+
+        var ann = Annotation.Underline(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow) with
+        {
+            Author = ReadDefaultAuthor(),
+        };
+        await _annotationService.AddAsync(_filePath, ann, ct);
+        _allAnnotations.Add(ann);
+        NotifyAnnotationCountsChanged();
+        if (pageIndex == CurrentPageIndex && MatchesFilter(ann))
+        {
+            CurrentPageAnnotations.Add(ann);
+        }
+    }
+
+    /// <summary>Добавить strikethrough-аннотацию: линия через вертикальный центр bounds.</summary>
+    public async Task AddStrikethroughAsync(int pageIndex, AnnotationRect bounds, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+
+        var ann = Annotation.Strikethrough(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow) with
+        {
+            Author = ReadDefaultAuthor(),
+        };
+        await _annotationService.AddAsync(_filePath, ann, ct);
+        _allAnnotations.Add(ann);
+        NotifyAnnotationCountsChanged();
+        if (pageIndex == CurrentPageIndex && MatchesFilter(ann))
+        {
+            CurrentPageAnnotations.Add(ann);
         }
     }
 

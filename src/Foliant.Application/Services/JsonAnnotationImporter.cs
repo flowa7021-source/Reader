@@ -59,10 +59,12 @@ public sealed class JsonAnnotationImporter : IAnnotationImporter
         return raw with { Id = Guid.NewGuid() };
     }
 
-    // Те же правила валидности, что у экспортёров: highlight/note требуют Bounds, ink — ≥2 точек.
+    // Те же правила валидности, что у экспортёров: highlight/note/underline/strikethrough
+    // требуют Bounds, ink — ≥2 точек.
     private static bool IsValid(Annotation a) => a.Kind switch
     {
-        AnnotationKind.Highlight or AnnotationKind.StickyNote => a.Bounds is not null,
+        AnnotationKind.Highlight or AnnotationKind.StickyNote
+            or AnnotationKind.Underline or AnnotationKind.Strikethrough => a.Bounds is not null,
         AnnotationKind.Freehand => a.InkPoints is { Count: >= 2 },
         _ => false,
     };

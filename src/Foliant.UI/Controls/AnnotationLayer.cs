@@ -150,6 +150,12 @@ internal sealed class AnnotationLayer : FrameworkElement
             case AnnotationKind.Highlight when a.Bounds is { } b:
                 dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x60, color.R, color.G, color.B)), null, ToRect(b, page, zoom));
                 break;
+            case AnnotationKind.Underline when a.Bounds is { } b:
+                DrawUnderline(dc, ToRect(b, page, zoom), color);
+                break;
+            case AnnotationKind.Strikethrough when a.Bounds is { } b:
+                DrawStrikethrough(dc, ToRect(b, page, zoom), color);
+                break;
             case AnnotationKind.StickyNote when a.Bounds is { } b:
                 DrawNote(dc, ToRect(b, page, zoom), color);
                 break;
@@ -166,6 +172,28 @@ internal sealed class AnnotationLayer : FrameworkElement
         var brush = new SolidColorBrush(color);
         var pen = new Pen(Brushes.DimGray, 1);
         dc.DrawRectangle(brush, pen, r);
+    }
+
+    /// <summary>Underline: тонкая линия по нижней границе bounds. Толщина — пропорциональна
+    /// высоте строки, минимум 1 px, чтобы не пропадала на больших zoom-out.</summary>
+    private static void DrawUnderline(DrawingContext dc, Rect r, Color color)
+    {
+        double thickness = Math.Max(1.0, r.Height * 0.06);
+        var pen = new Pen(new SolidColorBrush(color), thickness);
+        var p1 = new Point(r.Left, r.Bottom);
+        var p2 = new Point(r.Right, r.Bottom);
+        dc.DrawLine(pen, p1, p2);
+    }
+
+    /// <summary>Strikethrough: тонкая линия через вертикальный центр bounds.</summary>
+    private static void DrawStrikethrough(DrawingContext dc, Rect r, Color color)
+    {
+        double thickness = Math.Max(1.0, r.Height * 0.06);
+        var pen = new Pen(new SolidColorBrush(color), thickness);
+        double midY = r.Top + (r.Height / 2.0);
+        var p1 = new Point(r.Left, midY);
+        var p2 = new Point(r.Right, midY);
+        dc.DrawLine(pen, p1, p2);
     }
 
     private static void DrawInk(DrawingContext dc, IReadOnlyList<AnnotationPoint> points, PageSize page, double zoom, Color color)

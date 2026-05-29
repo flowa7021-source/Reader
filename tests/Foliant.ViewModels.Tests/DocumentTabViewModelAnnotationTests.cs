@@ -331,4 +331,93 @@ public sealed class DocumentTabViewModelAnnotationTests
 
         await ann.DidNotReceive().UpdateAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
     }
+
+    // ───── Underline / Strikethrough (Q-F16 D7) ─────
+
+    [Fact]
+    public async Task AddUnderline_CreatesUnderlineOnCurrentPage()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var bounds = new AnnotationRect(1, 2, 3, 4);
+
+        await vm.AddUnderlineAsync(0, bounds, "#FF0000", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Underline && a.Bounds == bounds && a.ColorHex == "#FF0000"),
+            Arg.Any<CancellationToken>());
+        vm.UnderlineCount.Should().Be(1);
+        vm.TotalAnnotationsCount.Should().Be(1);
+        vm.CurrentPageAnnotations.Should().ContainSingle(a => a.Kind == AnnotationKind.Underline);
+    }
+
+    [Fact]
+    public async Task AddStrikethrough_CreatesStrikethroughOnCurrentPage()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var bounds = new AnnotationRect(5, 6, 7, 8);
+
+        await vm.AddStrikethroughAsync(0, bounds, "#00FF00", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Strikethrough && a.Bounds == bounds && a.ColorHex == "#00FF00"),
+            Arg.Any<CancellationToken>());
+        vm.StrikethroughCount.Should().Be(1);
+        vm.TotalAnnotationsCount.Should().Be(1);
+        vm.CurrentPageAnnotations.Should().ContainSingle(a => a.Kind == AnnotationKind.Strikethrough);
+    }
+
+    [Fact]
+    public async Task AddUnderline_OnDifferentPage_NotInCurrentPageList()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+
+        await vm.AddUnderlineAsync(5, new AnnotationRect(0, 0, 10, 10), "#000", default);
+
+        vm.TotalAnnotationsCount.Should().Be(1);
+        vm.UnderlineCount.Should().Be(1);
+        vm.CurrentPageAnnotations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AddUnderline_StampsAuthorFromSettings()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann, SettingsWithAuthor("Alice"));
+
+        await vm.AddUnderlineAsync(0, new AnnotationRect(0, 0, 10, 10), "#FF0", default);
+
+        await ann.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Author == "Alice"),
+            Arg.Any<CancellationToken>());
+    }
+
+    // ───── Domain factories ─────
+
+    [Fact]
+    public void DomainUnderlineFactory_SetsKindAndBounds()
+    {
+        var b = new AnnotationRect(1, 2, 3, 4);
+        var a = Annotation.Underline(0, b, "#000", DateTimeOffset.UnixEpoch);
+        a.Kind.Should().Be(AnnotationKind.Underline);
+        a.Bounds.Should().Be(b);
+        a.Text.Should().BeNull();
+        a.InkPoints.Should().BeNull();
+    }
+
+    [Fact]
+    public void DomainStrikethroughFactory_SetsKindAndBounds()
+    {
+        var b = new AnnotationRect(1, 2, 3, 4);
+        var a = Annotation.Strikethrough(0, b, "#000", DateTimeOffset.UnixEpoch);
+        a.Kind.Should().Be(AnnotationKind.Strikethrough);
+        a.Bounds.Should().Be(b);
+        a.Text.Should().BeNull();
+        a.InkPoints.Should().BeNull();
+    }
 }

@@ -5,6 +5,8 @@ public enum AnnotationKind
     Highlight,
     StickyNote,
     Freehand,
+    Underline,
+    Strikethrough,
 }
 
 public sealed record AnnotationRect(double X, double Y, double Width, double Height);
@@ -43,4 +45,10 @@ public sealed record Annotation(
 
     public static Annotation Freehand(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, DateTimeOffset createdAt) =>
         new(Guid.NewGuid(), pageIndex, AnnotationKind.Freehand, colorHex, null, null, points, createdAt);
+
+    public static Annotation Underline(int pageIndex, AnnotationRect bounds, string colorHex, DateTimeOffset createdAt) =>
+        new(Guid.NewGuid(), pageIndex, AnnotationKind.Underline, colorHex, bounds, null, null, createdAt);
+
+    public static Annotation Strikethrough(int pageIndex, AnnotationRect bounds, string colorHex, DateTimeOffset createdAt) =>
+        new(Guid.NewGuid(), pageIndex, AnnotationKind.Strikethrough, colorHex, bounds, null, null, createdAt);
 }
