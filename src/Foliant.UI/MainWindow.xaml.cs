@@ -314,6 +314,52 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnMergePdfsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (!_vm.CanMergePdfs)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var pick = new OpenFileDialog
+        {
+            Title = loc["MergePdfsPickDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            Multiselect = true,
+        };
+
+        if (pick.ShowDialog(this) != true || pick.FileNames.Length < 2)
+        {
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["MergePdfsSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = "merged.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await _vm.MergePdfsCommand.ExecuteAsync(new Foliant.ViewModels.MergePdfsRequest(pick.FileNames, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error merging PDFs into '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnAddWatermarkMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanAddWatermark: true } tab)
@@ -389,6 +435,46 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled error applying header/footer to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnCropPagesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanCropPages: true } tab)
+        {
+            return;
+        }
+
+        var spec = CropDialog.Prompt(this);
+        if (spec is null)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["CropPagesSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-cropped.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.CropPagesCommand.ExecuteAsync(new Foliant.ViewModels.CropPagesRequest(spec, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error cropping pages to '{Path}'.", save.FileName);
             MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

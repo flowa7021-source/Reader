@@ -70,11 +70,44 @@
   <data name="MenuFileClearRecent" xml:space="preserve">
     <value>_Clear Recent Files</value>
   </data>
+  <data name="MenuFileMergePdfs" xml:space="preserve">
+    <value>_Merge PDFs...</value>
+  </data>
+  <data name="MergePdfsPickDialogTitle" xml:space="preserve">
+    <value>Pick PDFs to merge (in selection order)</value>
+  </data>
+  <data name="MergePdfsSaveDialogTitle" xml:space="preserve">
+    <value>Save merged PDF as</value>
+  </data>
   <data name="MenuFileAddWatermark" xml:space="preserve">
     <value>Add _Watermark...</value>
   </data>
   <data name="MenuFileAddHeaderFooter" xml:space="preserve">
     <value>Add _Header / Footer...</value>
+  </data>
+  <data name="MenuFileCropPages" xml:space="preserve">
+    <value>_Crop Pages...</value>
+  </data>
+  <data name="CropDialogTitle" xml:space="preserve">
+    <value>Crop Pages</value>
+  </data>
+  <data name="CropDialogHint" xml:space="preserve">
+    <value>Trim each side as a percentage of the page. Uses /CropBox — content is preserved and the change is reversible.</value>
+  </data>
+  <data name="CropLeft" xml:space="preserve">
+    <value>Left:</value>
+  </data>
+  <data name="CropTop" xml:space="preserve">
+    <value>Top:</value>
+  </data>
+  <data name="CropRight" xml:space="preserve">
+    <value>Right:</value>
+  </data>
+  <data name="CropBottom" xml:space="preserve">
+    <value>Bottom:</value>
+  </data>
+  <data name="CropPagesSaveDialogTitle" xml:space="preserve">
+    <value>Save cropped PDF as</value>
   </data>
   <data name="MenuFileExit" xml:space="preserve">
     <value>E_xit</value>

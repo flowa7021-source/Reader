@@ -70,11 +70,44 @@
   <data name="MenuFileClearRecent" xml:space="preserve">
     <value>_Очистить список недавних</value>
   </data>
+  <data name="MenuFileMergePdfs" xml:space="preserve">
+    <value>_Объединить PDF...</value>
+  </data>
+  <data name="MergePdfsPickDialogTitle" xml:space="preserve">
+    <value>Выберите PDF для объединения (в порядке выбора)</value>
+  </data>
+  <data name="MergePdfsSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить объединённый PDF как</value>
+  </data>
   <data name="MenuFileAddWatermark" xml:space="preserve">
     <value>Добавить _водяной знак...</value>
   </data>
   <data name="MenuFileAddHeaderFooter" xml:space="preserve">
     <value>Добавить _колонтитулы...</value>
+  </data>
+  <data name="MenuFileCropPages" xml:space="preserve">
+    <value>_Обрезать страницы...</value>
+  </data>
+  <data name="CropDialogTitle" xml:space="preserve">
+    <value>Обрезать страницы</value>
+  </data>
+  <data name="CropDialogHint" xml:space="preserve">
+    <value>Срез каждой стороны в процентах от страницы. Используется /CropBox — содержимое сохраняется, обрезка обратима.</value>
+  </data>
+  <data name="CropLeft" xml:space="preserve">
+    <value>Слева:</value>
+  </data>
+  <data name="CropTop" xml:space="preserve">
+    <value>Сверху:</value>
+  </data>
+  <data name="CropRight" xml:space="preserve">
+    <value>Справа:</value>
+  </data>
+  <data name="CropBottom" xml:space="preserve">
+    <value>Снизу:</value>
+  </data>
+  <data name="CropPagesSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить обрезанный PDF как</value>
   </data>
   <data name="MenuFileExit" xml:space="preserve">
     <value>В_ыход</value>

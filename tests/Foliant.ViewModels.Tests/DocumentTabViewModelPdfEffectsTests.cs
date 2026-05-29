@@ -12,7 +12,8 @@ public sealed class DocumentTabViewModelPdfEffectsTests
     private static DocumentTabViewModel CreateVm(
         string filePath = "/tmp/x.pdf",
         IWatermarkService? watermark = null,
-        IHeaderFooterService? headerFooter = null)
+        IHeaderFooterService? headerFooter = null,
+        IPdfCropService? crop = null)
     {
         var document = Substitute.For<IDocument>();
         document.PageCount.Returns(3);
@@ -32,7 +33,8 @@ public sealed class DocumentTabViewModelPdfEffectsTests
             document, filePath, search, ann, bm,
             NullLogger<DocumentTabViewModel>.Instance,
             watermarkService: watermark,
-            headerFooterService: headerFooter);
+            headerFooterService: headerFooter,
+            cropService: crop);
     }
 
     private static WatermarkSpec SampleWatermark() =>
@@ -40,6 +42,8 @@ public sealed class DocumentTabViewModelPdfEffectsTests
 
     private static HeaderFooterSpec SampleHeaderFooter() =>
         new(HeaderText: "Doc", FooterText: "{page}/{total}", FontSize: 10, R: 64, G: 64, B: 64);
+
+    private static CropSpec SampleCrop() => new(Left: 0.05, Top: 0.10, Right: 0.05, Bottom: 0.10);
 
     // ───── CanAddWatermark / CanAddHeaderFooter gates ─────
 
@@ -176,5 +180,98 @@ public sealed class DocumentTabViewModelPdfEffectsTests
             await vm.ApplyHeaderFooterCommand.ExecuteAsync(new ApplyHeaderFooterRequest(SampleHeaderFooter(), "/tmp/out.pdf"));
 
         await act.Should().NotThrowAsync();
+    }
+
+    // ───── CropPagesCommand ─────
+
+    [Fact]
+    public void CanCropPages_NoService_False()
+    {
+        var vm = CreateVm(crop: null);
+        vm.CanCropPages.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanCropPages_NonPdfSource_False()
+    {
+        var vm = CreateVm(filePath: "/tmp/foo.djvu", crop: Substitute.For<IPdfCropService>());
+        vm.CanCropPages.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanCropPages_PdfSourceAndService_True()
+    {
+        var vm = CreateVm(filePath: "/tmp/foo.PDF", crop: Substitute.For<IPdfCropService>());
+        vm.CanCropPages.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CropPages_ForwardsSpecAndPath_ToService()
+    {
+        var svc = Substitute.For<IPdfCropService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", crop: svc);
+
+        var spec = SampleCrop();
+        await vm.CropPagesCommand.ExecuteAsync(new CropPagesRequest(spec, "/tmp/out.pdf"));
+
+        await svc.Received(1).ApplyAsync("/tmp/in.pdf", spec, "/tmp/out.pdf", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CropPages_NullRequest_IsNoOp()
+    {
+        var svc = Substitute.For<IPdfCropService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", crop: svc);
+
+        await vm.CropPagesCommand.ExecuteAsync(null);
+
+        await svc.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task CropPages_BlankTargetPath_IsNoOp()
+    {
+        var svc = Substitute.For<IPdfCropService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", crop: svc);
+
+        await vm.CropPagesCommand.ExecuteAsync(new CropPagesRequest(SampleCrop(), "  "));
+
+        await svc.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task CropPages_NoEffectSpec_IsNoOp()
+    {
+        var svc = Substitute.For<IPdfCropService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", crop: svc);
+
+        await vm.CropPagesCommand.ExecuteAsync(new CropPagesRequest(new CropSpec(0, 0, 0, 0), "/tmp/out.pdf"));
+
+        await svc.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task CropPages_ServiceThrows_DoesNotPropagate()
+    {
+        var svc = Substitute.For<IPdfCropService>();
+        svc.ApplyAsync(Arg.Any<string>(), Arg.Any<CropSpec>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromException(new InvalidOperationException("boom")));
+        var vm = CreateVm(filePath: "/tmp/in.pdf", crop: svc);
+
+        Func<Task> act = async () =>
+            await vm.CropPagesCommand.ExecuteAsync(new CropPagesRequest(SampleCrop(), "/tmp/out.pdf"));
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task CropPages_NonPdfSource_IsNoOp()
+    {
+        var svc = Substitute.For<IPdfCropService>();
+        var vm = CreateVm(filePath: "/tmp/in.png", crop: svc);
+
+        await vm.CropPagesCommand.ExecuteAsync(new CropPagesRequest(SampleCrop(), "/tmp/out.pdf"));
+
+        await svc.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default!, default!, default);
     }
 }

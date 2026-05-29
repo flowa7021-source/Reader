@@ -27,6 +27,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IPdfOutlineReader? _pdfOutlineReader;
     private readonly IWatermarkService? _watermarkService;
     private readonly IHeaderFooterService? _headerFooterService;
+    private readonly IPdfCropService? _cropService;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -109,7 +110,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IPageRangeExtractor? pageRangeExtractor = null,
         IPageImageExporter? pageImageExporter = null,
         IWatermarkService? watermarkService = null,
-        IHeaderFooterService? headerFooterService = null)
+        IHeaderFooterService? headerFooterService = null,
+        IPdfCropService? cropService = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -137,6 +139,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _pageImageExporter = pageImageExporter;
         _watermarkService = watermarkService;
         _headerFooterService = headerFooterService;
+        _cropService = cropService;
         _logger = logger;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
