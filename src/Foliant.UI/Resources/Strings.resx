@@ -298,6 +298,60 @@
   <data name="ThemeHighContrast" xml:space="preserve">
     <value>_High Contrast</value>
   </data>
+  <data name="MenuToolsBatch" xml:space="preserve">
+    <value>_Batch processing...</value>
+  </data>
+  <data name="BatchWindowTitle" xml:space="preserve">
+    <value>Batch Processing</value>
+  </data>
+  <data name="BatchOperationLabel" xml:space="preserve">
+    <value>Operation:</value>
+  </data>
+  <data name="BatchConfigure" xml:space="preserve">
+    <value>Configure...</value>
+  </data>
+  <data name="BatchOpWatermark" xml:space="preserve">
+    <value>Add Watermark</value>
+  </data>
+  <data name="BatchOpHeaderFooter" xml:space="preserve">
+    <value>Add Header / Footer</value>
+  </data>
+  <data name="BatchOpCrop" xml:space="preserve">
+    <value>Crop Pages</value>
+  </data>
+  <data name="BatchFilesLabel" xml:space="preserve">
+    <value>Files (drop here):</value>
+  </data>
+  <data name="BatchAdd" xml:space="preserve">
+    <value>Add...</value>
+  </data>
+  <data name="BatchClear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="BatchAddDialogTitle" xml:space="preserve">
+    <value>Pick PDFs to add</value>
+  </data>
+  <data name="BatchOutputFolderLabel" xml:space="preserve">
+    <value>Output folder:</value>
+  </data>
+  <data name="BatchBrowse" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="BatchBrowseDialogTitle" xml:space="preserve">
+    <value>Pick output folder</value>
+  </data>
+  <data name="BatchParallelismLabel" xml:space="preserve">
+    <value>Parallelism:</value>
+  </data>
+  <data name="BatchRun" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="BatchCancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="BatchClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
   <data name="MenuToolsImportLicense" xml:space="preserve">
     <value>_Import License…</value>
   </data>

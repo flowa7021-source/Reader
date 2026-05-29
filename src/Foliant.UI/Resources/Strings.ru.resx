@@ -298,6 +298,60 @@
   <data name="ThemeHighContrast" xml:space="preserve">
     <value>_Высокая контрастность</value>
   </data>
+  <data name="MenuToolsBatch" xml:space="preserve">
+    <value>_Пакетная обработка...</value>
+  </data>
+  <data name="BatchWindowTitle" xml:space="preserve">
+    <value>Пакетная обработка</value>
+  </data>
+  <data name="BatchOperationLabel" xml:space="preserve">
+    <value>Операция:</value>
+  </data>
+  <data name="BatchConfigure" xml:space="preserve">
+    <value>Настроить...</value>
+  </data>
+  <data name="BatchOpWatermark" xml:space="preserve">
+    <value>Водяной знак</value>
+  </data>
+  <data name="BatchOpHeaderFooter" xml:space="preserve">
+    <value>Колонтитулы</value>
+  </data>
+  <data name="BatchOpCrop" xml:space="preserve">
+    <value>Обрезка страниц</value>
+  </data>
+  <data name="BatchFilesLabel" xml:space="preserve">
+    <value>Файлы (перетащите сюда):</value>
+  </data>
+  <data name="BatchAdd" xml:space="preserve">
+    <value>Добавить...</value>
+  </data>
+  <data name="BatchClear" xml:space="preserve">
+    <value>Очистить</value>
+  </data>
+  <data name="BatchAddDialogTitle" xml:space="preserve">
+    <value>Выберите PDF для пакета</value>
+  </data>
+  <data name="BatchOutputFolderLabel" xml:space="preserve">
+    <value>Папка вывода:</value>
+  </data>
+  <data name="BatchBrowse" xml:space="preserve">
+    <value>Обзор...</value>
+  </data>
+  <data name="BatchBrowseDialogTitle" xml:space="preserve">
+    <value>Выберите папку вывода</value>
+  </data>
+  <data name="BatchParallelismLabel" xml:space="preserve">
+    <value>Параллелизм:</value>
+  </data>
+  <data name="BatchRun" xml:space="preserve">
+    <value>Запустить</value>
+  </data>
+  <data name="BatchCancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="BatchClose" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
   <data name="MenuToolsImportLicense" xml:space="preserve">
     <value>_Импорт лицензии…</value>
   </data>
