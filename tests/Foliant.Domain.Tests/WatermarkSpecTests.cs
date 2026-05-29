@@ -28,4 +28,17 @@ public sealed class WatermarkSpecTests
 
         a.Should().Be(b);
     }
+
+    [Fact]
+    public void ImagePath_DefaultsToNull()
+    {
+        new WatermarkSpec("x", 1, 0.5, 0, 0, 0, 0).ImagePath.Should().BeNull();
+    }
+
+    [Fact]
+    public void ImagePath_IsCarriedForImageMode()
+    {
+        var spec = new WatermarkSpec("", 1, 0.3, 0, 0, 0, 0, Range: null, ImagePath: "/tmp/stamp.png");
+        spec.ImagePath.Should().Be("/tmp/stamp.png");
+    }
 }

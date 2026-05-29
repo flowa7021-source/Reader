@@ -22,6 +22,7 @@ public partial class WatermarkDialog : Window, INotifyPropertyChanged
     private double _g = 128;
     private double _b = 128;
     private string _pageRange = string.Empty;
+    private string _imagePath = string.Empty;
 
     public WatermarkDialog()
     {
@@ -50,10 +51,35 @@ public partial class WatermarkDialog : Window, INotifyPropertyChanged
         set { _pageRange = value; Notify(); Notify(nameof(IsValid)); }
     }
 
-    /// <summary>OK enabled только когда у текста есть хоть один не-whitespace символ И
-    /// page-range parsable (пустой = OK). Сервис бросает ArgumentException на пустом тексте /
-    /// невалидном range — лучше дисейблить заранее.</summary>
-    public bool IsValid => !string.IsNullOrWhiteSpace(_text) && PageRange.TryParse(_pageRange, out _);
+    /// <summary>Опциональный путь к image-watermark'у. Когда задан, текст игнорируется и
+    /// IsValid требует только page-range parse + наличие файла. Пустой ↔ режим текста.</summary>
+    public string ImagePath
+    {
+        get => _imagePath;
+        set { _imagePath = value; Notify(); Notify(nameof(IsValid)); }
+    }
+
+    /// <summary>OK enabled когда:
+    /// <list type="bullet">
+    /// <item>page-range parsable (пустой = OK);</item>
+    /// <item>ЛИБО image-path задан и файл существует — режим image;</item>
+    /// <item>ЛИБО text не пустой — режим text.</item>
+    /// </list></summary>
+    public bool IsValid
+    {
+        get
+        {
+            if (!PageRange.TryParse(_pageRange, out _))
+            {
+                return false;
+            }
+            if (!string.IsNullOrWhiteSpace(_imagePath))
+            {
+                return System.IO.File.Exists(_imagePath);
+            }
+            return !string.IsNullOrWhiteSpace(_text);
+        }
+    }
 
     /// <summary>Open the dialog modally. Returns <c>null</c> if the user cancelled, otherwise
     /// a fresh <see cref="WatermarkSpec"/> with the captured values.</summary>
@@ -69,15 +95,40 @@ public partial class WatermarkDialog : Window, INotifyPropertyChanged
         {
             range = parsed;
         }
+        string? imagePath = string.IsNullOrWhiteSpace(dialog.ImagePath) ? null : dialog.ImagePath.Trim();
         return new WatermarkSpec(
-            Text: dialog.Text.Trim(),
+            Text: imagePath is null ? dialog.Text.Trim() : string.Empty,
             FontSize: dialog.SpecFontSize,
             Opacity: dialog.SpecOpacity,
             AngleDegrees: dialog.Angle,
             R: (byte)Math.Clamp(dialog.R, 0, 255),
             G: (byte)Math.Clamp(dialog.G, 0, 255),
             B: (byte)Math.Clamp(dialog.B, 0, 255),
-            Range: range);
+            Range: range,
+            ImagePath: imagePath);
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private void OnBrowseImageClick(object sender, RoutedEventArgs e)
+    {
+        var loc = Foliant.UI.Localization.LocalizationManager.Instance;
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = loc["WatermarkImagePickTitle"],
+            Filter = loc["WatermarkImagePickFilter"],
+            CheckFileExists = true,
+        };
+        try
+        {
+            if (dialog.ShowDialog(this) == true)
+            {
+                ImagePath = dialog.FileName;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"WatermarkDialog browse-image failed: {ex.Message}");
+        }
     }
 
     private void OnOkClick(object sender, RoutedEventArgs e) => DialogResult = true;
