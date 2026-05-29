@@ -41,7 +41,7 @@ public sealed class DocumentTabViewModelPdfEffectsTests
         new("DRAFT", FontSize: 48, Opacity: 0.3, AngleDegrees: 45, R: 128, G: 128, B: 128);
 
     private static HeaderFooterSpec SampleHeaderFooter() =>
-        new(HeaderText: "Doc", FooterText: "{page}/{total}", FontSize: 10, R: 64, G: 64, B: 64);
+        HeaderFooterSpec.FromCenterTexts(headerText: "Doc", footerText: "{page}/{total}", fontSize: 10, r: 64, g: 64, b: 64);
 
     private static CropSpec SampleCrop() => new(Left: 0.05, Top: 0.10, Right: 0.05, Bottom: 0.10);
 

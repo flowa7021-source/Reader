@@ -11,8 +11,8 @@ namespace Foliant.Application.Services;
 ///
 /// Контракт ошибок:
 /// <list type="bullet">
-/// <item>Оба <see cref="HeaderFooterSpec.HeaderText"/> и <see cref="HeaderFooterSpec.FooterText"/>
-/// пусты — <see cref="ArgumentException"/> (нечего рисовать).</item>
+/// <item><see cref="HeaderFooterSpec.Bands"/> пуст или у всех bands <c>Text</c> blank —
+/// <see cref="ArgumentException"/> (нечего рисовать).</item>
 /// <item>Отрицательный font size → <see cref="ArgumentOutOfRangeException"/>.</item>
 /// <item>Битый PDF / IO-сбой → пробрасывается caller'у.</item>
 /// </list>

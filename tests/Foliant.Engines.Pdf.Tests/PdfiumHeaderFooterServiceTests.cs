@@ -43,11 +43,11 @@ public sealed class PdfiumHeaderFooterServiceTests : IDisposable
     {
         string src = WritePdf(pageCount: 3);
         string dst = Path.Combine(_tmpDir, "stamped.pdf");
-        var spec = new HeaderFooterSpec(
-            HeaderText: "Confidential",
-            FooterText: "Page {page} of {total}",
-            FontSize: 10,
-            R: 0, G: 0, B: 0);
+        var spec = HeaderFooterSpec.FromCenterTexts(
+            headerText: "Confidential",
+            footerText: "Page {page} of {total}",
+            fontSize: 10,
+            r: 0, g: 0, b: 0);
 
         await _service.ApplyAsync(src, spec, dst, default);
 
@@ -77,7 +77,7 @@ public sealed class PdfiumHeaderFooterServiceTests : IDisposable
     {
         string src = WritePdf(pageCount: 2);
         string dst = Path.Combine(_tmpDir, "stamped.pdf");
-        var spec = new HeaderFooterSpec(HeaderText: "Top", FooterText: null, FontSize: 10, R: 0, G: 0, B: 0);
+        var spec = HeaderFooterSpec.FromCenterTexts(headerText: "Top", footerText: null, fontSize: 10, r: 0, g: 0, b: 0);
 
         await _service.ApplyAsync(src, spec, dst, default);
 
@@ -105,7 +105,7 @@ public sealed class PdfiumHeaderFooterServiceTests : IDisposable
     public async Task ApplyAsync_BothEmpty_Throws()
     {
         string src = WritePdf(pageCount: 1);
-        var spec = new HeaderFooterSpec(HeaderText: null, FooterText: "   ", FontSize: 10, R: 0, G: 0, B: 0);
+        var spec = HeaderFooterSpec.FromCenterTexts(headerText: null, footerText: "   ", fontSize: 10, r: 0, g: 0, b: 0);
 
         var act = () => _service.ApplyAsync(src, spec, Path.Combine(_tmpDir, "out.pdf"), default);
 
@@ -116,7 +116,7 @@ public sealed class PdfiumHeaderFooterServiceTests : IDisposable
     public async Task ApplyAsync_ZeroFontSize_Throws()
     {
         string src = WritePdf(pageCount: 1);
-        var spec = new HeaderFooterSpec(HeaderText: "x", FooterText: null, FontSize: 0, R: 0, G: 0, B: 0);
+        var spec = HeaderFooterSpec.FromCenterTexts(headerText: "x", footerText: null, fontSize: 0, r: 0, g: 0, b: 0);
 
         var act = () => _service.ApplyAsync(src, spec, Path.Combine(_tmpDir, "out.pdf"), default);
 

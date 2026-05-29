@@ -184,6 +184,21 @@
   <data name="HeaderFooterFontSize" xml:space="preserve">
     <value>Размер шрифта:</value>
   </data>
+  <data name="HeaderFooterTopRow" xml:space="preserve">
+    <value>Верх (лево / центр / право):</value>
+  </data>
+  <data name="HeaderFooterBottomRow" xml:space="preserve">
+    <value>Низ (лево / центр / право):</value>
+  </data>
+  <data name="HeaderFooterPositionLeft" xml:space="preserve">
+    <value>Слева</value>
+  </data>
+  <data name="HeaderFooterPositionCenter" xml:space="preserve">
+    <value>Центр</value>
+  </data>
+  <data name="HeaderFooterPositionRight" xml:space="preserve">
+    <value>Справа</value>
+  </data>
   <data name="HeaderFooterPlaceholdersHint" xml:space="preserve">
     <value>Подстановки: {page}, {total}, {filename}, {date}. Пустое поле — полоса не рисуется.</value>
   </data>

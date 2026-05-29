@@ -24,9 +24,9 @@ public sealed class PdfiumHeaderFooterService : IHeaderFooterService
         ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
         ArgumentNullException.ThrowIfNull(spec);
         ArgumentException.ThrowIfNullOrWhiteSpace(targetPath);
-        if (string.IsNullOrWhiteSpace(spec.HeaderText) && string.IsNullOrWhiteSpace(spec.FooterText))
+        if (spec.Bands.Count == 0 || spec.Bands.All(b => string.IsNullOrWhiteSpace(b.Text)))
         {
-            throw new ArgumentException("At least one of HeaderText / FooterText must be set.", nameof(spec));
+            throw new ArgumentException("At least one Band must have non-blank Text.", nameof(spec));
         }
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(spec.FontSize);
@@ -98,17 +98,14 @@ public sealed class PdfiumHeaderFooterService : IHeaderFooterService
             float pageH = fpdfview.FPDF_GetPageHeightF(page);
             bool any = false;
 
-            if (!string.IsNullOrWhiteSpace(spec.HeaderText))
+            foreach (var band in spec.Bands)
             {
-                string text = ExpandPlaceholders(spec.HeaderText!, pageIndex, totalPages, filename, today);
-                AddCenteredText(doc, page, text, spec, pageW, y: pageH - Margin);
-                any = true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(spec.FooterText))
-            {
-                string text = ExpandPlaceholders(spec.FooterText!, pageIndex, totalPages, filename, today);
-                AddCenteredText(doc, page, text, spec, pageW, y: Margin);
+                if (string.IsNullOrWhiteSpace(band.Text))
+                {
+                    continue;
+                }
+                string text = ExpandPlaceholders(band.Text, pageIndex, totalPages, filename, today);
+                AddText(doc, page, text, spec, pageW, pageH, band.Position);
                 any = true;
             }
 
@@ -123,7 +120,10 @@ public sealed class PdfiumHeaderFooterService : IHeaderFooterService
         }
     }
 
-    private static void AddCenteredText(FpdfDocumentT doc, FpdfPageT page, string text, HeaderFooterSpec spec, float pageW, float y)
+    /// <summary>Помещает text-object на страницу в одной из шести позиций. Координата X
+    /// зависит от horizontal-aligning (Left/Center/Right), Y — от vertical-aligning
+    /// (Top/Bottom) с отступом <see cref="Margin"/>.</summary>
+    private static void AddText(FpdfDocumentT doc, FpdfPageT page, string text, HeaderFooterSpec spec, float pageW, float pageH, HeaderFooterPosition position)
     {
         var textObj = fpdf_edit.FPDFPageObjNewTextObj(doc, "Helvetica", (float)spec.FontSize);
         if (textObj is null)
@@ -135,10 +135,23 @@ public sealed class PdfiumHeaderFooterService : IHeaderFooterService
         fpdf_edit.FPDFPageObjSetFillColor(textObj, spec.R, spec.G, spec.B, 255u);
 
         // Width аппроксимируем как fontSize × 0.5 × len (средняя для proportional-шрифта).
-        // Centering без знания реальных метрик: даёт визуально центральную позицию для типичных
-        // строк. Для точности нужна font metric query — отложено вместе с font-embedding.
         double textWidth = spec.FontSize * 0.5 * text.Length;
-        double tx = pageW / 2.0 - textWidth / 2.0;
+
+        // Horizontal: Left / Center / Right с отступом Margin от краёв.
+        double tx = position switch
+        {
+            HeaderFooterPosition.TopLeft or HeaderFooterPosition.BottomLeft => Margin,
+            HeaderFooterPosition.TopRight or HeaderFooterPosition.BottomRight => pageW - Margin - textWidth,
+            _ => pageW / 2.0 - textWidth / 2.0, // Center
+        };
+
+        // Vertical: Top — baseline у верхнего края с отступом, Bottom — у нижнего.
+        double ty = position switch
+        {
+            HeaderFooterPosition.TopLeft or HeaderFooterPosition.TopCenter or HeaderFooterPosition.TopRight
+                => pageH - Margin,
+            _ => Margin,
+        };
 
         using var matrix = new FS_MATRIX_
         {
@@ -147,7 +160,7 @@ public sealed class PdfiumHeaderFooterService : IHeaderFooterService
             C = 0f,
             D = 1f,
             E = (float)tx,
-            F = y,
+            F = (float)ty,
         };
         fpdf_edit.FPDFPageObjSetMatrix(textObj, matrix);
 

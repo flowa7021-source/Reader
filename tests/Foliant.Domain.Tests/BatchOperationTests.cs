@@ -10,7 +10,7 @@ public sealed class BatchOperationTests
         new("DRAFT", FontSize: 48, Opacity: 0.3, AngleDegrees: 45, R: 128, G: 128, B: 128);
 
     private static readonly HeaderFooterSpec SampleHeaderFooter =
-        new(HeaderText: "Doc", FooterText: "{page}/{total}", FontSize: 10, R: 64, G: 64, B: 64);
+        HeaderFooterSpec.FromCenterTexts(headerText: "Doc", footerText: "{page}/{total}", fontSize: 10, r: 64, g: 64, b: 64);
 
     [Fact]
     public void ApplyWatermark_CarriesSpec()

@@ -13,7 +13,7 @@ public sealed class BatchViewModelTests
         new("DRAFT", FontSize: 48, Opacity: 0.3, AngleDegrees: 45, R: 128, G: 128, B: 128);
 
     private static readonly HeaderFooterSpec SampleHeaderFooter =
-        new(HeaderText: "X", FooterText: "{page}", FontSize: 10, R: 0, G: 0, B: 0);
+        HeaderFooterSpec.FromCenterTexts(headerText: "X", footerText: "{page}", fontSize: 10, r: 0, g: 0, b: 0);
 
     private static readonly CropSpec SampleCrop = new(0.05, 0.10, 0.05, 0.10);
 
