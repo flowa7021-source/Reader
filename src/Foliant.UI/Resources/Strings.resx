@@ -184,6 +184,21 @@
   <data name="HeaderFooterFontSize" xml:space="preserve">
     <value>Font size:</value>
   </data>
+  <data name="HeaderFooterTopRow" xml:space="preserve">
+    <value>Top (left / center / right):</value>
+  </data>
+  <data name="HeaderFooterBottomRow" xml:space="preserve">
+    <value>Bottom (left / center / right):</value>
+  </data>
+  <data name="HeaderFooterPositionLeft" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="HeaderFooterPositionCenter" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="HeaderFooterPositionRight" xml:space="preserve">
+    <value>Right</value>
+  </data>
   <data name="HeaderFooterPlaceholdersHint" xml:space="preserve">
     <value>Placeholders: {page}, {total}, {filename}, {date}. Leave a field blank to skip it.</value>
   </data>

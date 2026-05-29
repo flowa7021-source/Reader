@@ -13,7 +13,7 @@ public sealed class BatchJobRunnerTests
         new("DRAFT", FontSize: 48, Opacity: 0.3, AngleDegrees: 45, R: 128, G: 128, B: 128);
 
     private static readonly HeaderFooterSpec SampleHeaderFooter =
-        new(HeaderText: "Doc", FooterText: "{page}/{total}", FontSize: 10, R: 64, G: 64, B: 64);
+        HeaderFooterSpec.FromCenterTexts(headerText: "Doc", footerText: "{page}/{total}", fontSize: 10, r: 64, g: 64, b: 64);
 
     private static readonly CropSpec SampleCrop = new(0.05, 0.10, 0.05, 0.10);
 

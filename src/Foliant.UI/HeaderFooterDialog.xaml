@@ -4,7 +4,7 @@
         xmlns:loc="clr-namespace:Foliant.UI.Localization"
         Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterDialogTitle]}"
         SizeToContent="Height"
-        Width="500"
+        Width="640"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
@@ -19,84 +19,137 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="140" />
       <ColumnDefinition Width="*" />
-      <ColumnDefinition Width="56" />
     </Grid.ColumnDefinitions>
 
-    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+    <!-- Placeholder hint -->
+    <TextBlock Grid.Row="0"
                Margin="0,0,0,8"
                TextWrapping="Wrap"
                Foreground="{DynamicResource Foreground}"
                Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPlaceholdersHint]}" />
 
-    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
+    <!-- Top row labels -->
+    <TextBlock Grid.Row="1" Margin="0,4,0,4"
+               FontWeight="Bold"
                Foreground="{DynamicResource Foreground}"
-               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterHeader]}" />
-    <TextBox x:Name="HeaderBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
-             Margin="0,4" Padding="4"
-             Text="{Binding HeaderText, UpdateSourceTrigger=PropertyChanged}" />
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterTopRow]}" />
 
-    <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterFooter]}" />
-    <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
-             Margin="0,4" Padding="4"
-             Text="{Binding FooterText, UpdateSourceTrigger=PropertyChanged}" />
+    <!-- Top row: 3 textboxes (Left / Center / Right) -->
+    <Grid Grid.Row="2" Margin="0,0,0,8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <TextBox Grid.Column="0" Padding="4"
+               Tag="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPositionLeft]}"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPositionLeft]}"
+               Text="{Binding TopLeftText, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBox x:Name="TopCenterBox" Grid.Column="2" Padding="4"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPositionCenter]}"
+               Text="{Binding TopCenterText, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBox Grid.Column="4" Padding="4"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPositionRight]}"
+               Text="{Binding TopRightText, UpdateSourceTrigger=PropertyChanged}" />
+    </Grid>
 
-    <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"
+    <!-- Bottom row label -->
+    <TextBlock Grid.Row="3" Margin="0,4,0,4"
+               FontWeight="Bold"
                Foreground="{DynamicResource Foreground}"
-               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterFontSize]}" />
-    <Slider Grid.Row="3" Grid.Column="1" Margin="0,4"
-            Minimum="6" Maximum="24" SmallChange="1" LargeChange="2"
-            Value="{Binding SpecFontSize, Mode=TwoWay}" />
-    <TextBlock Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding SpecFontSize, StringFormat={}{0:0} pt}" />
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterBottomRow]}" />
 
-    <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkColorR]}" />
-    <Slider Grid.Row="4" Grid.Column="1" Margin="0,4"
-            Minimum="0" Maximum="255" SmallChange="1" LargeChange="16"
-            Value="{Binding R, Mode=TwoWay}" />
-    <TextBlock Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding R, StringFormat={}{0:0}}" />
+    <!-- Bottom row: 3 textboxes (Left / Center / Right) -->
+    <Grid Grid.Row="4" Margin="0,0,0,8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <TextBox Grid.Column="0" Padding="4"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPositionLeft]}"
+               Text="{Binding BottomLeftText, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBox Grid.Column="2" Padding="4"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPositionCenter]}"
+               Text="{Binding BottomCenterText, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBox Grid.Column="4" Padding="4"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterPositionRight]}"
+               Text="{Binding BottomRightText, UpdateSourceTrigger=PropertyChanged}" />
+    </Grid>
 
-    <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkColorG]}" />
-    <Slider Grid.Row="5" Grid.Column="1" Margin="0,4"
-            Minimum="0" Maximum="255" SmallChange="1" LargeChange="16"
-            Value="{Binding G, Mode=TwoWay}" />
-    <TextBlock Grid.Row="5" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding G, StringFormat={}{0:0}}" />
+    <!-- Font size + color sliders -->
+    <Grid Grid.Row="5">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="140" />
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="56" />
+      </Grid.ColumnDefinitions>
 
-    <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkColorB]}" />
-    <Slider Grid.Row="6" Grid.Column="1" Margin="0,4"
-            Minimum="0" Maximum="255" SmallChange="1" LargeChange="16"
-            Value="{Binding B, Mode=TwoWay}" />
-    <TextBlock Grid.Row="6" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding B, StringFormat={}{0:0}}" />
+      <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HeaderFooterFontSize]}" />
+      <Slider Grid.Row="0" Grid.Column="1" Margin="0,4"
+              Minimum="6" Maximum="24" SmallChange="1" LargeChange="2"
+              Value="{Binding SpecFontSize, Mode=TwoWay}" />
+      <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding SpecFontSize, StringFormat={}{0:0} pt}" />
 
-    <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
-               Foreground="{DynamicResource Foreground}"
-               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageRangeLabel]}" />
-    <TextBox Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2"
-             Margin="0,4" Padding="4"
-             ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageRangeHint]}"
-             Text="{Binding PageRangeText, UpdateSourceTrigger=PropertyChanged}" />
+      <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkColorR]}" />
+      <Slider Grid.Row="1" Grid.Column="1" Margin="0,4"
+              Minimum="0" Maximum="255" SmallChange="1" LargeChange="16"
+              Value="{Binding R, Mode=TwoWay}" />
+      <TextBlock Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding R, StringFormat={}{0:0}}" />
 
-    <StackPanel Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="3"
+      <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkColorG]}" />
+      <Slider Grid.Row="2" Grid.Column="1" Margin="0,4"
+              Minimum="0" Maximum="255" SmallChange="1" LargeChange="16"
+              Value="{Binding G, Mode=TwoWay}" />
+      <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding G, StringFormat={}{0:0}}" />
+
+      <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WatermarkColorB]}" />
+      <Slider Grid.Row="3" Grid.Column="1" Margin="0,4"
+              Minimum="0" Maximum="255" SmallChange="1" LargeChange="16"
+              Value="{Binding B, Mode=TwoWay}" />
+      <TextBlock Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding B, StringFormat={}{0:0}}" />
+
+      <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageRangeLabel]}" />
+      <TextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
+               Margin="0,4" Padding="4"
+               ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageRangeHint]}"
+               Text="{Binding PageRangeText, UpdateSourceTrigger=PropertyChanged}" />
+    </Grid>
+
+    <!-- OK / Cancel -->
+    <StackPanel Grid.Row="6"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 Margin="0,16,0,0">
