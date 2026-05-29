@@ -355,6 +355,24 @@
   <data name="MenuFileImportPdfOutline" xml:space="preserve">
     <value>Импорт _оглавления PDF в закладки</value>
   </data>
+  <data name="MenuFileExportFormData" xml:space="preserve">
+    <value>Экспорт данных _формы...</value>
+  </data>
+  <data name="MenuFileImportFormData" xml:space="preserve">
+    <value>И_мпорт данных формы...</value>
+  </data>
+  <data name="ExportFormDataDialogTitle" xml:space="preserve">
+    <value>Сохранить данные формы как</value>
+  </data>
+  <data name="ImportFormDataDialogTitle" xml:space="preserve">
+    <value>Выберите файл данных формы (JSON / FDF / XFDF)</value>
+  </data>
+  <data name="ImportFormDataSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить заполненный PDF как</value>
+  </data>
+  <data name="FormDataDialogFilter" xml:space="preserve">
+    <value>JSON (*.json)|*.json|FDF (*.fdf)|*.fdf|XFDF (*.xfdf)|*.xfdf|Все файлы (*.*)|*.*</value>
+  </data>
   <data name="SettingsTitle" xml:space="preserve">
     <value>Настройки</value>
   </data>

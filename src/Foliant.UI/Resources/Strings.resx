@@ -355,6 +355,24 @@
   <data name="MenuFileImportPdfOutline" xml:space="preserve">
     <value>Import PDF _outline as bookmarks</value>
   </data>
+  <data name="MenuFileExportFormData" xml:space="preserve">
+    <value>Export _Form Data...</value>
+  </data>
+  <data name="MenuFileImportFormData" xml:space="preserve">
+    <value>I_mport Form Data...</value>
+  </data>
+  <data name="ExportFormDataDialogTitle" xml:space="preserve">
+    <value>Export form data as</value>
+  </data>
+  <data name="ImportFormDataDialogTitle" xml:space="preserve">
+    <value>Pick form-data file (JSON / FDF / XFDF)</value>
+  </data>
+  <data name="ImportFormDataSaveDialogTitle" xml:space="preserve">
+    <value>Save filled PDF as</value>
+  </data>
+  <data name="FormDataDialogFilter" xml:space="preserve">
+    <value>JSON (*.json)|*.json|FDF (*.fdf)|*.fdf|XFDF (*.xfdf)|*.xfdf|All files (*.*)|*.*</value>
+  </data>
   <data name="SettingsTitle" xml:space="preserve">
     <value>Settings</value>
   </data>
