@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="PDFiumCore" />
     <PackageReference Include="PdfPig" />
+    <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 

@@ -2,19 +2,31 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Foliant.Application.Services;
 using PDFiumCore;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Foliant.Engines.Pdf;
 
 /// <summary>
-/// PDFium-объединение PDF: создаёт пустой документ через <c>FPDF_CreateNewDocument</c>,
-/// затем для каждого источника вызывает <c>FPDF_ImportPages(dest, src, null, dest.PageCount)</c>,
-/// что копирует все страницы в конец. Источники открываются последовательно (PDFium
-/// не потокобезопасен между документами). Результат пишется атомарно через temp + Move,
-/// как у <see cref="PdfiumWatermarkService"/>.
+/// PDFium-объединение источников в PDF: создаёт пустой документ через <c>FPDF_CreateNewDocument</c>,
+/// затем для каждого источника либо импортирует его страницы (<c>FPDF_ImportPages</c> для PDF),
+/// либо встраивает как страницу-изображение (для PNG / JPEG / BMP / GIF / TIFF). Источники
+/// открываются последовательно (PDFium не потокобезопасен между документами). Результат
+/// пишется атомарно через temp + Move, как у <see cref="PdfiumWatermarkService"/>.
+///
+/// Размер image-страницы: <c>width_pixels × height_pixels</c> в PDF-точках (1 px = 1 pt).
+/// Это даёт оригинальный визуальный размер на 72 DPI и предсказуемое поведение для
+/// большинства image-источников. DjVu / EPUB как источники merge — отдельный PR.
 /// </summary>
 public sealed class PdfiumMergeService : IPdfMergeService
 {
     private static readonly Lock NativeGate = new();
+
+    /// <summary>Поддерживаемые image-расширения (case-insensitive, с точкой).</summary>
+    private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".tif",
+    };
 
     public async Task MergeAsync(IReadOnlyList<string> sourcePaths, string targetPath, CancellationToken ct)
     {
@@ -29,20 +41,41 @@ public sealed class PdfiumMergeService : IPdfMergeService
             ArgumentException.ThrowIfNullOrWhiteSpace(p, nameof(sourcePaths));
         }
 
-        // Read all sources first so the lock-block only does CPU/native work; PDFium's load
-        // function takes either a path or a pinned in-memory buffer — buffer keeps it tidy.
-        var buffers = new List<byte[]>(sourcePaths.Count);
+        // Load sources upfront. PDFs → raw bytes (used inside NativeGate-lock so we don't IO
+        // there). Images → decoded BGRA32 + pixel dims (ImageSharp is fully managed, safe to
+        // call before the lock).
+        var sources = new List<MergeSource>(sourcePaths.Count);
         foreach (var path in sourcePaths)
         {
             ct.ThrowIfCancellationRequested();
-            buffers.Add(await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false));
+            if (IsImage(path))
+            {
+                sources.Add(await LoadImageSourceAsync(path, ct).ConfigureAwait(false));
+            }
+            else
+            {
+                byte[] bytes = await File.ReadAllBytesAsync(path, ct).ConfigureAwait(false);
+                sources.Add(new MergeSource(MergeSourceKind.Pdf, bytes, 0, 0));
+            }
         }
 
-        byte[] output = await Task.Run(() => MergeCore(buffers, ct), ct).ConfigureAwait(false);
+        byte[] output = await Task.Run(() => MergeCore(sources, ct), ct).ConfigureAwait(false);
         await WriteAtomicAsync(targetPath, output, ct).ConfigureAwait(false);
     }
 
-    private static byte[] MergeCore(List<byte[]> buffers, CancellationToken ct)
+    private static bool IsImage(string path) => ImageExtensions.Contains(Path.GetExtension(path));
+
+    private static async Task<MergeSource> LoadImageSourceAsync(string path, CancellationToken ct)
+    {
+        using var img = await Image.LoadAsync<Bgra32>(path, ct).ConfigureAwait(false);
+        int wPx = img.Width;
+        int hPx = img.Height;
+        byte[] buffer = new byte[wPx * hPx * 4]; // BGRA32, stride = 4*w
+        img.CopyPixelDataTo(buffer);
+        return new MergeSource(MergeSourceKind.Image, buffer, wPx, hPx);
+    }
+
+    private static byte[] MergeCore(List<MergeSource> sources, CancellationToken ct)
     {
         lock (NativeGate)
         {
@@ -56,10 +89,17 @@ public sealed class PdfiumMergeService : IPdfMergeService
 
             try
             {
-                foreach (var buffer in buffers)
+                foreach (var source in sources)
                 {
                     ct.ThrowIfCancellationRequested();
-                    AppendSource(dest, buffer);
+                    if (source.Kind == MergeSourceKind.Pdf)
+                    {
+                        AppendPdfSource(dest, source.Bytes);
+                    }
+                    else
+                    {
+                        AppendImageSource(dest, source.Bytes, source.WidthPx, source.HeightPx);
+                    }
                 }
                 return Save(dest);
             }
@@ -70,7 +110,7 @@ public sealed class PdfiumMergeService : IPdfMergeService
         }
     }
 
-    private static void AppendSource(FpdfDocumentT dest, byte[] sourceBytes)
+    private static void AppendPdfSource(FpdfDocumentT dest, byte[] sourceBytes)
     {
         GCHandle pin = GCHandle.Alloc(sourceBytes, GCHandleType.Pinned);
         try
@@ -85,7 +125,6 @@ public sealed class PdfiumMergeService : IPdfMergeService
             try
             {
                 int currentDestCount = fpdfview.FPDF_GetPageCount(dest);
-                // pagerange=null → all pages; index=currentDestCount → append.
                 if (fpdf_ppo.FPDF_ImportPages(dest, src, null, currentDestCount) == 0)
                 {
                     throw new InvalidOperationException("PDFium FPDF_ImportPages returned failure.");
@@ -94,6 +133,72 @@ public sealed class PdfiumMergeService : IPdfMergeService
             finally
             {
                 fpdfview.FPDF_CloseDocument(src);
+            }
+        }
+        finally
+        {
+            pin.Free();
+        }
+    }
+
+    /// <summary>Append a single image as a new page sized to its pixel dimensions (1 px → 1 pt).</summary>
+    private static void AppendImageSource(FpdfDocumentT dest, byte[] bgra32, int wPx, int hPx)
+    {
+        GCHandle pin = GCHandle.Alloc(bgra32, GCHandleType.Pinned);
+        try
+        {
+            // FPDFBitmap format 4 = BGRA. Stride = 4 * width for tightly-packed BGRA32.
+            var bitmap = fpdfview.FPDFBitmapCreateEx(wPx, hPx, 4, pin.AddrOfPinnedObject(), wPx * 4);
+            if (bitmap is null)
+            {
+                throw new InvalidOperationException("PDFium FPDFBitmapCreateEx failed for image source.");
+            }
+
+            try
+            {
+                int destPageIndex = fpdfview.FPDF_GetPageCount(dest);
+                var page = fpdf_edit.FPDFPageNew(dest, destPageIndex, wPx, hPx);
+                if (page is null)
+                {
+                    throw new InvalidOperationException("PDFium FPDFPageNew failed for image source.");
+                }
+
+                try
+                {
+                    var imgObj = fpdf_edit.FPDFPageObjNewImageObj(dest);
+                    if (imgObj is null)
+                    {
+                        throw new InvalidOperationException("PDFium FPDFPageObjNewImageObj failed.");
+                    }
+
+                    if (fpdf_edit.FPDFImageObjSetBitmap(page, 1, imgObj, bitmap) == 0)
+                    {
+                        throw new InvalidOperationException("PDFium FPDFImageObjSetBitmap returned failure.");
+                    }
+
+                    // Image objects are by default a unit square; scale to page dimensions.
+                    using var matrix = new FS_MATRIX_
+                    {
+                        A = wPx,
+                        B = 0,
+                        C = 0,
+                        D = hPx,
+                        E = 0,
+                        F = 0,
+                    };
+                    fpdf_edit.FPDFPageObjSetMatrix(imgObj, matrix);
+
+                    fpdf_edit.FPDFPageInsertObject(page, imgObj);
+                    fpdf_edit.FPDFPageGenerateContent(page);
+                }
+                finally
+                {
+                    fpdfview.FPDF_ClosePage(page);
+                }
+            }
+            finally
+            {
+                fpdfview.FPDFBitmapDestroy(bitmap);
             }
         }
         finally
@@ -155,4 +260,14 @@ public sealed class PdfiumMergeService : IPdfMergeService
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
     }
+
+    private enum MergeSourceKind
+    {
+        Pdf,
+        Image,
+    }
+
+    /// <summary>Internal envelope: either PDF bytes ready for <c>FPDF_LoadMemDocument64</c>,
+    /// or decoded BGRA32 image with pixel dimensions.</summary>
+    private sealed record MergeSource(MergeSourceKind Kind, byte[] Bytes, int WidthPx, int HeightPx);
 }

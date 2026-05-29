@@ -74,10 +74,13 @@
     <value>_Merge PDFs...</value>
   </data>
   <data name="MergePdfsPickDialogTitle" xml:space="preserve">
-    <value>Pick PDFs to merge (in selection order)</value>
+    <value>Pick PDFs or images to merge (in selection order)</value>
   </data>
   <data name="MergePdfsSaveDialogTitle" xml:space="preserve">
     <value>Save merged PDF as</value>
+  </data>
+  <data name="MergeSourcesDialogFilter" xml:space="preserve">
+    <value>Mergeable files (*.pdf;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.pdf;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|PDF (*.pdf)|*.pdf|Images (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|All files (*.*)|*.*</value>
   </data>
   <data name="MenuFileAddWatermark" xml:space="preserve">
     <value>Add _Watermark...</value>
