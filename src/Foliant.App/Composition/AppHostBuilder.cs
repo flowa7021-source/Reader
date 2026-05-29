@@ -151,6 +151,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IWatermarkService, PdfiumWatermarkService>();
         services.AddSingleton<IHeaderFooterService, PdfiumHeaderFooterService>();
         services.AddSingleton<IPdfCropService, PdfiumCropService>();
+        services.AddSingleton<IPdfMergeService, PdfiumMergeService>();
         services.AddSingleton<IPageImageExporter, WpfPageImageExporter>();
         services.AddSingleton<IPdfOutlineReader, PdfPigOutlineReader>();
 
@@ -281,7 +282,8 @@ internal static class AppHostBuilder
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<MainViewModel>(),
             sp.GetService<ILicenseManager>(),
             sp.GetService<ITrialService>(),
-            sp.GetService<IUpdateCheckService>()));
+            sp.GetService<IUpdateCheckService>(),
+            sp.GetService<IPdfMergeService>()));
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<LicenseImportViewModel>();
 

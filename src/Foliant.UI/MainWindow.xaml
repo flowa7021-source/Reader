@@ -185,6 +185,10 @@
                   IsEnabled="{Binding SelectedTab.CanImportPdfOutline, FallbackValue=False}"
                   Command="{Binding SelectedTab.ImportPdfOutlineCommand}" />
         <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileMergePdfs]}"
+                  IsEnabled="{Binding CanMergePdfs, FallbackValue=False}"
+                  Click="OnMergePdfsMenuItemClick" />
+        <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAddWatermark]}"
                   IsEnabled="{Binding SelectedTab.CanAddWatermark, FallbackValue=False}"
                   Click="OnAddWatermarkMenuItemClick" />

@@ -70,6 +70,15 @@
   <data name="MenuFileClearRecent" xml:space="preserve">
     <value>_Очистить список недавних</value>
   </data>
+  <data name="MenuFileMergePdfs" xml:space="preserve">
+    <value>_Объединить PDF...</value>
+  </data>
+  <data name="MergePdfsPickDialogTitle" xml:space="preserve">
+    <value>Выберите PDF для объединения (в порядке выбора)</value>
+  </data>
+  <data name="MergePdfsSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить объединённый PDF как</value>
+  </data>
   <data name="MenuFileAddWatermark" xml:space="preserve">
     <value>Добавить _водяной знак...</value>
   </data>

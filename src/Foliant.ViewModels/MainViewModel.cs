@@ -20,6 +20,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ILicenseManager? _licenseManager;
     private readonly ITrialService? _trial;
     private readonly IUpdateCheckService? _updateCheck;
+    private readonly IPdfMergeService? _mergeService;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -92,7 +93,8 @@ public sealed partial class MainViewModel : ObservableObject
         ILogger<MainViewModel> logger,
         ILicenseManager? licenseManager = null,
         ITrialService? trial = null,
-        IUpdateCheckService? updateCheck = null)
+        IUpdateCheckService? updateCheck = null,
+        IPdfMergeService? mergeService = null)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
@@ -111,6 +113,7 @@ public sealed partial class MainViewModel : ObservableObject
         _licenseManager = licenseManager;
         _trial = trial;
         _updateCheck = updateCheck;
+        _mergeService = mergeService;
         _logger = logger;
 
         // Tabs.Count → PropertyChanged for TabsCount + HasOpenTab.

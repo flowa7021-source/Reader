@@ -70,6 +70,15 @@
   <data name="MenuFileClearRecent" xml:space="preserve">
     <value>_Clear Recent Files</value>
   </data>
+  <data name="MenuFileMergePdfs" xml:space="preserve">
+    <value>_Merge PDFs...</value>
+  </data>
+  <data name="MergePdfsPickDialogTitle" xml:space="preserve">
+    <value>Pick PDFs to merge (in selection order)</value>
+  </data>
+  <data name="MergePdfsSaveDialogTitle" xml:space="preserve">
+    <value>Save merged PDF as</value>
+  </data>
   <data name="MenuFileAddWatermark" xml:space="preserve">
     <value>Add _Watermark...</value>
   </data>
