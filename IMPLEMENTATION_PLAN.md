@@ -249,7 +249,7 @@ Acceptance: окно открывает выбранный PDF, скроллит
 | **S12** | 2 нед | Простой text editor (без reflow): replace single line + add text box | `SimpleTextEditor`, базовый PDF→DOCX (текст по позициям через OpenXml) | Заменить 5 строк, экспорт в DOCX, открыть в Word — текст распознан. |
 | **S13** | 2 нед | License manager + 30-day триал + anti-tamper + Inno Setup installer + EV-подпись | `LicenseManager`, `TrialAntiTamper`, `installer/Foliant.iss`, signed `Foliant-Setup.exe` | Чистая Win10 21H2 VM: установить → запустить → триал активен 30 дней → ввести лицензию → активировано. Uninstall чистый. |
 
-### 4.0. Статус реализации Phase 1 (срез на 2026-05-26, ветка `claude/modest-shannon-Z9hWF`)
+### 4.0. Статус реализации Phase 1 (срез на 2026-05-29, главная ветка `main`)
 
 > Легенда: ✅ готово · 🟡 частично (есть «скелет», но acceptance-критерий ещё не достигается) · ⛔ не начато.
 > Метод: кросс-платформенный слой (Domain/Application/Infrastructure/ViewModels/Engines/плагин)
@@ -276,6 +276,21 @@ Acceptance: окно открывает выбранный PDF, скроллит
 **Сводно:** ✅ полностью — **S1, S2, S3, S4, S5, S6, S7, S9, S10, S11** (10 из 13). 🟡 частично — **S8, S12, S13** (ядра/логика готовы и протестированы; осталась нетестируемая на Linux часть: оффлайн-модели OCR, `.iss`, EV-подпись). ⛔ не начато — нет.
 
 > Обновление (2026-05-26, docs workstream): WPF-рендер непрерывного/2-страничного режимов (S2) и drag-and-drop reorder в полосе миниатюр (S11) реализованы и подтверждены в `src/Foliant.UI/MainWindow.xaml` / `MainWindow.xaml.cs` — обе строки переведены 🟡 → ✅. Внутриприложенческая справка по `F1` остаётся отложенным пунктом Phase 2. Документация обновлена и публикуется как MkDocs Material сайт (`mkdocs.yml`, `docs/`, `.github/workflows/docs.yml`).
+>
+> Обновление (2026-05-29, после Tracks A/B/C, PR #54/#55/#56): к ядру добавлен
+> MEF-host для плагинов (Track A — DjVu подключается через `IPluginCatalog`
+> рантайм-discovery вместо compile-time ссылки), in-box loader для изображений
+> PNG/JPEG/BMP/TIFF/GIF (Track B — `Foliant.Engines.Image`, закрывает первую
+> треть Q-F1: PDF + DjVu + изображения; EPUB + FB2/MOBI остаются в долге), и
+> UI-обвязка для уже существовавших cross-platform-сервисов (Track C —
+> чекбоксы Match case / Whole word / Ignore diacritics в search-sidebar
+> подключены к `SearchMatchCase`/`SearchMatchWholeWord`/`SearchFoldDiacritics`
+> на VM плюс через общий `DiacriticFolder` отражены в подсветке overlay'я;
+> диалоги **Add Watermark…** и **Add Header / Footer…** под File-меню,
+> привязанные к `IWatermarkService` / `IHeaderFooterService`). Соответственно
+> Q-F13 (watermark) и Q-F14 (колонтитулы) вычеркнуты из freeze-листа альфы
+> ниже — функционально доступны end-to-end (cross-platform layer + Windows
+> dialogs build-verified; manual smoke на Windows-стенде ещё не пройден).
 
 **Корневое наблюдение (обновлено):** мета-первопричина прошлого («код без среды сборки») устранена — кросс-платформенный слой собирается и тестируется на Linux до коммита, поэтому логика и VM покрыты тестами и валидируются. WPF-интеграции (рендер непрерывного/2-страничного режима, полоса миниатюр с drag-and-drop) теперь реализованы. Оставшийся риск сместился в **нетестируемую здесь зону**: нативные ресурсы (OCR-модели), упаковка (`.iss`, EV-подпись). Их ядра готовы; нужен проход на Windows-стенде (build+manual smoke по `tests/manual/RELEASE_SMOKE.md`).
 
@@ -287,7 +302,7 @@ Acceptance: окно открывает выбранный PDF, скроллит
 - XFA, PAdES, шифрование PDF, redaction.
 - LibreOffice плагин.
 - PDF/A валидация.
-- Watermarks / headers / footers.
+- ~~Watermarks / headers / footers.~~ — реализовано в Track C (PR #56, 2026-05-29), Q-F13 + Q-F14.
 - Crash reporter (только локальные логи).
 - Auto-save + event-sourced undo (Phase 2).
 - ARM64.
