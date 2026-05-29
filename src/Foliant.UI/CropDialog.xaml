@@ -18,6 +18,7 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
       <ColumnDefinition Width="140" />
@@ -72,6 +73,24 @@
                Text="{Binding TrimBottom, StringFormat={}{0:P0}}" />
 
     <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3"
+                Orientation="Horizontal"
+                Margin="0,8,0,0">
+      <TextBlock VerticalAlignment="Center" Margin="0,0,12,0"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CropMode]}" />
+      <RadioButton Margin="0,0,12,0" VerticalAlignment="Center"
+                   GroupName="CropMode"
+                   Foreground="{DynamicResource Foreground}"
+                   IsChecked="{Binding IsReversible, Mode=TwoWay}"
+                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CropModeReversible]}" />
+      <RadioButton VerticalAlignment="Center"
+                   GroupName="CropMode"
+                   Foreground="{DynamicResource Foreground}"
+                   IsChecked="{Binding IsPhysical, Mode=TwoWay}"
+                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CropModePhysical]}" />
+    </StackPanel>
+
+    <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right"
                 Margin="0,16,0,0">

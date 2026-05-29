@@ -106,6 +106,15 @@
   <data name="CropBottom" xml:space="preserve">
     <value>Снизу:</value>
   </data>
+  <data name="CropMode" xml:space="preserve">
+    <value>Режим:</value>
+  </data>
+  <data name="CropModeReversible" xml:space="preserve">
+    <value>Обратимый (/CropBox)</value>
+  </data>
+  <data name="CropModePhysical" xml:space="preserve">
+    <value>Физический (clip + MediaBox)</value>
+  </data>
   <data name="CropPagesSaveDialogTitle" xml:space="preserve">
     <value>Сохранить обрезанный PDF как</value>
   </data>

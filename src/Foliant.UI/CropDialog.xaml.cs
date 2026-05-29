@@ -18,6 +18,7 @@ public partial class CropDialog : Window, INotifyPropertyChanged
     private double _trimTop;
     private double _trimRight;
     private double _trimBottom;
+    private bool _isPhysical;
 
     public CropDialog()
     {
@@ -29,6 +30,14 @@ public partial class CropDialog : Window, INotifyPropertyChanged
     public double TrimTop { get => _trimTop; set { _trimTop = value; Notify(); Notify(nameof(IsValid)); } }
     public double TrimRight { get => _trimRight; set { _trimRight = value; Notify(); Notify(nameof(IsValid)); } }
     public double TrimBottom { get => _trimBottom; set { _trimBottom = value; Notify(); Notify(nameof(IsValid)); } }
+
+    /// <summary>True → <see cref="CropMode.Physical"/>; false → <see cref="CropMode.Reversible"/>.
+    /// Two-way bound to a RadioButton group in XAML.</summary>
+    public bool IsPhysical { get => _isPhysical; set { _isPhysical = value; Notify(); Notify(nameof(IsReversible)); } }
+
+    /// <summary>Inverse of <see cref="IsPhysical"/> для второго RadioButton'а — две взаимо-
+    /// исключающие опции в одной IsChecked-биндинг-парадигме.</summary>
+    public bool IsReversible { get => !_isPhysical; set { _isPhysical = !value; Notify(); Notify(nameof(IsPhysical)); } }
 
     /// <summary>OK enabled only when the spec has a measurable effect AND the sums stay below
     /// the safe limit (avoid creating a degenerate page). Mirrors <see cref="CropSpec.Validate"/>
@@ -62,7 +71,9 @@ public partial class CropDialog : Window, INotifyPropertyChanged
         {
             return null;
         }
-        return new CropSpec(dialog.TrimLeft, dialog.TrimTop, dialog.TrimRight, dialog.TrimBottom);
+        return new CropSpec(
+            dialog.TrimLeft, dialog.TrimTop, dialog.TrimRight, dialog.TrimBottom,
+            dialog.IsPhysical ? CropMode.Physical : CropMode.Reversible);
     }
 
     private void OnOkClick(object sender, RoutedEventArgs e) => DialogResult = true;
