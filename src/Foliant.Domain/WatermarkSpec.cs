@@ -12,6 +12,8 @@ namespace Foliant.Domain;
 /// <param name="R">Red-канал (0..255). Серый <c>128,128,128</c> — частый дефолт.</param>
 /// <param name="G">Green-канал (0..255).</param>
 /// <param name="B">Blue-канал (0..255).</param>
+/// <param name="Range">К каким страницам применить watermark; <c>null</c> — ко всем
+/// (Q-F13 «по диапазону»). Парсится из строки через <see cref="PageRange.Parse"/>.</param>
 public sealed record WatermarkSpec(
     string Text,
     double FontSize,
@@ -19,4 +21,5 @@ public sealed record WatermarkSpec(
     double AngleDegrees,
     byte R,
     byte G,
-    byte B);
+    byte B,
+    PageRange? Range = null);

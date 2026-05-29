@@ -18,10 +18,13 @@ namespace Foliant.Domain;
 /// <param name="R">Red-канал (0..255).</param>
 /// <param name="G">Green-канал (0..255).</param>
 /// <param name="B">Blue-канал (0..255).</param>
+/// <param name="Range">К каким страницам применить header/footer; <c>null</c> — ко всем
+/// (Q-F14 «по диапазону»). Парсится из строки через <see cref="PageRange.Parse"/>.</param>
 public sealed record HeaderFooterSpec(
     string? HeaderText,
     string? FooterText,
     double FontSize,
     byte R,
     byte G,
-    byte B);
+    byte B,
+    PageRange? Range = null);

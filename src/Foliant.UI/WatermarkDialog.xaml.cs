@@ -21,6 +21,7 @@ public partial class WatermarkDialog : Window, INotifyPropertyChanged
     private double _r = 128;
     private double _g = 128;
     private double _b = 128;
+    private string _pageRange = string.Empty;
 
     public WatermarkDialog()
     {
@@ -42,9 +43,17 @@ public partial class WatermarkDialog : Window, INotifyPropertyChanged
     public double G { get => _g; set { _g = value; Notify(); } }
     public double B { get => _b; set { _b = value; Notify(); } }
 
-    /// <summary>OK button stays disabled until the user has at least one non-whitespace character —
-    /// the service throws ArgumentException on empty text and we'd rather not surface that as a dialog error.</summary>
-    public bool IsValid => !string.IsNullOrWhiteSpace(_text);
+    /// <summary>Диапазон страниц в формате <c>"1-3,5,7-10"</c>. Пустая строка = все страницы.</summary>
+    public string PageRangeText
+    {
+        get => _pageRange;
+        set { _pageRange = value; Notify(); Notify(nameof(IsValid)); }
+    }
+
+    /// <summary>OK enabled только когда у текста есть хоть один не-whitespace символ И
+    /// page-range parsable (пустой = OK). Сервис бросает ArgumentException на пустом тексте /
+    /// невалидном range — лучше дисейблить заранее.</summary>
+    public bool IsValid => !string.IsNullOrWhiteSpace(_text) && PageRange.TryParse(_pageRange, out _);
 
     /// <summary>Open the dialog modally. Returns <c>null</c> if the user cancelled, otherwise
     /// a fresh <see cref="WatermarkSpec"/> with the captured values.</summary>
@@ -55,6 +64,11 @@ public partial class WatermarkDialog : Window, INotifyPropertyChanged
         {
             return null;
         }
+        PageRange? range = null;
+        if (PageRange.TryParse(dialog.PageRangeText, out PageRange? parsed) && parsed is not null && !parsed.IsAll)
+        {
+            range = parsed;
+        }
         return new WatermarkSpec(
             Text: dialog.Text.Trim(),
             FontSize: dialog.SpecFontSize,
@@ -62,7 +76,8 @@ public partial class WatermarkDialog : Window, INotifyPropertyChanged
             AngleDegrees: dialog.Angle,
             R: (byte)Math.Clamp(dialog.R, 0, 255),
             G: (byte)Math.Clamp(dialog.G, 0, 255),
-            B: (byte)Math.Clamp(dialog.B, 0, 255));
+            B: (byte)Math.Clamp(dialog.B, 0, 255),
+            Range: range);
     }
 
     private void OnOkClick(object sender, RoutedEventArgs e) => DialogResult = true;

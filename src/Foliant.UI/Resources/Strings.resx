@@ -145,6 +145,12 @@
   <data name="WatermarkColorB" xml:space="preserve">
     <value>Color B:</value>
   </data>
+  <data name="PageRangeLabel" xml:space="preserve">
+    <value>Page range:</value>
+  </data>
+  <data name="PageRangeHint" xml:space="preserve">
+    <value>e.g. 1-3,5,7-10 — empty = all pages</value>
+  </data>
   <data name="AddWatermarkSaveDialogTitle" xml:space="preserve">
     <value>Save watermarked PDF as</value>
   </data>

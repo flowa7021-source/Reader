@@ -58,10 +58,15 @@ public sealed class PdfiumHeaderFooterService : IHeaderFooterService
                 {
                     int pageCount = fpdfview.FPDF_GetPageCount(doc);
                     string today = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                    PageRange range = spec.Range ?? PageRange.All;
 
                     for (int i = 0; i < pageCount; i++)
                     {
                         ct.ThrowIfCancellationRequested();
+                        if (!range.Includes(i))
+                        {
+                            continue;
+                        }
                         StampPage(doc, i, pageCount, spec, filename, today);
                     }
 

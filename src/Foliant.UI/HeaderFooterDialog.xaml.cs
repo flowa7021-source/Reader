@@ -20,6 +20,7 @@ public partial class HeaderFooterDialog : Window, INotifyPropertyChanged
     private double _r = 64;
     private double _g = 64;
     private double _b = 64;
+    private string _pageRange = string.Empty;
 
     public HeaderFooterDialog()
     {
@@ -45,9 +46,16 @@ public partial class HeaderFooterDialog : Window, INotifyPropertyChanged
     public double G { get => _g; set { _g = value; Notify(); } }
     public double B { get => _b; set { _b = value; Notify(); } }
 
-    /// <summary>OK enabled only when at least one band has text — avoids the no-op spec.</summary>
+    public string PageRangeText
+    {
+        get => _pageRange;
+        set { _pageRange = value; Notify(); Notify(nameof(IsValid)); }
+    }
+
+    /// <summary>OK enabled only when at least one band has text AND page-range parses (пустая → all).</summary>
     public bool IsValid =>
-        !string.IsNullOrWhiteSpace(_headerText) || !string.IsNullOrWhiteSpace(_footerText);
+        (!string.IsNullOrWhiteSpace(_headerText) || !string.IsNullOrWhiteSpace(_footerText))
+        && PageRange.TryParse(_pageRange, out _);
 
     /// <summary>Open the dialog modally. Returns <c>null</c> on cancel, otherwise a spec where each
     /// band is either trimmed-non-empty or <c>null</c> (so the service skips it cleanly).</summary>
@@ -58,13 +66,19 @@ public partial class HeaderFooterDialog : Window, INotifyPropertyChanged
         {
             return null;
         }
+        PageRange? range = null;
+        if (PageRange.TryParse(dialog.PageRangeText, out PageRange? parsed) && parsed is not null && !parsed.IsAll)
+        {
+            range = parsed;
+        }
         return new HeaderFooterSpec(
             HeaderText: string.IsNullOrWhiteSpace(dialog.HeaderText) ? null : dialog.HeaderText.Trim(),
             FooterText: string.IsNullOrWhiteSpace(dialog.FooterText) ? null : dialog.FooterText.Trim(),
             FontSize: dialog.SpecFontSize,
             R: (byte)Math.Clamp(dialog.R, 0, 255),
             G: (byte)Math.Clamp(dialog.G, 0, 255),
-            B: (byte)Math.Clamp(dialog.B, 0, 255));
+            B: (byte)Math.Clamp(dialog.B, 0, 255),
+            Range: range);
     }
 
     private void OnOkClick(object sender, RoutedEventArgs e) => DialogResult = true;
