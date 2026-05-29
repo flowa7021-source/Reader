@@ -106,6 +106,15 @@
   <data name="CropBottom" xml:space="preserve">
     <value>Bottom:</value>
   </data>
+  <data name="CropMode" xml:space="preserve">
+    <value>Mode:</value>
+  </data>
+  <data name="CropModeReversible" xml:space="preserve">
+    <value>Reversible (/CropBox)</value>
+  </data>
+  <data name="CropModePhysical" xml:space="preserve">
+    <value>Physical (clip + MediaBox)</value>
+  </data>
   <data name="CropPagesSaveDialogTitle" xml:space="preserve">
     <value>Save cropped PDF as</value>
   </data>

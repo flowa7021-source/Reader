@@ -2,18 +2,34 @@ namespace Foliant.Domain;
 
 /// <summary>
 /// Описание обрезки страниц PDF — доли (0..0.5) ширины/высоты, которые срезаются с каждой
-/// стороны. Pure-data, без I/O — потребляется <c>IPdfCropService</c>. Применяется ко всем
-/// страницам единообразно (per-range — follow-up).
+/// стороны, плюс <see cref="CropMode"/> — обратимый или физический режим. Pure-data, без
+/// I/O — потребляется <c>IPdfCropService</c>. Применяется ко всем страницам единообразно
+/// (per-range — follow-up).
 ///
-/// Семантика обратимая: реализация выставляет <c>/CropBox</c> поверх существующего
-/// <c>/MediaBox</c>, поэтому контент не теряется — другой viewer может вернуть исходные
-/// границы. Физический crop (с обрезкой контента) — Phase 2 (см. Q-F15).
+/// Режимы:
+/// <list type="bullet">
+/// <item><see cref="CropMode.Reversible"/> — реализация выставляет <c>/CropBox</c> поверх
+///   существующего <c>/MediaBox</c>; контент не теряется, другой viewer (или сама Foliant
+///   с обнулённым CropBox) может вернуть исходные границы.</item>
+/// <item><see cref="CropMode.Physical"/> — реализация ставит и <c>/CropBox</c>, и
+///   <c>/MediaBox</c> в новые границы И добавляет page-level clipping path. Содержимое
+///   за новыми границами не рендерится никаким viewer'ом, размеры страницы фактически
+///   уменьшаются. Контент-stream не переписывается (объекты остаются в файле), поэтому
+///   полностью «удалить» их — Phase 2+; для большинства задач clip-based вариант
+///   эквивалентен «настоящему» физическому crop'у.</item>
+/// </list>
 /// </summary>
 /// <param name="Left">Доля ширины страницы, срезаемая слева (0..0.5).</param>
 /// <param name="Top">Доля высоты страницы, срезаемая сверху (0..0.5).</param>
 /// <param name="Right">Доля ширины страницы, срезаемая справа (0..0.5).</param>
 /// <param name="Bottom">Доля высоты страницы, срезаемая снизу (0..0.5).</param>
-public sealed record CropSpec(double Left, double Top, double Right, double Bottom)
+/// <param name="Mode">Режим обрезки; default — <see cref="CropMode.Reversible"/>.</param>
+public sealed record CropSpec(
+    double Left,
+    double Top,
+    double Right,
+    double Bottom,
+    CropMode Mode = CropMode.Reversible)
 {
     /// <summary>True если хотя бы одна сторона срезается на ≥ 0.5 %; иначе spec — no-op
     /// и сервису незачем переписывать документ.</summary>
@@ -48,4 +64,20 @@ public sealed record CropSpec(double Left, double Top, double Right, double Bott
             throw new ArgumentOutOfRangeException(name, value, "Each side must be in [0, 0.5].");
         }
     }
+}
+
+/// <summary>Режим работы <see cref="CropSpec"/>: обратимый (только <c>/CropBox</c>) или
+/// физический (<c>/MediaBox</c> + clip-path).</summary>
+public enum CropMode
+{
+    /// <summary>Только <c>/CropBox</c> — viewer-level подсказка о видимой области.
+    /// Полностью обратимо: достаточно убрать <c>/CropBox</c>, чтобы получить исходный документ.
+    /// Default для обратной совместимости.</summary>
+    Reversible,
+
+    /// <summary>Физический crop: меняем и <c>/CropBox</c>, и <c>/MediaBox</c>, и добавляем
+    /// page-level clipping path. Размеры страницы реально уменьшаются, контент за новыми
+    /// границами не виден никаким viewer'ом. Объекты не удаляются из файла — это
+    /// можно делать в Phase 2+, если потребуется уменьшить вес файла.</summary>
+    Physical,
 }

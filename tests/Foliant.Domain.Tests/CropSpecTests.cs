@@ -81,4 +81,28 @@ public sealed class CropSpecTests
     {
         new CropSpec(0.05, 0.10, 0.05, 0.10).Validate(); // no throw
     }
+
+    // ───── Mode ─────
+
+    [Fact]
+    public void Mode_DefaultsToReversible()
+    {
+        new CropSpec(0.05, 0.05, 0.05, 0.05).Mode.Should().Be(CropMode.Reversible);
+    }
+
+    [Fact]
+    public void Mode_PhysicalIsCarried()
+    {
+        new CropSpec(0.05, 0.05, 0.05, 0.05, CropMode.Physical).Mode.Should().Be(CropMode.Physical);
+    }
+
+    [Fact]
+    public void Validate_PhysicalMode_SameRulesAsReversible()
+    {
+        Action goodAct = () => new CropSpec(0.05, 0.10, 0.05, 0.10, CropMode.Physical).Validate();
+        goodAct.Should().NotThrow();
+
+        Action badAct = () => new CropSpec(0.6, 0, 0, 0, CropMode.Physical).Validate();
+        badAct.Should().Throw<ArgumentOutOfRangeException>();
+    }
 }

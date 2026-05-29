@@ -104,6 +104,29 @@ public sealed class PdfiumCropService : IPdfCropService
             float newTop = top - (float)(spec.Top * height);
 
             fpdf_transformpage.FPDFPageSetCropBox(page, newLeft, newBottom, newRight, newTop);
+
+            if (spec.Mode == CropMode.Physical)
+            {
+                // Физический режим: меняем и MediaBox, и добавляем page-level clip-path.
+                // SetMediaBox делает PDF-страницу реально меньше; viewer'ы, игнорирующие
+                // CropBox, всё равно видят только новые границы. Clip-path гарантирует,
+                // что любой контент, нарисованный «за» новыми границами, не отображается.
+                fpdf_transformpage.FPDFPageSetMediaBox(page, newLeft, newBottom, newRight, newTop);
+
+                var clip = fpdf_transformpage.FPDF_CreateClipPath(newLeft, newBottom, newRight, newTop);
+                if (clip is not null)
+                {
+                    try
+                    {
+                        fpdf_transformpage.FPDFPageInsertClipPath(page, clip);
+                    }
+                    finally
+                    {
+                        fpdf_transformpage.FPDF_DestroyClipPath(clip);
+                    }
+                }
+            }
+
             fpdf_edit.FPDFPageGenerateContent(page);
         }
         finally
