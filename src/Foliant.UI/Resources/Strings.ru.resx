@@ -74,10 +74,13 @@
     <value>_Объединить PDF...</value>
   </data>
   <data name="MergePdfsPickDialogTitle" xml:space="preserve">
-    <value>Выберите PDF для объединения (в порядке выбора)</value>
+    <value>Выберите PDF или изображения для объединения (в порядке выбора)</value>
   </data>
   <data name="MergePdfsSaveDialogTitle" xml:space="preserve">
     <value>Сохранить объединённый PDF как</value>
+  </data>
+  <data name="MergeSourcesDialogFilter" xml:space="preserve">
+    <value>Источники для объединения (*.pdf;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.pdf;*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|PDF (*.pdf)|*.pdf|Изображения (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|Все файлы (*.*)|*.*</value>
   </data>
   <data name="MenuFileAddWatermark" xml:space="preserve">
     <value>Добавить _водяной знак...</value>

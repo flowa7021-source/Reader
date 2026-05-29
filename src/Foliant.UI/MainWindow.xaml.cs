@@ -430,7 +430,7 @@ public partial class MainWindow : Window
         var pick = new OpenFileDialog
         {
             Title = loc["MergePdfsPickDialogTitle"],
-            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            Filter = loc["MergeSourcesDialogFilter"],
             Multiselect = true,
         };
 
