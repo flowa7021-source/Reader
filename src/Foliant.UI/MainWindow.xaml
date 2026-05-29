@@ -184,6 +184,12 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileImportPdfOutline]}"
                   IsEnabled="{Binding SelectedTab.CanImportPdfOutline, FallbackValue=False}"
                   Command="{Binding SelectedTab.ImportPdfOutlineCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExportFormData]}"
+                  IsEnabled="{Binding SelectedTab.CanExportFormData, FallbackValue=False}"
+                  Click="OnExportFormDataMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileImportFormData]}"
+                  IsEnabled="{Binding SelectedTab.CanImportFormData, FallbackValue=False}"
+                  Click="OnImportFormDataMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileMergePdfs]}"
                   IsEnabled="{Binding CanMergePdfs, FallbackValue=False}"

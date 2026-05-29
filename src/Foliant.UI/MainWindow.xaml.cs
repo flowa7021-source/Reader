@@ -314,6 +314,86 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnExportFormDataMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanExportFormData: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["ExportFormDataDialogTitle"],
+            Filter = loc["FormDataDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-form.json",
+            DefaultExt = "json",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ExportFormDataCommand.ExecuteAsync(save.FileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error exporting form data to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnImportFormDataMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanImportFormData: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var pick = new OpenFileDialog
+        {
+            Title = loc["ImportFormDataDialogTitle"],
+            Filter = loc["FormDataDialogFilter"],
+            CheckFileExists = true,
+        };
+
+        if (pick.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["ImportFormDataSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-filled.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ImportFormDataCommand.ExecuteAsync(new Foliant.ViewModels.ImportFormDataRequest(pick.FileName, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error importing form data from '{Source}' into '{Target}'.", pick.FileName, save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnMergePdfsMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (!_vm.CanMergePdfs)
