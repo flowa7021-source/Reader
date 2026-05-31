@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Foliant.Engines.Mobi</RootNamespace>
+    <Description>MOBI engine. Читает PalmDB-контейнер + PalmDOC-сжатый текст (in-box LZ77 разжиматель, без NuGet-зависимостей). Текстовые записи → HTML strip → pages; text-layer для поиска. Visual render — blank canvas в Phase 1 (см. EPUB/FB2 engines).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Foliant.Engines.Mobi.Tests" />
+  </ItemGroup>
+
+</Project>
