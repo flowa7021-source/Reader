@@ -8,8 +8,9 @@ namespace Foliant.Engines.Pdf;
 
 /// <summary>
 /// PDFium-реализация <see cref="IAnnotatedPdfExportService"/>: читает исходный PDF, добавляет
-/// настоящие редактируемые annotation-объекты (<c>/Highlight</c>, <c>/Text</c>, <c>/Ink</c>) через
-/// нативный слой PDFium и атомарно пишет новый PDF. Чистый маппинг доменных аннотаций в числовой,
+/// настоящие редактируемые annotation-объекты (<c>/Highlight</c>, <c>/Underline</c>,
+/// <c>/StrikeOut</c>, <c>/Text</c>, <c>/Ink</c>) через нативный слой PDFium и атомарно пишет
+/// новый PDF. Чистый маппинг доменных аннотаций в числовой,
 /// PDF-нейтральный вид делает <see cref="AnnotationToPdfSpec"/>; здесь — только нативная запись.
 ///
 /// PDFium не потокобезопасен (даже между документами), поэтому весь нативный участок выполняется
@@ -22,6 +23,8 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
     // константы не экспонируются, поэтому значения зашиты по спецификации PDFium.
     private const int SubtypeText = 1;
     private const int SubtypeHighlight = 9;
+    private const int SubtypeUnderline = 10;
+    private const int SubtypeStrikeout = 12;
     private const int SubtypeInk = 15;
 
     // FPDF_PAGEOBJ_* draw-mode для path-объекта чернил: только обводка, без заливки.
@@ -149,6 +152,8 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
             PdfAnnotationSubtype.Highlight => SubtypeHighlight,
             PdfAnnotationSubtype.Text => SubtypeText,
             PdfAnnotationSubtype.Ink => SubtypeInk,
+            PdfAnnotationSubtype.Underline => SubtypeUnderline,
+            PdfAnnotationSubtype.Strikeout => SubtypeStrikeout,
             _ => -1,
         };
 
@@ -175,6 +180,11 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
             switch (spec.Subtype)
             {
                 case PdfAnnotationSubtype.Highlight:
+                case PdfAnnotationSubtype.Underline:
+                case PdfAnnotationSubtype.Strikeout:
+                    // Все три text-markup используют один путь: цвет + quadpoints. PDFium
+                    // сам нарисует подходящий маркер (highlight fill / underline line / strikethrough line)
+                    // на основе /Subtype.
                     SetColor(annot, spec.Color);
                     AppendQuadPoints(annot, spec.QuadPoints);
                     break;

@@ -87,4 +87,61 @@ public sealed class AnnotationToPdfSpecTests
         specs[0].Subtype.Should().Be(PdfAnnotationSubtype.Highlight);
         specs[1].Subtype.Should().Be(PdfAnnotationSubtype.Text);
     }
+
+    // ───── Q-F16 underline + strikethrough text-markup ─────
+
+    [Fact]
+    public void Underline_MapsRectQuadPointsAndOpaqueColor()
+    {
+        var u = Annotation.Underline(3, new AnnotationRect(10, 20, 30, 40), "#0000FF", T0);
+
+        var spec = AnnotationToPdfSpec.Map(u)!;
+
+        spec.PageIndex.Should().Be(3);
+        spec.Subtype.Should().Be(PdfAnnotationSubtype.Underline);
+        spec.Rect.Should().Be(new PdfRect(10, 20, 40, 60));
+        spec.Color.Should().Be(new PdfRgba(0, 0, 255, 255));   // opaque — line на тексте
+        spec.QuadPoints.Should().Equal(10, 60, 40, 60, 10, 20, 40, 20);
+    }
+
+    [Fact]
+    public void Strikethrough_MapsToStrikeoutSubtypeWithOpaqueColor()
+    {
+        var s = Annotation.Strikethrough(0, new AnnotationRect(0, 0, 100, 10), "#FF0000", T0);
+
+        var spec = AnnotationToPdfSpec.Map(s)!;
+
+        spec.Subtype.Should().Be(PdfAnnotationSubtype.Strikeout);
+        spec.Color.Should().Be(new PdfRgba(255, 0, 0, 255));
+        spec.QuadPoints.Should().HaveCount(8);
+    }
+
+    [Fact]
+    public void TextMarkup_WithoutBounds_IsSkipped()
+    {
+        var u = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Underline, "#000", null, null, null, T0);
+        var s = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Strikethrough, "#000", null, null, null, T0);
+
+        AnnotationToPdfSpec.Map(u).Should().BeNull();
+        AnnotationToPdfSpec.Map(s).Should().BeNull();
+    }
+
+    [Fact]
+    public void TextMarkup_PreservesMetadata()
+    {
+        var modified = new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+        var u = Annotation.Underline(0, new AnnotationRect(0, 0, 10, 10), "#000", T0) with
+        {
+            ModifiedAt = modified,
+            Author = "Иван",
+            Subject = "Замечание",
+        };
+
+        var spec = AnnotationToPdfSpec.Map(u)!;
+
+        spec.CreatedAt.Should().Be(T0);
+        spec.ModifiedAt.Should().Be(modified);
+        spec.Author.Should().Be("Иван");
+        spec.Subject.Should().Be("Замечание");
+    }
 }

@@ -18,6 +18,8 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
     // PDFium FPDF_ANNOTATION_SUBTYPE values (fpdf_annot.h).
     private const int SubtypeText = 1;
     private const int SubtypeHighlight = 9;
+    private const int SubtypeUnderline = 10;
+    private const int SubtypeStrikeout = 12;
     private const int SubtypeInk = 15;
 
     private const string NoteText = "Привет — заметка";
@@ -99,6 +101,39 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
         actual.Bottom.Should().BeApproximately(bottom, Tol);
         actual.Right.Should().BeApproximately(right, Tol);
         actual.Top.Should().BeApproximately(top, Tol);
+    }
+
+    [Fact]
+    public async Task Export_EmbedsUnderlineAndStrikethrough_RoundTripsViaPdfium()
+    {
+        string source = SourcePath();
+        string target = Path.Combine(_tmpDir, "annotated-textmarkup.pdf");
+        var when = DateTimeOffset.UnixEpoch;
+        var bounds = new AnnotationRect(50, 300, 200, 12);
+
+        var annotations = new[]
+        {
+            Annotation.Underline(0, bounds, "#0000FF", when),
+            Annotation.Strikethrough(1, bounds, "#FF0000", when),
+        };
+
+        await _service.ExportAsync(source, annotations, target, default);
+
+        File.Exists(target).Should().BeTrue();
+
+        WithDocument(target, doc =>
+        {
+            var byPage = ReadAnnotations(doc);
+
+            var u = byPage[0].Should().ContainSingle().Subject;
+            u.Subtype.Should().Be(SubtypeUnderline);
+            AssertRect(u.Rect, left: 50, bottom: 300, right: 250, top: 312);
+            (u.ColorR, u.ColorG, u.ColorB).Should().Be(((uint)0, (uint)0, (uint)255));
+
+            var s = byPage[1].Should().ContainSingle().Subject;
+            s.Subtype.Should().Be(SubtypeStrikeout);
+            (s.ColorR, s.ColorG, s.ColorB).Should().Be(((uint)255, (uint)0, (uint)0));
+        });
     }
 
     [Fact]
