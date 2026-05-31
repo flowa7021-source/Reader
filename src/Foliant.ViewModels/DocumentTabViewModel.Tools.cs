@@ -84,6 +84,29 @@ public sealed partial class DocumentTabViewModel
         }
     }
 
+    /// <summary>ICommand-обёртка (B1c): завершить two-point жест (Line / Arrow) на текущей
+    /// странице. View передаёт пару PDF-точек; валидация — в <see cref="CommitTwoPointToolAsync"/>.</summary>
+    [RelayCommand]
+    private async Task CommitTwoPointToolOnCurrentPage(TwoPointPayload? payload)
+    {
+        if (payload is not null)
+        {
+            await CommitTwoPointToolAsync(CurrentPageIndex, payload.Start, payload.End).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>ICommand-обёртка (B1c): завершить multi-point жест (Freehand / Polygon) на
+    /// текущей странице. View передаёт собранные PDF-точки; валидация (≥2 / ≥3) — в
+    /// <see cref="CommitMultiPointToolAsync"/>.</summary>
+    [RelayCommand]
+    private async Task CommitMultiPointToolOnCurrentPage(IReadOnlyList<AnnotationPoint>? points)
+    {
+        if (points is not null)
+        {
+            await CommitMultiPointToolAsync(CurrentPageIndex, points).ConfigureAwait(false);
+        }
+    }
+
     /// <summary>Завершить rubber-band-rect жест: создать аннотацию rect-группы на странице
     /// <paramref name="pageIndex"/> по PDF-координатам <paramref name="bounds"/>. No-op для
     /// вырожденного прямоугольника, blank stamp-label или не-rect инструмента. Возвращает
@@ -190,3 +213,7 @@ public sealed partial class DocumentTabViewModel
         return true;
     }
 }
+
+/// <summary>View-supplied envelope для <c>CommitTwoPointToolOnCurrentPageCommand</c>: пара
+/// PDF-точек (начало/конец) two-point жеста Line / Arrow.</summary>
+public sealed record TwoPointPayload(AnnotationPoint Start, AnnotationPoint End);

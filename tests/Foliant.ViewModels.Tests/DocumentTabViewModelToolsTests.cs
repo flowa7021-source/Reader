@@ -251,4 +251,64 @@ public sealed class DocumentTabViewModelToolsTests
 
         (await vm.CommitPointToolAsync(0, new AnnotationPoint(0, 0))).Should().BeFalse();
     }
+
+    // ───── B1c: two-point / multi-point current-page ICommand wrappers ─────
+
+    [Fact]
+    public async Task CommitTwoPointToolOnCurrentPageCommand_UsesCurrentPageIndex()
+    {
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.CurrentPageIndex = 2;
+        vm.SelectToolCommand.Execute(AnnotationTool.Arrow);
+
+        await vm.CommitTwoPointToolOnCurrentPageCommand.ExecuteAsync(
+            new TwoPointPayload(new AnnotationPoint(0, 0), new AnnotationPoint(40, 50)));
+
+        await service.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Arrow && a.PageIndex == 2),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CommitTwoPointToolOnCurrentPageCommand_NullPayload_NoOp()
+    {
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.SelectToolCommand.Execute(AnnotationTool.Line);
+
+        await vm.CommitTwoPointToolOnCurrentPageCommand.ExecuteAsync(null);
+
+        await service.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CommitMultiPointToolOnCurrentPageCommand_Freehand_UsesCurrentPageIndex()
+    {
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.CurrentPageIndex = 1;
+        vm.SelectToolCommand.Execute(AnnotationTool.Freehand);
+
+        await vm.CommitMultiPointToolOnCurrentPageCommand.ExecuteAsync(
+            new List<AnnotationPoint> { new(0, 0), new(5, 5), new(10, 2) });
+
+        await service.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Freehand && a.PageIndex == 1),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CommitMultiPointToolOnCurrentPageCommand_NullPoints_NoOp()
+    {
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.SelectToolCommand.Execute(AnnotationTool.Freehand);
+
+        await vm.CommitMultiPointToolOnCurrentPageCommand.ExecuteAsync(null);
+
+        await service.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+    }
 }

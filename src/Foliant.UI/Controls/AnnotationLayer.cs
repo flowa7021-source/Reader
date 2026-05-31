@@ -54,12 +54,28 @@ internal sealed class AnnotationLayer : FrameworkElement
     public static readonly DependencyProperty CommitPointToolCommandProperty = DependencyProperty.Register(
         nameof(CommitPointToolCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
 
+    /// <summary>ICommand, вызывается с <c>TwoPointPayload</c> по завершении two-point жеста
+    /// (Line / Arrow).</summary>
+    public static readonly DependencyProperty CommitTwoPointToolCommandProperty = DependencyProperty.Register(
+        nameof(CommitTwoPointToolCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
+
+    /// <summary>ICommand, вызывается с <c>IReadOnlyList&lt;AnnotationPoint&gt;</c> по завершении
+    /// multi-point жеста (Freehand).</summary>
+    public static readonly DependencyProperty CommitMultiPointToolCommandProperty = DependencyProperty.Register(
+        nameof(CommitMultiPointToolCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
+
     private static readonly SolidColorBrush SearchHighlightBrush = CreateSearchHighlightBrush();
 
-    // Live rubber-band drag state (B1b). _dragStartPx in element-local pixels.
+    // Минимальный шаг сэмплирования freehand-точек (в пикселях) — чтобы не копить тысячи точек.
+    private const double FreehandMinStepPx = 3.0;
+
+    // Live drag state (B1b/B1c). _dragStartPx in element-local pixels; _activeGesture фиксирует
+    // тип жеста на mouse-down, чтобы up/move обрабатывали один и тот же сценарий.
     private bool _dragging;
+    private AnnotationToolGesture _activeGesture;
     private Point _dragStartPx;
     private Point _dragCurrentPx;
+    private readonly List<Point> _freehandPx = [];
 
     public IEnumerable<Annotation>? Annotations
     {
@@ -102,6 +118,18 @@ internal sealed class AnnotationLayer : FrameworkElement
     {
         get => (ICommand?)GetValue(CommitPointToolCommandProperty);
         set => SetValue(CommitPointToolCommandProperty, value);
+    }
+
+    public ICommand? CommitTwoPointToolCommand
+    {
+        get => (ICommand?)GetValue(CommitTwoPointToolCommandProperty);
+        set => SetValue(CommitTwoPointToolCommandProperty, value);
+    }
+
+    public ICommand? CommitMultiPointToolCommand
+    {
+        get => (ICommand?)GetValue(CommitMultiPointToolCommandProperty);
+        set => SetValue(CommitMultiPointToolCommandProperty, value);
     }
 
     private static void OnAnnotationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -170,9 +198,32 @@ internal sealed class AnnotationLayer : FrameworkElement
 
         if (_dragging)
         {
-            var preview = new Rect(_dragStartPx, _dragCurrentPx);
-            var pen = new Pen(Brushes.DodgerBlue, 1) { DashStyle = DashStyles.Dash };
-            dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x20, 0x1E, 0x90, 0xFF)), pen, preview);
+            DrawPreview(dc);
+        }
+    }
+
+    private void DrawPreview(DrawingContext dc)
+    {
+        var pen = new Pen(Brushes.DodgerBlue, 1) { DashStyle = DashStyles.Dash };
+        switch (_activeGesture)
+        {
+            case AnnotationToolGesture.RubberBandRect:
+                dc.DrawRectangle(
+                    new SolidColorBrush(Color.FromArgb(0x20, 0x1E, 0x90, 0xFF)),
+                    pen,
+                    new Rect(_dragStartPx, _dragCurrentPx));
+                break;
+            case AnnotationToolGesture.TwoPoint:
+                dc.DrawLine(pen, _dragStartPx, _dragCurrentPx);
+                break;
+            case AnnotationToolGesture.MultiPoint:
+                for (int i = 1; i < _freehandPx.Count; i++)
+                {
+                    dc.DrawLine(pen, _freehandPx[i - 1], _freehandPx[i]);
+                }
+                break;
+            default:
+                break;
         }
     }
 
@@ -418,12 +469,18 @@ internal sealed class AnnotationLayer : FrameworkElement
 
         AnnotationToolGesture gesture = DocumentTabViewModel.GestureFor(ActiveTool);
 
-        // Active palette tool wins over the default double-click-note behaviour.
-        if (gesture == AnnotationToolGesture.RubberBandRect)
+        // Active palette tool wins over the default double-click-note behaviour. RubberBandRect,
+        // TwoPoint и MultiPoint(Freehand) — все press-drag-release, разнятся только commit'ом.
+        if (gesture is AnnotationToolGesture.RubberBandRect
+            or AnnotationToolGesture.TwoPoint
+            or AnnotationToolGesture.MultiPoint)
         {
             _dragging = true;
+            _activeGesture = gesture;
             _dragStartPx = e.GetPosition(this);
             _dragCurrentPx = _dragStartPx;
+            _freehandPx.Clear();
+            _freehandPx.Add(_dragStartPx);
             CaptureMouse();
             e.Handled = true;
             return;
@@ -456,11 +513,24 @@ internal sealed class AnnotationLayer : FrameworkElement
     {
         ArgumentNullException.ThrowIfNull(e);
         base.OnMouseMove(e);
-        if (_dragging)
+        if (!_dragging)
         {
-            _dragCurrentPx = e.GetPosition(this);
-            InvalidateVisual();
+            return;
         }
+
+        _dragCurrentPx = e.GetPosition(this);
+        if (_activeGesture == AnnotationToolGesture.MultiPoint)
+        {
+            // Сэмплируем freehand-точки только при заметном смещении — чтобы список не разрастался.
+            Point last = _freehandPx[^1];
+            if (Math.Abs(_dragCurrentPx.X - last.X) >= FreehandMinStepPx
+                || Math.Abs(_dragCurrentPx.Y - last.Y) >= FreehandMinStepPx)
+            {
+                _freehandPx.Add(_dragCurrentPx);
+            }
+        }
+
+        InvalidateVisual();
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
@@ -475,9 +545,34 @@ internal sealed class AnnotationLayer : FrameworkElement
         _dragging = false;
         ReleaseMouseCapture();
         _dragCurrentPx = e.GetPosition(this);
+        AnnotationToolGesture gesture = _activeGesture;
         InvalidateVisual();
 
-        if (PageRender is not { } render || CommitRectToolCommand is null)
+        if (PageRender is not { } render)
+        {
+            return;
+        }
+
+        switch (gesture)
+        {
+            case AnnotationToolGesture.RubberBandRect:
+                CommitRect(render);
+                break;
+            case AnnotationToolGesture.TwoPoint:
+                CommitTwoPoint(render);
+                break;
+            case AnnotationToolGesture.MultiPoint:
+                CommitFreehand(render);
+                break;
+            default:
+                break;
+        }
+        e.Handled = true;
+    }
+
+    private void CommitRect(IPageRender render)
+    {
+        if (CommitRectToolCommand is null)
         {
             return;
         }
@@ -494,7 +589,46 @@ internal sealed class AnnotationLayer : FrameworkElement
         {
             CommitRectToolCommand.Execute(rect);
         }
-        e.Handled = true;
+    }
+
+    private void CommitTwoPoint(IPageRender render)
+    {
+        if (CommitTwoPointToolCommand is null)
+        {
+            return;
+        }
+
+        AnnotationPoint start = ToPdfPoint(_dragStartPx, render);
+        AnnotationPoint end = ToPdfPoint(_dragCurrentPx, render);
+        if (start.X == end.X && start.Y == end.Y)
+        {
+            return; // no drag
+        }
+
+        var payload = new TwoPointPayload(start, end);
+        if (CommitTwoPointToolCommand.CanExecute(payload))
+        {
+            CommitTwoPointToolCommand.Execute(payload);
+        }
+    }
+
+    private void CommitFreehand(IPageRender render)
+    {
+        if (CommitMultiPointToolCommand is null || _freehandPx.Count < 2)
+        {
+            return;
+        }
+
+        var points = new List<AnnotationPoint>(_freehandPx.Count);
+        foreach (Point p in _freehandPx)
+        {
+            points.Add(ToPdfPoint(p, render));
+        }
+
+        if (CommitMultiPointToolCommand.CanExecute(points))
+        {
+            CommitMultiPointToolCommand.Execute(points);
+        }
     }
 
     private static AnnotationPoint ToPdfPoint(Point px, IPageRender render)
