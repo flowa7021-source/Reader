@@ -141,4 +141,158 @@ public sealed class XfdfAnnotationImporterTests
         a.ModifiedAt.Should().Be(modified);
         a.CreatedAt.Should().Be(created);
     }
+
+    // ───── Q-F16 shapes / text-markup round-trip ─────
+
+    [Fact]
+    public void Roundtrip_AllAnnotationKinds_PreservesShapesAndMetadata()
+    {
+        var when = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var bounds = new AnnotationRect(10, 20, 30, 40);
+        AnnotationPoint[] lineEnds = [new AnnotationPoint(1, 2), new AnnotationPoint(50, 60)];
+        AnnotationPoint[] polyVerts =
+        [
+            new AnnotationPoint(0, 0), new AnnotationPoint(10, 0),
+            new AnnotationPoint(10, 10), new AnnotationPoint(0, 10),
+        ];
+
+        var source = new List<Annotation>
+        {
+            Annotation.Underline(0, bounds, "#0000FF", when),
+            Annotation.Strikethrough(1, bounds, "#FF0000", when),
+            Annotation.Rectangle(2, bounds, "#00FF00", when),
+            Annotation.Ellipse(3, bounds, "#FF00FF", when),
+            Annotation.Line(4, lineEnds, "#000000", when),
+            Annotation.Arrow(5, lineEnds, "#FF8800", when),
+            Annotation.Polygon(6, polyVerts, "#888888", when),
+        };
+
+        var xfdf = new XfdfAnnotationExporter().Export(source);
+        var imported = _sut.Import(xfdf);
+
+        imported.Should().HaveCount(7);
+        imported.Should().BeEquivalentTo(source, o => o.Excluding(a => a.Id));
+    }
+
+    [Fact]
+    public void Import_AcrobatStyleSquareAndCircle_MapsToRectangleAndEllipse()
+    {
+        const string xfdf = """
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <square page="0" color="#00FF00" rect="0,0,40,30" />
+              <circle page="1" color="#FF00FF" rect="5,5,45,55" />
+            </annots></xfdf>
+            """;
+
+        var imported = _sut.Import(xfdf);
+
+        imported.Should().HaveCount(2);
+        imported[0].Kind.Should().Be(AnnotationKind.Rectangle);
+        imported[0].Bounds.Should().Be(new AnnotationRect(0, 0, 40, 30));
+        imported[1].Kind.Should().Be(AnnotationKind.Ellipse);
+        imported[1].PageIndex.Should().Be(1);
+    }
+
+    [Fact]
+    public void Import_LineWithoutEndings_IsPlainLine()
+    {
+        const string xfdf = """
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <line page="0" color="#000000" start="0,0" end="100,50" />
+            </annots></xfdf>
+            """;
+
+        var a = _sut.Import(xfdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Line);
+        a.InkPoints.Should().Equal(new AnnotationPoint(0, 0), new AnnotationPoint(100, 50));
+    }
+
+    [Theory]
+    [InlineData("None", "OpenArrow")]
+    [InlineData("OpenArrow", "None")]
+    [InlineData("ClosedArrow", "ClosedArrow")]
+    public void Import_LineWithNonNoneEnding_IsArrow(string head, string tail)
+    {
+        string xfdf = $"""
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <line page="0" color="#000000" start="0,0" end="10,10" head="{head}" tail="{tail}" />
+            </annots></xfdf>
+            """;
+
+        var a = _sut.Import(xfdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Arrow);
+    }
+
+    [Fact]
+    public void Import_PolygonWithSemicolonVertices_ParsesAllPoints()
+    {
+        const string xfdf = """
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <polygon page="0" color="#000000"><vertices>0,0;10,0;10,10;0,10</vertices></polygon>
+            </annots></xfdf>
+            """;
+
+        var a = _sut.Import(xfdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Polygon);
+        a.InkPoints.Should().HaveCount(4);
+    }
+
+    [Fact]
+    public void Import_PolygonWithFewerThanThreeVertices_IsSkipped()
+    {
+        const string xfdf = """
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <polygon page="0" color="#000000"><vertices>0,0;10,10</vertices></polygon>
+            </annots></xfdf>
+            """;
+
+        _sut.Import(xfdf).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Import_UnderlineAndStrikeout_MapToCorrectKinds()
+    {
+        const string xfdf = """
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <underline page="0" color="#0000FF" rect="0,0,40,5" />
+              <strikeout page="1" color="#FF0000" rect="0,0,40,5" />
+            </annots></xfdf>
+            """;
+
+        var imported = _sut.Import(xfdf);
+
+        imported[0].Kind.Should().Be(AnnotationKind.Underline);
+        imported[1].Kind.Should().Be(AnnotationKind.Strikethrough);
+    }
+
+    [Fact]
+    public void Export_AllShapeKinds_ProducesNonNullElements()
+    {
+        // White-box assertion that exporter doesn't silently drop any of the 10 kinds.
+        var when = DateTimeOffset.UnixEpoch;
+        var b = new AnnotationRect(0, 0, 10, 10);
+        AnnotationPoint[] line = [new(0, 0), new(10, 10)];
+        AnnotationPoint[] poly = [new(0, 0), new(10, 0), new(10, 10)];
+        var src = new List<Annotation>
+        {
+            Annotation.Highlight(0, b, "#FFEB3B", when),
+            Annotation.Underline(0, b, "#FFEB3B", when),
+            Annotation.Strikethrough(0, b, "#FFEB3B", when),
+            Annotation.StickyNote(0, b, "x", "#FFEB3B", when),
+            Annotation.Freehand(0, line, "#000", when),
+            Annotation.Rectangle(0, b, "#000", when),
+            Annotation.Ellipse(0, b, "#000", when),
+            Annotation.Line(0, line, "#000", when),
+            Annotation.Arrow(0, line, "#000", when),
+            Annotation.Polygon(0, poly, "#000", when),
+        };
+
+        string xfdf = new XfdfAnnotationExporter().Export(src);
+
+        var imported = _sut.Import(xfdf);
+        imported.Should().HaveCount(10);
+    }
 }
