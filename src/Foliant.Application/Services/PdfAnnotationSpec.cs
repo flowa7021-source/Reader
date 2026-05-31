@@ -20,6 +20,10 @@ public enum PdfAnnotationSubtype
 
     /// <summary>PDF `/Subtype /Circle` — эллипс/круг.</summary>
     Circle,
+
+    /// <summary>PDF `/Subtype /Stamp` — штамп с label-текстом (<c>/Contents</c>) и rect-border
+    /// appearance'ом, рисуемым внутри annotation.</summary>
+    Stamp,
 }
 
 /// <summary>Прямоугольник в PDF user space: нижний-левый и верхний-правый углы.</summary>

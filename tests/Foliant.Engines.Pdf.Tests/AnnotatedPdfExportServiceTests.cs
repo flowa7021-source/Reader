@@ -22,6 +22,7 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
     private const int SubtypeHighlight = 9;
     private const int SubtypeUnderline = 10;
     private const int SubtypeStrikeout = 12;
+    private const int SubtypeStamp = 13;
     private const int SubtypeInk = 15;
 
     private const string NoteText = "Привет — заметка";
@@ -167,6 +168,33 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
             var ci = byPage[1].Should().ContainSingle().Subject;
             ci.Subtype.Should().Be(SubtypeCircle);
             (ci.ColorR, ci.ColorG, ci.ColorB).Should().Be(((uint)255, (uint)0, (uint)255));
+        });
+    }
+
+    [Fact]
+    public async Task Export_EmbedsStamp_RoundTripsViaPdfium()
+    {
+        string source = SourcePath();
+        string target = Path.Combine(_tmpDir, "annotated-stamp.pdf");
+        var when = DateTimeOffset.UnixEpoch;
+
+        var annotations = new[]
+        {
+            Annotation.Stamp(0, new AnnotationRect(100, 100, 200, 60), "APPROVED", "#00AA00", when),
+        };
+
+        await _service.ExportAsync(source, annotations, target, default);
+
+        File.Exists(target).Should().BeTrue();
+
+        WithDocument(target, doc =>
+        {
+            var stamp = ReadAnnotations(doc)[0].Should().ContainSingle().Subject;
+            stamp.Subtype.Should().Be(SubtypeStamp);
+            // Label survives via /Contents; color lives in the appearance-stream path/text objects,
+            // not in /C — PDFium's FPDFAnnotGetColor returns nothing for Stamp, which is expected.
+            stamp.Contents.Should().Be("APPROVED");
+            AssertRect(stamp.Rect, left: 100, bottom: 100, right: 300, top: 160);
         });
     }
 

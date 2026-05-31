@@ -19,29 +19,40 @@
 Легенда: `[ ]` не начато · `[~]` в работе / draft PR · `[x]` merged.
 
 ### 1. A4 — Stamp в FDF/XFDF round-trip
-- [~] **Status:** draft PR опубликован
+- [x] **Status:** merged (#77)
 - **Файлы:** `XfdfAnnotationExporter.cs`, `XfdfAnnotationImporter.cs`, `FdfAnnotationExporter.cs`, `FdfAnnotationImporter.cs` + tests
 - **Acceptance:** Stamp round-trip через оба формата; tests на label + bounds + color preservation
 - **Размер:** S
 - **PR:** _tbd_
 
 ### 2. A1 — AnnotatedPdf: underline + strikethrough
-- [ ] **Status:** не начато
+- [x] **Status:** merged (#78)
 - **Файлы:** `AnnotatedPdfExportService.cs`, `AnnotationToPdfSpec.cs` + tests
 - **Acceptance:** `/Subtype /Underline` и `/Subtype /StrikeOut` появляются в `/Annots`; QuadPoints корректны
 - **Размер:** S
 - **Блокирует:** A2 (общие helpers)
-- **PR:** _tbd_
+- **PR:** #78
 
 ### 3. A2 — AnnotatedPdf: shapes (square/circle/line/arrow/polygon)
-- [ ] **Status:** не начато
+- [x] **Status:** merged (#79) — Square+Circle embedд'ятся; Line/Arrow/Polygon отложены
+  (PDFium 146.x не экспонирует `/L`/`/Vertices`/`/LE` setter'ы) → подтрек **A2b** ниже
 - **Файлы:** те же что A1 + tests
-- **Acceptance:** 5 новых `/Subtype` в `/Annots`; `/L`, `/LE`, `/Vertices` соответствуют PDF spec
+- **Acceptance:** `/Square` + `/Circle` в `/Annots` (✅); Line/Arrow/Polygon → A2b
 - **Размер:** M
+- **PR:** #79
+
+### 3b. A2b — AnnotatedPdf: line/arrow/polygon через cos-level fallback
+- [ ] **Status:** не начато (новый подтрек, выделен из A2)
+- **Файлы:** `AnnotatedPdfExportService.cs` (cos-level `/L`/`/Vertices`/`/LE` запись поверх
+  `FPDF_SaveAsCopy` output, либо path-object внутри pre-created form), tests
+- **Acceptance:** Line/Arrow/Polygon → `/Annots` с корректным `/L`/`/Vertices`
+- **Размер:** M
+- **Заметка:** требует обхода ограничения PDFiumCore 146.x — возможно raw-dictionary
+  пост-обработка. Низкий приоритет (round-trip через FDF/XFDF/JSON уже работает).
 - **PR:** _tbd_
 
 ### 4. A3 — AnnotatedPdf: stamp с appearance stream
-- [ ] **Status:** не начато
+- [~] **Status:** draft PR опубликован
 - **Файлы:** те же + `StampAppearance.cs` (новый)
 - **Acceptance:** `/Subtype /Stamp` + `/AP` (rect outline + centred label) → Acrobat распознаёт как редактируемый stamp
 - **Размер:** M
