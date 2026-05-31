@@ -78,7 +78,7 @@
 - **PR:** _tbd_
 
 ### 7. B2 — Form-fill UI dialog
-- [ ] **Status:** не начато
+- [~] **Status:** draft PR опубликован
 - **Файлы:** `FormFillDialog.xaml(.cs)`, `MainWindow.xaml(.cs)` (Tools → Fill Form…), Strings, FormFillViewModel
 - **Acceptance:** диалог показывает поля формы PDF, пользователь правит → save → новый PDF на диск
 - **Размер:** M

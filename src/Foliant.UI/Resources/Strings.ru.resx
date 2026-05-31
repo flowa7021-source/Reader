@@ -349,6 +349,30 @@
   <data name="ThemeHighContrast" xml:space="preserve">
     <value>_Высокая контрастность</value>
   </data>
+  <data name="MenuToolsFillForm" xml:space="preserve">
+    <value>_Заполнить форму...</value>
+  </data>
+  <data name="FormFillDialogTitle" xml:space="preserve">
+    <value>Заполнение формы</value>
+  </data>
+  <data name="FormFillColumnField" xml:space="preserve">
+    <value>Поле</value>
+  </data>
+  <data name="FormFillColumnValue" xml:space="preserve">
+    <value>Значение</value>
+  </data>
+  <data name="FormFillEmptyHint" xml:space="preserve">
+    <value>В документе нет заполняемых полей формы.</value>
+  </data>
+  <data name="FormFillCountFormat" xml:space="preserve">
+    <value>Полей формы: {0}. Отредактируйте значения и нажмите «Сохранить как», чтобы записать заполненную копию.</value>
+  </data>
+  <data name="FormFillSaveAs" xml:space="preserve">
+    <value>Сохранить как...</value>
+  </data>
+  <data name="FormFillSaveTitle" xml:space="preserve">
+    <value>Сохранить заполненный PDF как</value>
+  </data>
   <data name="MenuToolsViewSignatures" xml:space="preserve">
     <value>_Цифровые подписи...</value>
   </data>
