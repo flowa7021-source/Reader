@@ -70,7 +70,7 @@ public sealed class FdfAnnotationImporterTests
     [Fact]
     public void Import_UnknownSubtype_IsSkipped()
     {
-        // /Underline — нами не поддерживается; должен быть проигнорирован, валидный Highlight рядом
+        // /Caret — нами не поддерживается; должен быть проигнорирован, валидный Highlight рядом
         // остаётся.
         string fdf = """
             %FDF-1.2
@@ -79,7 +79,7 @@ public sealed class FdfAnnotationImporterTests
             /FDF
             <<
             /Annots [
-            << /Type /Annot /Subtype /Underline /Page 0 /Rect [0 0 10 10] /C [0 0 0] >>
+            << /Type /Annot /Subtype /Caret /Page 0 /Rect [0 0 10 10] /C [0 0 0] >>
             << /Type /Annot /Subtype /Highlight /Page 0 /Rect [10 20 40 60] /C [1 0 0] /QuadPoints [10 60 40 60 10 20 40 20] >>
             ]
             >>
@@ -217,5 +217,158 @@ public sealed class FdfAnnotationImporterTests
 
         imported.Should().ContainSingle()
             .Which.Should().Match<Annotation>(a => a.Kind == AnnotationKind.StickyNote && a.Text == "Hi>");
+    }
+
+    // ───── Q-F16 shapes / text-markup round-trip ─────
+
+    [Fact]
+    public void RoundTrip_AllShapeKinds_PreservesEverything()
+    {
+        var bounds = new AnnotationRect(10, 20, 30, 40);
+        AnnotationPoint[] lineEnds = [new(1, 2), new(50, 60)];
+        AnnotationPoint[] poly =
+        [
+            new(0, 0), new(10, 0), new(10, 10), new(0, 10),
+        ];
+
+        var src = new[]
+        {
+            Annotation.Underline(0, bounds, "#0000FF", T0),
+            Annotation.Strikethrough(1, bounds, "#FF0000", T0),
+            Annotation.Rectangle(2, bounds, "#00FF00", T0),
+            Annotation.Ellipse(3, bounds, "#FF00FF", T0),
+            Annotation.Line(4, lineEnds, "#000000", T0),
+            Annotation.Arrow(5, lineEnds, "#FF8800", T0),
+            Annotation.Polygon(6, poly, "#888888", T0),
+        };
+
+        string fdf = new FdfAnnotationExporter().Export(src);
+        var imported = new FdfAnnotationImporter().Import(fdf);
+
+        imported.Should().BeEquivalentTo(src, o => o.Excluding(a => a.Id));
+    }
+
+    [Fact]
+    public void Import_AcrobatStyleSquareAndCircle_MapToRectangleAndEllipse()
+    {
+        const string fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Square /Page 0 /Rect [0 0 40 30] /C [0 1 0] >>
+            << /Type /Annot /Subtype /Circle /Page 1 /Rect [5 5 45 55] /C [1 0 1] >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        var imported = new FdfAnnotationImporter().Import(fdf);
+
+        imported.Should().HaveCount(2);
+        imported[0].Kind.Should().Be(AnnotationKind.Rectangle);
+        imported[0].Bounds.Should().Be(new AnnotationRect(0, 0, 40, 30));
+        imported[1].Kind.Should().Be(AnnotationKind.Ellipse);
+    }
+
+    [Fact]
+    public void Import_LineWithoutLE_IsPlainLine()
+    {
+        const string fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Line /Page 0 /C [0 0 0] /L [0 0 100 50] >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        var a = new FdfAnnotationImporter().Import(fdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Line);
+        a.InkPoints.Should().Equal(new AnnotationPoint(0, 0), new AnnotationPoint(100, 50));
+    }
+
+    [Theory]
+    [InlineData("/None /OpenArrow")]
+    [InlineData("/OpenArrow /None")]
+    [InlineData("/ClosedArrow /ClosedArrow")]
+    public void Import_LineWithNonNoneLE_IsArrow(string le)
+    {
+        string fdf = $$"""
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Line /Page 0 /C [0 0 0] /L [0 0 10 10] /LE [{{le}}] >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        var a = new FdfAnnotationImporter().Import(fdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Arrow);
+    }
+
+    [Fact]
+    public void Import_Polygon_ReadsVertices()
+    {
+        const string fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Polygon /Page 0 /C [0 0 0] /Vertices [0 0 10 0 10 10 0 10] >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        var a = new FdfAnnotationImporter().Import(fdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Polygon);
+        a.InkPoints.Should().HaveCount(4);
+    }
+
+    [Fact]
+    public void Import_PolygonWithFewerThanThreeVertices_IsSkipped()
+    {
+        // /Vertices has 4 values (2 points) → polygon requires ≥3 vertices → skipped silently.
+        const string fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Polygon /Page 0 /C [0 0 0] /Vertices [0 0 10 10] >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        new FdfAnnotationImporter().Import(fdf).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Import_UnderlineAndStrikeout_MapsToCorrectKinds()
+    {
+        const string fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Underline /Page 0 /Rect [0 0 40 5] /C [0 0 1] >>
+            << /Type /Annot /Subtype /StrikeOut /Page 1 /Rect [0 0 40 5] /C [1 0 0] >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        var imported = new FdfAnnotationImporter().Import(fdf);
+
+        imported[0].Kind.Should().Be(AnnotationKind.Underline);
+        imported[1].Kind.Should().Be(AnnotationKind.Strikethrough);
     }
 }

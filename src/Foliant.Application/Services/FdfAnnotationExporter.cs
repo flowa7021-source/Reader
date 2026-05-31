@@ -6,8 +6,18 @@ namespace Foliant.Application.Services;
 
 /// <summary>
 /// Экспорт аннотаций в FDF (Adobe Forms Data Format) — легаси-формат обмена на PDF-синтаксисе
-/// (Q-F17), читается Acrobat. Highlight/StickyNote(/Text)/Freehand(/Ink) — PDF-словари в массиве
-/// <c>/Annots</c>. Координаты — PDF user space; цвет — массив <c>[r g b]</c> 0..1; текст —
+/// (Q-F17), читается Acrobat. Покрытые типы:
+/// <list type="bullet">
+/// <item>Highlight / Underline / Strikethrough → <c>/Subtype /Highlight | /Underline | /StrikeOut</c>
+///       (общий text-markup путь с <c>/QuadPoints</c>).</item>
+/// <item>StickyNote → <c>/Subtype /Text</c> + <c>/Contents</c>.</item>
+/// <item>Freehand → <c>/Subtype /Ink</c> + <c>/InkList</c>.</item>
+/// <item>Rectangle / Ellipse → <c>/Subtype /Square | /Circle</c> + <c>/Rect</c>.</item>
+/// <item>Line → <c>/Subtype /Line</c> + <c>/L [x1 y1 x2 y2]</c>.</item>
+/// <item>Arrow → <c>/Subtype /Line</c> + <c>/LE [/None /OpenArrow]</c>.</item>
+/// <item>Polygon → <c>/Subtype /Polygon</c> + <c>/Vertices [x1 y1 x2 y2 …]</c>.</item>
+/// </list>
+/// Координаты — PDF user space; цвет — массив <c>[r g b]</c> 0..1; текст —
 /// UTF-16BE hex-строка (корректно для кириллицы). Stateless, без I/O.
 ///
 /// Round-trip: импорт обратно делает <see cref="FdfAnnotationImporter"/>.
@@ -38,14 +48,40 @@ public sealed class FdfAnnotationExporter : IAnnotationExporter
 
     private static string? AnnotDict(Annotation a) => a.Kind switch
     {
-        AnnotationKind.Highlight when a.Bounds is { } b =>
-            $"<< /Type /Annot /Subtype /Highlight {PageRectColor(a, b)} /QuadPoints [{QuadPoints(b)}]{Metadata(a)} >>",
+        AnnotationKind.Highlight when a.Bounds is { } b => TextMarkupDict("Highlight", a, b),
+        AnnotationKind.Underline when a.Bounds is { } b => TextMarkupDict("Underline", a, b),
+        AnnotationKind.Strikethrough when a.Bounds is { } b => TextMarkupDict("StrikeOut", a, b),
         AnnotationKind.StickyNote when a.Bounds is { } b =>
             $"<< /Type /Annot /Subtype /Text {PageRectColor(a, b)} /Contents {PdfText(a.Text)}{Metadata(a)} >>",
         AnnotationKind.Freehand when a.InkPoints is { Count: > 0 } points =>
             $"<< /Type /Annot /Subtype /Ink /Page {Page(a)} {ColorEntry(a.ColorHex)} /InkList [[{InkList(points)}]]{Metadata(a)} >>",
+        AnnotationKind.Rectangle when a.Bounds is { } b =>
+            $"<< /Type /Annot /Subtype /Square {PageRectColor(a, b)}{Metadata(a)} >>",
+        AnnotationKind.Ellipse when a.Bounds is { } b =>
+            $"<< /Type /Annot /Subtype /Circle {PageRectColor(a, b)}{Metadata(a)} >>",
+        AnnotationKind.Line when a.InkPoints is { Count: 2 } pts =>
+            LineDict(a, pts, isArrow: false),
+        AnnotationKind.Arrow when a.InkPoints is { Count: 2 } pts =>
+            LineDict(a, pts, isArrow: true),
+        AnnotationKind.Polygon when a.InkPoints is { Count: >= 3 } pts =>
+            $"<< /Type /Annot /Subtype /Polygon /Page {Page(a)} {ColorEntry(a.ColorHex)} /Vertices [{Vertices(pts)}]{Metadata(a)} >>",
         _ => null,
     };
+
+    private static string TextMarkupDict(string subtype, Annotation a, AnnotationRect b) =>
+        $"<< /Type /Annot /Subtype /{subtype} {PageRectColor(a, b)} /QuadPoints [{QuadPoints(b)}]{Metadata(a)} >>";
+
+    private static string LineDict(Annotation a, IReadOnlyList<AnnotationPoint> pts, bool isArrow)
+    {
+        // PDF /L массив: [x1 y1 x2 y2]. /LE [head tail] управляет окончаниями.
+        // Arrow: head=None, tail=OpenArrow (соответствует XfdfAnnotationExporter).
+        string l = $"/L [{F(pts[0].X)} {F(pts[0].Y)} {F(pts[1].X)} {F(pts[1].Y)}]";
+        string le = isArrow ? " /LE [/None /OpenArrow]" : string.Empty;
+        return $"<< /Type /Annot /Subtype /Line /Page {Page(a)} {ColorEntry(a.ColorHex)} {l}{le}{Metadata(a)} >>";
+    }
+
+    private static string Vertices(IReadOnlyList<AnnotationPoint> pts) =>
+        string.Join(' ', pts.Select(p => $"{F(p.X)} {F(p.Y)}"));
 
     // Метаданные пишем только если поля заполнены — пустые /T/Subj бесполезны, /M/CreationDate
     // имеют смысл лишь как реальные временные метки. /CreationDate всегда есть (домен требует),
