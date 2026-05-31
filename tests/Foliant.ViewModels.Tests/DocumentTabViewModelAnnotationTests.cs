@@ -420,4 +420,212 @@ public sealed class DocumentTabViewModelAnnotationTests
         a.Text.Should().BeNull();
         a.InkPoints.Should().BeNull();
     }
+
+    // ───── Geometric shapes (Q-F16, Track R3) ─────
+
+    [Fact]
+    public async Task AddRectangle_DispatchesToService()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var bounds = new AnnotationRect(10, 20, 100, 50);
+
+        await vm.AddRectangleAsync(0, bounds, "#FF0000", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Rectangle && a.Bounds == bounds),
+            Arg.Any<CancellationToken>());
+        vm.RectangleCount.Should().Be(1);
+        vm.CurrentPageAnnotations.Should().ContainSingle(a => a.Kind == AnnotationKind.Rectangle);
+    }
+
+    [Fact]
+    public async Task AddEllipse_DispatchesToService()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var bounds = new AnnotationRect(0, 0, 50, 30);
+
+        await vm.AddEllipseAsync(0, bounds, "#00FF00", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Ellipse && a.Bounds == bounds),
+            Arg.Any<CancellationToken>());
+        vm.EllipseCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AddLine_TwoPoints_Dispatches()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var points = new List<AnnotationPoint> { new(0, 0), new(100, 100) };
+
+        await vm.AddLineAsync(0, points, "#0000FF", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Line && a.InkPoints!.Count == 2),
+            Arg.Any<CancellationToken>());
+        vm.LineCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AddLine_WrongPointCount_IsNoOp()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+
+        await vm.AddLineAsync(0, [new AnnotationPoint(1, 1)], "#000", CancellationToken.None);
+
+        await ann.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+        vm.LineCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AddArrow_TwoPoints_Dispatches()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var points = new List<AnnotationPoint> { new(0, 0), new(50, 25) };
+
+        await vm.AddArrowAsync(0, points, "#FF00FF", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Arrow && a.InkPoints!.Count == 2),
+            Arg.Any<CancellationToken>());
+        vm.ArrowCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AddPolygon_ThreePoints_Dispatches()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var points = new List<AnnotationPoint> { new(0, 0), new(10, 0), new(5, 10) };
+
+        await vm.AddPolygonAsync(0, points, "#FFFF00", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Polygon && a.InkPoints!.Count == 3),
+            Arg.Any<CancellationToken>());
+        vm.PolygonCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AddPolygon_FewerThanThreePoints_IsNoOp()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var points = new List<AnnotationPoint> { new(0, 0), new(10, 10) };
+
+        await vm.AddPolygonAsync(0, points, "#000", CancellationToken.None);
+
+        await ann.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+        vm.PolygonCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AddRectangle_OnDifferentPage_NotInCurrentList()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+
+        await vm.AddRectangleAsync(5, new AnnotationRect(0, 0, 10, 10), "#000", default);
+
+        vm.TotalAnnotationsCount.Should().Be(1);
+        vm.RectangleCount.Should().Be(1);
+        vm.CurrentPageAnnotations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AddRectangle_StampsAuthorFromSettings()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann, SettingsWithAuthor("Charlie"));
+
+        await vm.AddRectangleAsync(0, new AnnotationRect(0, 0, 10, 10), "#000", default);
+
+        await ann.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Author == "Charlie"),
+            Arg.Any<CancellationToken>());
+    }
+
+    // ───── Domain factory contracts ─────
+
+    [Fact]
+    public void DomainRectangleFactory_SetsKindAndBounds()
+    {
+        var b = new AnnotationRect(1, 2, 3, 4);
+        var a = Annotation.Rectangle(0, b, "#000", DateTimeOffset.UnixEpoch);
+        a.Kind.Should().Be(AnnotationKind.Rectangle);
+        a.Bounds.Should().Be(b);
+        a.InkPoints.Should().BeNull();
+    }
+
+    [Fact]
+    public void DomainEllipseFactory_SetsKindAndBounds()
+    {
+        var b = new AnnotationRect(1, 2, 3, 4);
+        var a = Annotation.Ellipse(0, b, "#000", DateTimeOffset.UnixEpoch);
+        a.Kind.Should().Be(AnnotationKind.Ellipse);
+        a.Bounds.Should().Be(b);
+    }
+
+    [Fact]
+    public void DomainLineFactory_ExactlyTwoPoints_OK()
+    {
+        var pts = new List<AnnotationPoint> { new(0, 0), new(10, 10) };
+        var a = Annotation.Line(0, pts, "#000", DateTimeOffset.UnixEpoch);
+        a.Kind.Should().Be(AnnotationKind.Line);
+        a.Bounds.Should().BeNull();
+        a.InkPoints.Should().BeEquivalentTo(pts);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void DomainLineFactory_WrongPointCount_Throws(int n)
+    {
+        var pts = Enumerable.Range(0, n).Select(i => new AnnotationPoint(i, i)).ToList();
+        Action act = () => Annotation.Line(0, pts, "#000", DateTimeOffset.UnixEpoch);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void DomainArrowFactory_WrongPointCount_Throws(int n)
+    {
+        var pts = Enumerable.Range(0, n).Select(i => new AnnotationPoint(i, i)).ToList();
+        Action act = () => Annotation.Arrow(0, pts, "#000", DateTimeOffset.UnixEpoch);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void DomainPolygonFactory_FewerThanThreePoints_Throws(int n)
+    {
+        var pts = Enumerable.Range(0, n).Select(i => new AnnotationPoint(i, i)).ToList();
+        Action act = () => Annotation.Polygon(0, pts, "#000", DateTimeOffset.UnixEpoch);
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void DomainPolygonFactory_ThreeOrMore_OK()
+    {
+        var pts = new List<AnnotationPoint> { new(0, 0), new(10, 0), new(5, 10) };
+        var a = Annotation.Polygon(0, pts, "#000", DateTimeOffset.UnixEpoch);
+        a.Kind.Should().Be(AnnotationKind.Polygon);
+        a.InkPoints.Should().HaveCount(3);
+    }
 }

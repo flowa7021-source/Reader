@@ -81,6 +81,37 @@ public sealed class MarkdownAnnotationExporter : IAnnotationExporter
                 sb.Append(a.ColorHex);
                 sb.AppendLine(")");
                 break;
+
+            case AnnotationKind.Rectangle:
+                sb.Append("- **Rectangle** (");
+                sb.Append(a.ColorHex);
+                sb.AppendLine(")");
+                break;
+
+            case AnnotationKind.Ellipse:
+                sb.Append("- **Ellipse** (");
+                sb.Append(a.ColorHex);
+                sb.AppendLine(")");
+                break;
+
+            case AnnotationKind.Line:
+                sb.Append("- **Line** (");
+                sb.Append(a.ColorHex);
+                sb.AppendLine(")");
+                break;
+
+            case AnnotationKind.Arrow:
+                sb.Append("- **Arrow** (");
+                sb.Append(a.ColorHex);
+                sb.AppendLine(")");
+                break;
+
+            case AnnotationKind.Polygon:
+                sb.Append("- **Polygon** (");
+                int polyPoints = a.InkPoints?.Count ?? 0;
+                sb.Append(polyPoints.ToString(CultureInfo.InvariantCulture));
+                sb.AppendLine(" vertices)");
+                break;
         }
 
         AppendMetadata(sb, a);

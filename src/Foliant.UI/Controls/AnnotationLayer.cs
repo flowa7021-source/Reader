@@ -162,9 +162,91 @@ internal sealed class AnnotationLayer : FrameworkElement
             case AnnotationKind.Freehand when a.InkPoints is { Count: > 1 }:
                 DrawInk(dc, a.InkPoints, page, zoom, color);
                 break;
+            case AnnotationKind.Rectangle when a.Bounds is { } b:
+                DrawRectangleShape(dc, ToRect(b, page, zoom), color);
+                break;
+            case AnnotationKind.Ellipse when a.Bounds is { } b:
+                DrawEllipseShape(dc, ToRect(b, page, zoom), color);
+                break;
+            case AnnotationKind.Line when a.InkPoints is { Count: 2 }:
+                DrawLineShape(dc, a.InkPoints, page, zoom, color);
+                break;
+            case AnnotationKind.Arrow when a.InkPoints is { Count: 2 }:
+                DrawArrowShape(dc, a.InkPoints, page, zoom, color);
+                break;
+            case AnnotationKind.Polygon when a.InkPoints is { Count: >= 3 }:
+                DrawPolygonShape(dc, a.InkPoints, page, zoom, color);
+                break;
             default:
                 break;
         }
+    }
+
+    /// <summary>Rectangle (contour, no fill).</summary>
+    private static void DrawRectangleShape(DrawingContext dc, Rect r, Color color)
+    {
+        var pen = new Pen(new SolidColorBrush(color), 2);
+        dc.DrawRectangle(null, pen, r);
+    }
+
+    /// <summary>Ellipse inscribed in <paramref name="r"/>.</summary>
+    private static void DrawEllipseShape(DrawingContext dc, Rect r, Color color)
+    {
+        var pen = new Pen(new SolidColorBrush(color), 2);
+        dc.DrawEllipse(null, pen, new Point(r.Left + (r.Width / 2.0), r.Top + (r.Height / 2.0)), r.Width / 2.0, r.Height / 2.0);
+    }
+
+    /// <summary>Straight line between two points.</summary>
+    private static void DrawLineShape(DrawingContext dc, IReadOnlyList<AnnotationPoint> points, PageSize page, double zoom, Color color)
+    {
+        var pen = new Pen(new SolidColorBrush(color), 2);
+        dc.DrawLine(pen, ToPoint(points[0], page, zoom), ToPoint(points[1], page, zoom));
+    }
+
+    /// <summary>Arrow = line with arrowhead at end point. Arrowhead is two short lines at ±30°
+    /// from the line direction, length proportional to line length but capped at 16 px.</summary>
+    private static void DrawArrowShape(DrawingContext dc, IReadOnlyList<AnnotationPoint> points, PageSize page, double zoom, Color color)
+    {
+        var pen = new Pen(new SolidColorBrush(color), 2);
+        Point start = ToPoint(points[0], page, zoom);
+        Point end = ToPoint(points[1], page, zoom);
+        dc.DrawLine(pen, start, end);
+
+        double dx = end.X - start.X;
+        double dy = end.Y - start.Y;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        if (len < 1e-6)
+        {
+            return;
+        }
+        double headLen = Math.Min(16.0, len * 0.2);
+        double angle = Math.Atan2(dy, dx);
+        const double headHalfAngle = Math.PI / 6.0; // 30°
+        var leftBarb = new Point(
+            end.X - (headLen * Math.Cos(angle - headHalfAngle)),
+            end.Y - (headLen * Math.Sin(angle - headHalfAngle)));
+        var rightBarb = new Point(
+            end.X - (headLen * Math.Cos(angle + headHalfAngle)),
+            end.Y - (headLen * Math.Sin(angle + headHalfAngle)));
+        dc.DrawLine(pen, end, leftBarb);
+        dc.DrawLine(pen, end, rightBarb);
+    }
+
+    /// <summary>Closed polygon by vertices. Drawn as outline (no fill).</summary>
+    private static void DrawPolygonShape(DrawingContext dc, IReadOnlyList<AnnotationPoint> points, PageSize page, double zoom, Color color)
+    {
+        var pen = new Pen(new SolidColorBrush(color), 2) { LineJoin = PenLineJoin.Round };
+        var geometry = new StreamGeometry();
+        using (StreamGeometryContext ctx = geometry.Open())
+        {
+            ctx.BeginFigure(ToPoint(points[0], page, zoom), isFilled: false, isClosed: true);
+            for (int i = 1; i < points.Count; i++)
+            {
+                ctx.LineTo(ToPoint(points[i], page, zoom), isStroked: true, isSmoothJoin: true);
+            }
+        }
+        geometry.Freeze();
+        dc.DrawGeometry(null, pen, geometry);
     }
 
     private static void DrawNote(DrawingContext dc, Rect r, Color color)
