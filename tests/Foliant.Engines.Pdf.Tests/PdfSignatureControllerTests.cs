@@ -8,8 +8,32 @@ using Xunit;
 
 namespace Foliant.Engines.Pdf.Tests;
 
-public sealed class PdfSignatureControllerTests
+public sealed class PdfSignatureControllerTests : IDisposable
 {
+    private readonly string _tmpDir;
+
+    public PdfSignatureControllerTests()
+    {
+        _tmpDir = Path.Combine(Path.GetTempPath(), "foliant-sig-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_tmpDir);
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            Directory.Delete(_tmpDir, recursive: true);
+        }
+        catch (IOException)
+        {
+            // best-effort cleanup — file may be locked by a background reader on Windows
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // best-effort cleanup — permission flap in CI
+        }
+    }
+
     // ───── MapKindFromSubFilter ─────
 
     [Theory]
@@ -30,7 +54,6 @@ public sealed class PdfSignatureControllerTests
     [Fact]
     public void ParsePdfDate_FullForm_ParsesCorrectly()
     {
-        // D:20231215143000+03'00' — December 15, 2023, 14:30:00 UTC+3.
         var result = PdfSignatureController.ParsePdfDate("D:20231215143000+03'00'");
         result.Year.Should().Be(2023);
         result.Month.Should().Be(12);
@@ -101,7 +124,6 @@ public sealed class PdfSignatureControllerTests
     [Fact]
     public void ExtractSignerName_ValidPkcs7_ReturnsCommonName()
     {
-        // Build a self-signed cert with a known CN, sign a small payload, extract.
         using var rsa = RSA.Create(2048);
         var req = new CertificateRequest("CN=Test Signer Foliant, OU=Engineering, O=Foliant", rsa,
             HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -128,62 +150,40 @@ public sealed class PdfSignatureControllerTests
 
     // ───── End-to-end with an UNSIGNED PDF (Slow — uses PDFium native) ─────
 
+    private string WriteTinyPdf(string name)
+    {
+        using var builder = new UglyToad.PdfPig.Writer.PdfDocumentBuilder();
+        var font = builder.AddStandard14Font(UglyToad.PdfPig.Fonts.Standard14Fonts.Standard14Font.Helvetica);
+        var page = builder.AddPage(200, 200);
+        page.AddText("x", 10, new UglyToad.PdfPig.Core.PdfPoint(10, 10), font);
+        string path = Path.Combine(_tmpDir, name);
+        File.WriteAllBytes(path, builder.Build());
+        return path;
+    }
+
     [Fact]
     [Trait("Category", "Slow")]
     public void UnsignedPdf_ReturnsEmptySignatureList()
     {
-        string tmpDir = Path.Combine(Path.GetTempPath(), "foliant-sig-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tmpDir);
-        try
-        {
-            // Hand-build minimal unsigned PDF via PdfPig.
-            var builder = new UglyToad.PdfPig.Writer.PdfDocumentBuilder();
-            var font = builder.AddStandard14Font(UglyToad.PdfPig.Fonts.Standard14Fonts.Standard14Font.Helvetica);
-            var page = builder.AddPage(400, 400);
-            page.AddText("unsigned", 12, new UglyToad.PdfPig.Core.PdfPoint(50, 50), font);
-            string path = Path.Combine(tmpDir, "unsigned.pdf");
-            File.WriteAllBytes(path, builder.Build());
+        string path = WriteTinyPdf("unsigned.pdf");
+        var ctrl = new PdfSignatureController(path);
 
-            var ctrl = new PdfSignatureController(path);
-
-            ctrl.Signatures.Should().BeEmpty();
-        }
-        finally
-        {
-            try { Directory.Delete(tmpDir, recursive: true); }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-        }
+        ctrl.Signatures.Should().BeEmpty();
     }
 
     [Fact]
     [Trait("Category", "Slow")]
     public async Task ValidateAsync_HonestNotImplemented()
     {
-        string tmpDir = Path.Combine(Path.GetTempPath(), "foliant-sig-val-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tmpDir);
-        try
-        {
-            var builder = new UglyToad.PdfPig.Writer.PdfDocumentBuilder();
-            var font = builder.AddStandard14Font(UglyToad.PdfPig.Fonts.Standard14Fonts.Standard14Font.Helvetica);
-            builder.AddPage(200, 200).AddText("x", 10, new UglyToad.PdfPig.Core.PdfPoint(10, 10), font);
-            string path = Path.Combine(tmpDir, "x.pdf");
-            File.WriteAllBytes(path, builder.Build());
+        string path = WriteTinyPdf("for-validate.pdf");
+        var ctrl = new PdfSignatureController(path);
+        var fakeSignature = new DocumentSignature("Test", DateTimeOffset.UtcNow, null, null, SignatureKind.Cms);
 
-            var ctrl = new PdfSignatureController(path);
-            var fakeSignature = new DocumentSignature("Test", DateTimeOffset.UtcNow, null, null, SignatureKind.Cms);
-            var result = await ctrl.ValidateAsync(fakeSignature, CancellationToken.None);
+        var result = await ctrl.ValidateAsync(fakeSignature, CancellationToken.None);
 
-            result.IsValid.Should().BeFalse();
-            result.CertificateTrusted.Should().BeFalse();
-            result.DocumentUntouchedSinceSigning.Should().BeFalse();
-            result.FailureReason.Should().Contain("not implemented");
-        }
-        finally
-        {
-            try { Directory.Delete(tmpDir, recursive: true); }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-        }
+        result.IsValid.Should().BeFalse();
+        result.CertificateTrusted.Should().BeFalse();
+        result.DocumentUntouchedSinceSigning.Should().BeFalse();
+        result.FailureReason.Should().Contain("not implemented");
     }
 }

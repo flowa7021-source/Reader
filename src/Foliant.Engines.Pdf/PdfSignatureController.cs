@@ -298,27 +298,24 @@ public sealed class PdfSignatureController : ISignatureController
         }
 
         TimeSpan offset = TimeSpan.Zero;
-        if (s.Length >= 15)
+        if (s.Length >= 15 && (s[14] == '+' || s[14] == '-'))
         {
             char sign = s[14];
-            if (sign == '+' || sign == '-')
+            if (s.Length >= 17 &&
+                int.TryParse(s.AsSpan(15, 2), NumberStyles.None, CultureInfo.InvariantCulture, out int offHours))
             {
-                if (s.Length >= 17 &&
-                    int.TryParse(s.AsSpan(15, 2), NumberStyles.None, CultureInfo.InvariantCulture, out int offHours))
+                int offMinutes = 0;
+                if (s.Length >= 20 && s[17] == '\'')
                 {
-                    int offMinutes = 0;
-                    if (s.Length >= 20 && s[17] == '\'')
-                    {
-                        int.TryParse(s.AsSpan(18, 2), NumberStyles.None, CultureInfo.InvariantCulture, out offMinutes);
-                    }
-                    offset = new TimeSpan(offHours, offMinutes, 0);
-                    if (sign == '-')
-                    {
-                        offset = -offset;
-                    }
+                    int.TryParse(s.AsSpan(18, 2), NumberStyles.None, CultureInfo.InvariantCulture, out offMinutes);
+                }
+                offset = new TimeSpan(offHours, offMinutes, 0);
+                if (sign == '-')
+                {
+                    offset = -offset;
                 }
             }
-            // 'Z' → offset stays zero.
+            // 'Z' / unknown signs leave offset at zero.
         }
 
         return new DateTimeOffset(dt, offset);
