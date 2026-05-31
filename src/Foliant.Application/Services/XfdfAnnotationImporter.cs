@@ -7,8 +7,8 @@ namespace Foliant.Application.Services;
 /// <summary>
 /// Импорт аннотаций из XFDF (Q-F17) — обратная операция к <see cref="XfdfAnnotationExporter"/>.
 /// Элементы ищутся по локальному имени (highlight / underline / strikeout / text / ink /
-/// square / circle / line / polygon) независимо от namespace, чтобы принимать XFDF из Acrobat
-/// и других инструментов. Arrow распознаётся как <c>&lt;line&gt;</c> с не-<c>None</c>
+/// square / circle / line / polygon / stamp) независимо от namespace, чтобы принимать XFDF
+/// из Acrobat и других инструментов. Arrow распознаётся как <c>&lt;line&gt;</c> с не-<c>None</c>
 /// <c>tail</c>-атрибутом (например <c>tail="OpenArrow"</c>). Битые/неполные элементы
 /// пропускаются; невалидный XML бросает исключение вызывающему.
 /// </summary>
@@ -37,6 +37,7 @@ public sealed class XfdfAnnotationImporter : IAnnotationImporter
                 "circle" => ParseRectShape(el, AnnotationKind.Ellipse),
                 "line" => ParseLine(el),
                 "polygon" => ParsePolygon(el),
+                "stamp" => ParseStamp(el),
                 _ => null,
             };
 
@@ -99,6 +100,23 @@ public sealed class XfdfAnnotationImporter : IAnnotationImporter
             ? Annotation.Arrow(page, pts, Color(el), Created(el))
             : Annotation.Line(page, pts, Color(el), Created(el));
         return WithMetadata(core, el);
+    }
+
+    private static Annotation? ParseStamp(XElement el)
+    {
+        if (Page(el) is not { } page || Rect(el) is not { } bounds)
+        {
+            return null;
+        }
+
+        // Stamp factory требует non-blank label — battery пустой <contents> → пропускаем.
+        string label = el.Elements().FirstOrDefault(c => c.Name.LocalName == "contents")?.Value ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(label))
+        {
+            return null;
+        }
+
+        return WithMetadata(Annotation.Stamp(page, bounds, label, Color(el), Created(el)), el);
     }
 
     private static Annotation? ParsePolygon(XElement el)

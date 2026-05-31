@@ -1,0 +1,148 @@
+# Foliant — Phase 1 (Alpha) DoD: оставшиеся работы
+
+**Создан:** 2026-05-31, после merge PR'ов #70–#76.
+**Базовый контракт:** один PR → draft → merge → следующий от свежего main. Параллелить только pure-application/engine треки, не трогающие `MainWindow.xaml(.cs)` и `Strings*.resx`.
+
+---
+
+## Статус-снимок (на момент создания плана)
+
+- **Phase 1 (Alpha):** 10/13 спринтов ✅, 3/13 🟡.
+- **Q-F фичи:** 19 ✅, 4 🟡, 9 заморожены Phase 2+.
+- **Тесты:** ~1431 кейсов; coverage gates держатся (D 99.7 / A 85.5 / I 80.7 / V 88.2).
+- **Свежемерджено:** #70 sigs read-only • #71 shapes • #72 stamps • #73 RTL • #74 sigs UI • #75 XFDF shapes • #76 FDF shapes.
+
+---
+
+## Дорожная карта (рекомендованный порядок принят)
+
+Легенда: `[ ]` не начато · `[~]` в работе / draft PR · `[x]` merged.
+
+### 1. A4 — Stamp в FDF/XFDF round-trip
+- [~] **Status:** draft PR опубликован
+- **Файлы:** `XfdfAnnotationExporter.cs`, `XfdfAnnotationImporter.cs`, `FdfAnnotationExporter.cs`, `FdfAnnotationImporter.cs` + tests
+- **Acceptance:** Stamp round-trip через оба формата; tests на label + bounds + color preservation
+- **Размер:** S
+- **PR:** _tbd_
+
+### 2. A1 — AnnotatedPdf: underline + strikethrough
+- [ ] **Status:** не начато
+- **Файлы:** `AnnotatedPdfExportService.cs`, `AnnotationToPdfSpec.cs` + tests
+- **Acceptance:** `/Subtype /Underline` и `/Subtype /StrikeOut` появляются в `/Annots`; QuadPoints корректны
+- **Размер:** S
+- **Блокирует:** A2 (общие helpers)
+- **PR:** _tbd_
+
+### 3. A2 — AnnotatedPdf: shapes (square/circle/line/arrow/polygon)
+- [ ] **Status:** не начато
+- **Файлы:** те же что A1 + tests
+- **Acceptance:** 5 новых `/Subtype` в `/Annots`; `/L`, `/LE`, `/Vertices` соответствуют PDF spec
+- **Размер:** M
+- **PR:** _tbd_
+
+### 4. A3 — AnnotatedPdf: stamp с appearance stream
+- [ ] **Status:** не начато
+- **Файлы:** те же + `StampAppearance.cs` (новый)
+- **Acceptance:** `/Subtype /Stamp` + `/AP` (rect outline + centred label) → Acrobat распознаёт как редактируемый stamp
+- **Размер:** M
+- **PR:** _tbd_
+
+### 5. A5 — Image-stamp extension
+- [ ] **Status:** не начато
+- **Файлы:** `Annotation.cs` (Stamp factory overload), `AnnotationLayer.cs`, `AnnotatedPdfExportService.cs`, format round-trips
+- **Acceptance:** Stamp с `ImagePath` рисуется как embedded PNG; round-trip через все 5 форматов
+- **Размер:** M
+- **Зависимость:** требует A3 (общий путь для stamp embedding)
+- **Pre-work:** запустить `Plan` агента для развилки «StampSpec record vs. поле в Annotation»
+- **PR:** _tbd_
+
+### 6. L1 — MOBI loader
+- [ ] **Status:** не начато
+- **Файлы:** `src/Foliant.Engines.Epub/MobiDocumentLoader.cs` + `MobiDocument.cs` (расширяем существующий engine project)
+- **Acceptance:** открытие MOBI → `PageCount > 0` + text layer
+- **Размер:** M
+- **Параллельно с:** A-треками (engine layer, не пересекается)
+- **Pre-work:** `Explore` агент — найти подходящую MIT-библиотеку (MobiMetadata) либо собственный LZ77 разжиматель
+- **PR:** _tbd_
+
+### 7. B2 — Form-fill UI dialog
+- [ ] **Status:** не начато
+- **Файлы:** `FormFillDialog.xaml(.cs)`, `MainWindow.xaml(.cs)` (Tools → Fill Form…), Strings, FormFillViewModel
+- **Acceptance:** диалог показывает поля формы PDF, пользователь правит → save → новый PDF на диск
+- **Размер:** M
+- **Блокирует:** не блокирует B1/B3, но идёт первым — разогревочный UI трек
+- **PR:** _tbd_
+
+### 8. B1 — Annotation tool palette toolbar
+- [ ] **Status:** не начато
+- **Файлы:** `MainWindow.xaml` (sidebar toolbar), 11 button-icons (vector), `DocumentTabViewModel.ActiveTool` state, drag-create handlers в `AnnotationLayer.cs`, Strings
+- **Acceptance:** пользователь кликает кнопку → активный инструмент → drag по странице → создаётся аннотация нужного типа
+- **Размер:** **L** (главный UI-кусок Phase 1 closure)
+- **Pre-work:** `Plan` агент — спроектировать state-machine «текущий инструмент» + drag-create контракт
+- **PR:** _tbd_
+
+### 9. B3 — MOBI File-Open filter + Recent menu (после L1)
+- [ ] **Status:** не начато
+- **Файлы:** `MainWindow.xaml.cs` (filter), Strings
+- **Acceptance:** «Open» dialog показывает MOBI; Recent помнит MOBI
+- **Размер:** S
+- **Зависимость:** L1 merged
+- **PR:** _tbd_
+
+### 10. D1 — OCR Windows smoke + offline-model packaging + CER гейт
+- [ ] **Status:** не начато
+- **Файлы:** `tools/fetch-natives.ps1` (или новый), CI workflow, новые tests
+- **Acceptance:** S8 OCR закрывается ✅ — модели поставляются, CER ≤ target на эталонном корпусе
+- **Размер:** M
+- **Pre-work:** `Explore` агент — найти где сидят OCR-модели, какие .traineddata/.onnx ожидаются
+- **PR:** _tbd_
+
+### 11. D2 — Inno Setup `.iss` + GH Actions ISCC build
+- [ ] **Status:** не начато
+- **Файлы:** `installer/foliant.iss`, `.github/workflows/release.yml`
+- **Acceptance:** S13 → ✅ (EV-sign остаётся внешним blocker'ом)
+- **Размер:** M
+- **Pre-work:** `Explore` агент — найти `Version`/`Authors`/RID/natives layout
+- **PR:** _tbd_
+
+### 12. D3 — Perf-bench harness
+- [ ] **Status:** не начато
+- **Файлы:** `tests/Foliant.Performance/` (расширить существующий)
+- **Acceptance:** S1/S3/S7 имеют замеры; FTS5 ≤ 500ms / 10 docs зафиксировано
+- **Размер:** M
+- **PR:** _tbd_
+
+### 13. E1 — Windows smoke pass + bug-fix sweep
+- [ ] **Status:** не начато
+- **Acceptance:** все 8+ PDFium-mutate треков проверены на реальном Windows; найденные баги — отдельные fix-PR'ы внутри этого трека
+- **Размер:** S–M (зависит от количества находок)
+- **PR:** _tbd_
+
+---
+
+## Итоговая оценка
+
+- **13 запланированных PR** до Alpha DoD.
+- **+2–3 PR запаса** на CodeQL fix-up'ы / ребейзы / Windows-only баги, найденные в E1.
+- **Итого ~15 PR** до production-ready Alpha.
+
+---
+
+## Out-of-scope (Phase 2+, заморожено)
+
+- Q-F5/F6/F7/F9 — inline-редактор с reflow, font matching, inpainting сканов
+- Q-F8 — OCG layers editing
+- Q-F22 — XFA с JS-движком (кандидат на veto)
+- Q-F25 — full PAdES B+T validation (TSA timestamp + cert chain)
+- Q-F26 — PAdES с TSA
+- Q-F28 — LibreOffice плагин (out-of-process)
+- Q-F30/F31/F32 — шифрование AES-256, permissions 8 флагов, redaction
+- PDF/A, PDF/UA, PDF/X — спецстандарты
+
+---
+
+## Обновления
+
+| Дата | Что | Кем |
+|---|---|---|
+| 2026-05-31 | Файл создан после merge #70–#76 | claude |

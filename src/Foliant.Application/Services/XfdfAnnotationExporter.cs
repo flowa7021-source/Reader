@@ -16,6 +16,7 @@ namespace Foliant.Application.Services;
 /// <item>Line → <c>&lt;line&gt;</c> с <c>start</c>/<c>end</c>.</item>
 /// <item>Arrow → <c>&lt;line&gt;</c> + line-ending атрибуты <c>head="None" tail="OpenArrow"</c>.</item>
 /// <item>Polygon → <c>&lt;polygon&gt;</c> + <c>&lt;vertices&gt;</c>.</item>
+/// <item>Stamp → <c>&lt;stamp&gt;</c> + <c>&lt;contents&gt;</c> (label).</item>
 /// </list>
 /// Координаты — PDF user space (origin внизу-слева, Y вверх), как и в <see cref="Annotation"/>.
 /// Stateless, без I/O.
@@ -61,6 +62,7 @@ public sealed class XfdfAnnotationExporter : IAnnotationExporter
         AnnotationKind.Line when a.InkPoints is { Count: 2 } pts => LineShape(a, pts, isArrow: false),
         AnnotationKind.Arrow when a.InkPoints is { Count: 2 } pts => LineShape(a, pts, isArrow: true),
         AnnotationKind.Polygon when a.InkPoints is { Count: >= 3 } pts => PolygonShape(a, pts),
+        AnnotationKind.Stamp when a.Bounds is { } b => StampElement(a, b),
         _ => null,
     };
 
@@ -107,6 +109,18 @@ public sealed class XfdfAnnotationExporter : IAnnotationExporter
             Ns + "polygon",
             CommonAttributes(a),
             new XElement(Ns + "vertices", vertices));
+    }
+
+    private static XElement StampElement(Annotation a, AnnotationRect b)
+    {
+        // PDF /Subtype /Stamp с label-текстом в /Contents. Иконка (/Name /Draft etc.) —
+        // не выставляется: наши штампы — custom-label, Acrobat показывает rect-border + текст.
+        var element = new XElement(Ns + "stamp", CommonAttributes(a), new XAttribute("rect", Rect(b)));
+        if (!string.IsNullOrEmpty(a.Text))
+        {
+            element.Add(new XElement(Ns + "contents", a.Text));
+        }
+        return element;
     }
 
     private static XElement StickyNote(Annotation a, AnnotationRect b)

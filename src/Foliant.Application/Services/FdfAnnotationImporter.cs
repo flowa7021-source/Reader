@@ -11,7 +11,8 @@ namespace Foliant.Application.Services;
 ///
 /// Покрытые subtype'ы: <c>/Highlight</c>, <c>/Underline</c>, <c>/StrikeOut</c>, <c>/Text</c>,
 /// <c>/Ink</c>, <c>/Square</c> (Rectangle), <c>/Circle</c> (Ellipse), <c>/Line</c> (с
-/// <c>/LE [/None /OpenArrow]</c> → Arrow), <c>/Polygon</c> (<c>/Vertices</c> плоский массив).
+/// <c>/LE [/None /OpenArrow]</c> → Arrow), <c>/Polygon</c> (<c>/Vertices</c> плоский массив),
+/// <c>/Stamp</c> (label-текст в <c>/Contents</c>).
 ///
 /// Минимальный cos-токенайзер scope'нут в этот файл (PdfPig свой не экспонирует): числа, имена,
 /// hex-/literal-строки, массивы, словари, references — больше FDF не требует (streams/xref для
@@ -125,6 +126,7 @@ file static class FdfAnnotationMapping
             "Polygon" => ReadVertices(d) is { Count: >= 3 } verts
                 ? Annotation.Polygon(pageIndex, verts, color, createdAt)
                 : null,
+            "Stamp" => ReadStamp(d, pageIndex, color, createdAt),
             _ => null,
         };
 
@@ -180,6 +182,18 @@ file static class FdfAnnotationMapping
 
     private static string ReadText(CosDict d, string key) =>
         d.Get<CosString>(key) is { } s ? DecodePdfText(s.Bytes) : string.Empty;
+
+    private static Annotation? ReadStamp(CosDict d, int pageIndex, string color, DateTimeOffset createdAt)
+    {
+        // Stamp factory требует non-blank label; пустой /Contents → пропускаем dict.
+        AnnotationRect? bounds = ReadRect(d);
+        string label = ReadText(d, "Contents");
+        if (bounds is null || string.IsNullOrWhiteSpace(label))
+        {
+            return null;
+        }
+        return Annotation.Stamp(pageIndex, bounds, label, color, createdAt);
+    }
 
     private static AnnotationPoint[]? ReadLineEndpoints(CosDict d)
     {
