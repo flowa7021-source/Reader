@@ -52,11 +52,11 @@
 - **PR:** _tbd_
 
 ### 4. A3 — AnnotatedPdf: stamp с appearance stream
-- [~] **Status:** draft PR опубликован
-- **Файлы:** те же + `StampAppearance.cs` (новый)
-- **Acceptance:** `/Subtype /Stamp` + `/AP` (rect outline + centred label) → Acrobat распознаёт как редактируемый stamp
+- [x] **Status:** merged (#80)
+- **Файлы:** `AnnotatedPdfExportService.cs` (`AppendStampAppearance`), `PdfAnnotationSpec.cs`, `AnnotationToPdfSpec.cs` + tests
+- **Acceptance:** `/Subtype /Stamp` + rect outline + centred label → Acrobat распознаёт как редактируемый stamp ✅
 - **Размер:** M
-- **PR:** _tbd_
+- **PR:** #80
 
 ### 5. A5 — Image-stamp extension
 - [ ] **Status:** не начато
@@ -68,12 +68,13 @@
 - **PR:** _tbd_
 
 ### 6. L1 — MOBI loader
-- [ ] **Status:** не начато
-- **Файлы:** `src/Foliant.Engines.Epub/MobiDocumentLoader.cs` + `MobiDocument.cs` (расширяем существующий engine project)
-- **Acceptance:** открытие MOBI → `PageCount > 0` + text layer
+- [~] **Status:** draft PR опубликован
+- **Файлы:** новый проект `src/Foliant.Engines.Mobi/` (`MobiDocumentLoader`, `MobiDocument`,
+  `PalmDocCompression`, `MobiHtml`) + tests; DI в `AppHostBuilder`; sln/slnf
+- **Acceptance:** открытие MOBI → `PageCount > 0` + text layer ✅ (in-box PalmDOC LZ77 разжиматель —
+  библиотеки на NuGet не нашлось; HUFF/CDIC и AZW3/KF8 — Phase 2)
 - **Размер:** M
-- **Параллельно с:** A-треками (engine layer, не пересекается)
-- **Pre-work:** `Explore` агент — найти подходящую MIT-библиотеку (MobiMetadata) либо собственный LZ77 разжиматель
+- **Заметка:** File→Open filter для `.mobi` — в B3 (UI трек). Сейчас открывается через «All files».
 - **PR:** _tbd_
 
 ### 7. B2 — Form-fill UI dialog
