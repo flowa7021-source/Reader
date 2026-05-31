@@ -7,6 +7,11 @@ public enum AnnotationKind
     Freehand,
     Underline,
     Strikethrough,
+    Rectangle,
+    Ellipse,
+    Line,
+    Arrow,
+    Polygon,
 }
 
 public sealed record AnnotationRect(double X, double Y, double Width, double Height);
@@ -51,4 +56,48 @@ public sealed record Annotation(
 
     public static Annotation Strikethrough(int pageIndex, AnnotationRect bounds, string colorHex, DateTimeOffset createdAt) =>
         new(Guid.NewGuid(), pageIndex, AnnotationKind.Strikethrough, colorHex, bounds, null, null, createdAt);
+
+    /// <summary>Прямоугольник: <paramref name="bounds"/> = bbox; контур (без заливки) рисуется
+    /// по периметру.</summary>
+    public static Annotation Rectangle(int pageIndex, AnnotationRect bounds, string colorHex, DateTimeOffset createdAt) =>
+        new(Guid.NewGuid(), pageIndex, AnnotationKind.Rectangle, colorHex, bounds, null, null, createdAt);
+
+    /// <summary>Эллипс, вписанный в <paramref name="bounds"/>.</summary>
+    public static Annotation Ellipse(int pageIndex, AnnotationRect bounds, string colorHex, DateTimeOffset createdAt) =>
+        new(Guid.NewGuid(), pageIndex, AnnotationKind.Ellipse, colorHex, bounds, null, null, createdAt);
+
+    /// <summary>Прямая линия между двумя точками. <paramref name="points"/> должен содержать
+    /// ровно две точки (start, end).</summary>
+    public static Annotation Line(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, DateTimeOffset createdAt)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        if (points.Count != 2)
+        {
+            throw new ArgumentException("Line requires exactly two points.", nameof(points));
+        }
+        return new(Guid.NewGuid(), pageIndex, AnnotationKind.Line, colorHex, null, null, points, createdAt);
+    }
+
+    /// <summary>Стрелка между двумя точками: рисуется как линия + arrowhead на конце.
+    /// <paramref name="points"/> должен содержать ровно две точки (start, end).</summary>
+    public static Annotation Arrow(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, DateTimeOffset createdAt)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        if (points.Count != 2)
+        {
+            throw new ArgumentException("Arrow requires exactly two points.", nameof(points));
+        }
+        return new(Guid.NewGuid(), pageIndex, AnnotationKind.Arrow, colorHex, null, null, points, createdAt);
+    }
+
+    /// <summary>Полигон по списку вершин (≥3). Замыкается автоматически при отрисовке.</summary>
+    public static Annotation Polygon(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, DateTimeOffset createdAt)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        if (points.Count < 3)
+        {
+            throw new ArgumentException("Polygon requires at least three points.", nameof(points));
+        }
+        return new(Guid.NewGuid(), pageIndex, AnnotationKind.Polygon, colorHex, null, null, points, createdAt);
+    }
 }

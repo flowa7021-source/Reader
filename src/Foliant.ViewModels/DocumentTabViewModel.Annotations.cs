@@ -35,6 +35,21 @@ public sealed partial class DocumentTabViewModel
     /// <summary>Сколько strikethrough-аннотаций.</summary>
     public int StrikethroughCount => CountByKind(AnnotationKind.Strikethrough);
 
+    /// <summary>Сколько прямоугольников.</summary>
+    public int RectangleCount => CountByKind(AnnotationKind.Rectangle);
+
+    /// <summary>Сколько эллипсов.</summary>
+    public int EllipseCount => CountByKind(AnnotationKind.Ellipse);
+
+    /// <summary>Сколько линий.</summary>
+    public int LineCount => CountByKind(AnnotationKind.Line);
+
+    /// <summary>Сколько стрелок.</summary>
+    public int ArrowCount => CountByKind(AnnotationKind.Arrow);
+
+    /// <summary>Сколько полигонов.</summary>
+    public int PolygonCount => CountByKind(AnnotationKind.Polygon);
+
     private int CountByKind(AnnotationKind kind)
     {
         int count = 0;
@@ -58,6 +73,11 @@ public sealed partial class DocumentTabViewModel
         OnPropertyChanged(nameof(FreehandCount));
         OnPropertyChanged(nameof(UnderlineCount));
         OnPropertyChanged(nameof(StrikethroughCount));
+        OnPropertyChanged(nameof(RectangleCount));
+        OnPropertyChanged(nameof(EllipseCount));
+        OnPropertyChanged(nameof(LineCount));
+        OnPropertyChanged(nameof(ArrowCount));
+        OnPropertyChanged(nameof(PolygonCount));
         OnPropertyChanged(nameof(CanExportAnnotatedPdf));
         ExportAnnotatedPdfCommand.NotifyCanExecuteChanged();
         AnnotationsDocument.Rebuild(_allAnnotations);
@@ -201,6 +221,69 @@ public sealed partial class DocumentTabViewModel
         if (pageIndex == CurrentPageIndex && MatchesFilter(ann))
         {
             CurrentPageAnnotations.Add(ann);
+        }
+    }
+
+    // ───── Geometric shapes (Q-F16, Track R3) ─────
+
+    public async Task AddRectangleAsync(int pageIndex, AnnotationRect bounds, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        await PersistShapeAsync(Annotation.Rectangle(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
+    }
+
+    public async Task AddEllipseAsync(int pageIndex, AnnotationRect bounds, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        await PersistShapeAsync(Annotation.Ellipse(pageIndex, bounds, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
+    }
+
+    public async Task AddLineAsync(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        if (points.Count != 2)
+        {
+            return; // factory will throw; VM treats invalid input as no-op rather than crash the tab.
+        }
+        await PersistShapeAsync(Annotation.Line(pageIndex, points, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
+    }
+
+    public async Task AddArrowAsync(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        if (points.Count != 2)
+        {
+            return;
+        }
+        await PersistShapeAsync(Annotation.Arrow(pageIndex, points, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
+    }
+
+    public async Task AddPolygonAsync(int pageIndex, IReadOnlyList<AnnotationPoint> points, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(points);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        if (points.Count < 3)
+        {
+            return;
+        }
+        await PersistShapeAsync(Annotation.Polygon(pageIndex, points, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
+    }
+
+    /// <summary>Shared persistence path for the five geometric shapes — stamp author,
+    /// dispatch to service, rebuild counts, surface on current page if filter matches.</summary>
+    private async Task PersistShapeAsync(Annotation shape, int pageIndex, CancellationToken ct)
+    {
+        var stamped = shape with { Author = ReadDefaultAuthor() };
+        await _annotationService.AddAsync(_filePath, stamped, ct);
+        _allAnnotations.Add(stamped);
+        NotifyAnnotationCountsChanged();
+        if (pageIndex == CurrentPageIndex && MatchesFilter(stamped))
+        {
+            CurrentPageAnnotations.Add(stamped);
         }
     }
 
