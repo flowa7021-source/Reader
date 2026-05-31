@@ -421,6 +421,15 @@
   <data name="ToolStickyNote" xml:space="preserve">
     <value>Заметка (клик)</value>
   </data>
+  <data name="ToolLine" xml:space="preserve">
+    <value>Линия (протяните)</value>
+  </data>
+  <data name="ToolArrow" xml:space="preserve">
+    <value>Стрелка (протяните)</value>
+  </data>
+  <data name="ToolFreehand" xml:space="preserve">
+    <value>От руки (рисуйте протягиванием)</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Пакетная обработка...</value>
   </data>
