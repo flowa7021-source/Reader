@@ -22,6 +22,8 @@ public static class AnnotationToPdfSpec
             AnnotationKind.Highlight when annotation.Bounds is { } b => Highlight(annotation, b),
             AnnotationKind.StickyNote when annotation.Bounds is { } b => Note(annotation, b),
             AnnotationKind.Freehand when annotation.InkPoints is { Count: >= 2 } pts => Ink(annotation, pts),
+            AnnotationKind.Underline when annotation.Bounds is { } b => TextMarkup(annotation, b, PdfAnnotationSubtype.Underline),
+            AnnotationKind.Strikethrough when annotation.Bounds is { } b => TextMarkup(annotation, b, PdfAnnotationSubtype.Strikeout),
             _ => null,
         };
     }
@@ -46,6 +48,13 @@ public static class AnnotationToPdfSpec
     private static PdfAnnotationSpec Highlight(Annotation a, AnnotationRect b) =>
         WithMetadata(a, new PdfAnnotationSpec(
             a.PageIndex, PdfAnnotationSubtype.Highlight, Rect(b), Color(a.ColorHex, HighlightAlpha),
+            QuadPoints: AnnotationGeometry.QuadPoints(b)));
+
+    // Underline/Strikethrough: та же геометрия что Highlight (rect + quadpoints), но непрозрачный
+    // цвет — линия рисуется поверх текста, полупрозрачность не нужна (Acrobat также делает opaque).
+    private static PdfAnnotationSpec TextMarkup(Annotation a, AnnotationRect b, PdfAnnotationSubtype subtype) =>
+        WithMetadata(a, new PdfAnnotationSpec(
+            a.PageIndex, subtype, Rect(b), Color(a.ColorHex, OpaqueAlpha),
             QuadPoints: AnnotationGeometry.QuadPoints(b)));
 
     private static PdfAnnotationSpec Note(Annotation a, AnnotationRect b) =>

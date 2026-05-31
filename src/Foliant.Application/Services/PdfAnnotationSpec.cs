@@ -8,6 +8,12 @@ public enum PdfAnnotationSubtype
     Highlight,
     Text,
     Ink,
+
+    /// <summary>PDF text-markup `/Subtype /Underline` — линия под текстом, та же геометрия что Highlight.</summary>
+    Underline,
+
+    /// <summary>PDF text-markup `/Subtype /StrikeOut` — линия через центр текста, та же геометрия что Highlight.</summary>
+    Strikeout,
 }
 
 /// <summary>Прямоугольник в PDF user space: нижний-левый и верхний-правый углы.</summary>
