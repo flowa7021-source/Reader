@@ -371,4 +371,63 @@ public sealed class FdfAnnotationImporterTests
         imported[0].Kind.Should().Be(AnnotationKind.Underline);
         imported[1].Kind.Should().Be(AnnotationKind.Strikethrough);
     }
+
+    // ───── Q-F18 stamp round-trip ─────
+
+    [Fact]
+    public void RoundTrip_Stamp_PreservesLabelBoundsColor()
+    {
+        var src = new[]
+        {
+            Annotation.Stamp(2, new AnnotationRect(100, 100, 200, 60), "APPROVED", "#00AA00", T0),
+        };
+
+        string fdf = new FdfAnnotationExporter().Export(src);
+        var a = new FdfAnnotationImporter().Import(fdf).Should().ContainSingle().Subject;
+
+        a.Kind.Should().Be(AnnotationKind.Stamp);
+        a.PageIndex.Should().Be(2);
+        a.Bounds.Should().Be(new AnnotationRect(100, 100, 200, 60));
+        a.Text.Should().Be("APPROVED");
+        a.ColorHex.Should().Be("#00AA00");
+    }
+
+    [Fact]
+    public void Import_AcrobatStyleStamp_ParsesContents()
+    {
+        // Acrobat пишет ASCII /Contents как literal-строку.
+        const string fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Stamp /Page 0 /Rect [50 50 250 110] /C [1 0 0] /Contents (DRAFT) >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        var a = new FdfAnnotationImporter().Import(fdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Stamp);
+        a.Text.Should().Be("DRAFT");
+    }
+
+    [Fact]
+    public void Import_StampWithoutContents_IsSkipped()
+    {
+        // Stamp factory throws on blank label — importer must skip rather than crash.
+        const string fdf = """
+            %FDF-1.2
+            1 0 obj
+            << /FDF << /Annots [
+            << /Type /Annot /Subtype /Stamp /Page 0 /Rect [0 0 100 30] /C [1 0 0] >>
+            ] >> >>
+            endobj
+            trailer << /Root 1 0 R >>
+            %%EOF
+            """;
+
+        new FdfAnnotationImporter().Import(fdf).Should().BeEmpty();
+    }
 }

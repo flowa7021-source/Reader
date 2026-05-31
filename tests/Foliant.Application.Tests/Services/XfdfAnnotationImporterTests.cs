@@ -271,7 +271,7 @@ public sealed class XfdfAnnotationImporterTests
     [Fact]
     public void Export_AllShapeKinds_ProducesNonNullElements()
     {
-        // White-box assertion that exporter doesn't silently drop any of the 10 kinds.
+        // White-box assertion that exporter doesn't silently drop any of the 11 kinds.
         var when = DateTimeOffset.UnixEpoch;
         var b = new AnnotationRect(0, 0, 10, 10);
         AnnotationPoint[] line = [new(0, 0), new(10, 10)];
@@ -288,11 +288,61 @@ public sealed class XfdfAnnotationImporterTests
             Annotation.Line(0, line, "#000", when),
             Annotation.Arrow(0, line, "#000", when),
             Annotation.Polygon(0, poly, "#000", when),
+            Annotation.Stamp(0, b, "APPROVED", "#00AA00", when),
         };
 
         string xfdf = new XfdfAnnotationExporter().Export(src);
 
         var imported = _sut.Import(xfdf);
-        imported.Should().HaveCount(10);
+        imported.Should().HaveCount(11);
+    }
+
+    // ───── Q-F18 stamp round-trip ─────
+
+    [Fact]
+    public void RoundTrip_Stamp_PreservesLabelBoundsColor()
+    {
+        var when = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var src = new[]
+        {
+            Annotation.Stamp(2, new AnnotationRect(100, 100, 200, 60), "APPROVED", "#00AA00", when),
+        };
+
+        var xfdf = new XfdfAnnotationExporter().Export(src);
+        var a = _sut.Import(xfdf).Should().ContainSingle().Subject;
+
+        a.Kind.Should().Be(AnnotationKind.Stamp);
+        a.PageIndex.Should().Be(2);
+        a.Bounds.Should().Be(new AnnotationRect(100, 100, 200, 60));
+        a.Text.Should().Be("APPROVED");
+        a.ColorHex.Should().Be("#00AA00");
+    }
+
+    [Fact]
+    public void Import_AcrobatStyleStamp_ParsesContents()
+    {
+        const string xfdf = """
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <stamp page="0" color="#FF0000" rect="50,50,250,110"><contents>DRAFT</contents></stamp>
+            </annots></xfdf>
+            """;
+
+        var a = _sut.Import(xfdf).Single();
+
+        a.Kind.Should().Be(AnnotationKind.Stamp);
+        a.Text.Should().Be("DRAFT");
+    }
+
+    [Fact]
+    public void Import_StampWithoutContents_IsSkipped()
+    {
+        // Stamp factory throws on blank label — importer must skip rather than crash.
+        const string xfdf = """
+            <xfdf xmlns="http://ns.adobe.com/xfdf/"><annots>
+              <stamp page="0" color="#FF0000" rect="0,0,100,30" />
+            </annots></xfdf>
+            """;
+
+        _sut.Import(xfdf).Should().BeEmpty();
     }
 }
