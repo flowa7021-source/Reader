@@ -54,27 +54,19 @@ public partial class FormFillDialog : Window, INotifyPropertyChanged
         }
     }
 
-    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Field-load failure must not crash the dialog.")]
     private async void OnLoadedAsync(object sender, RoutedEventArgs e)
     {
-        try
+        // ReadFormFieldsAsync — fail-soft: внутри логирует и возвращает пустой список при
+        // ошибке чтения, поэтому здесь try/catch не нужен (пустой список → подсказка во HeaderText).
+        var fields = await _tab.ReadFormFieldsAsync(CancellationToken.None).ConfigureAwait(true);
+        Fields.Clear();
+        foreach (var f in fields)
         {
-            var fields = await _tab.ReadFormFieldsAsync(CancellationToken.None).ConfigureAwait(true);
-            Fields.Clear();
-            foreach (var f in fields)
-            {
-                Fields.Add(f);
-            }
+            Fields.Add(f);
         }
-        catch (Exception)
-        {
-            // best-effort: пустой список → подсказка про отсутствие полей.
-        }
-        finally
-        {
-            Notify(nameof(HasFields));
-            Notify(nameof(HeaderText));
-        }
+
+        Notify(nameof(HasFields));
+        Notify(nameof(HeaderText));
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
