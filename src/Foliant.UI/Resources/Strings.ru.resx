@@ -403,6 +403,24 @@
   <data name="DialogClose" xml:space="preserve">
     <value>Закрыть</value>
   </data>
+  <data name="ToolHighlight" xml:space="preserve">
+    <value>Выделение (протяните по тексту)</value>
+  </data>
+  <data name="ToolUnderline" xml:space="preserve">
+    <value>Подчёркивание (протяните по тексту)</value>
+  </data>
+  <data name="ToolStrikethrough" xml:space="preserve">
+    <value>Зачёркивание (протяните по тексту)</value>
+  </data>
+  <data name="ToolRectangle" xml:space="preserve">
+    <value>Прямоугольник (протяните)</value>
+  </data>
+  <data name="ToolEllipse" xml:space="preserve">
+    <value>Эллипс (протяните)</value>
+  </data>
+  <data name="ToolStickyNote" xml:space="preserve">
+    <value>Заметка (клик)</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Пакетная обработка...</value>
   </data>

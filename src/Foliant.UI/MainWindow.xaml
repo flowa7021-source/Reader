@@ -17,10 +17,13 @@
     <converters:AnnotationMetadataLineConverter x:Key="AnnotationMetadataLineConverter" />
     <converters:DepthToIndentConverter x:Key="DepthToIndentConverter" />
     <converters:OneBasedPageConverter x:Key="OneBasedPageConverter" />
+    <converters:EnumToBoolConverter x:Key="EnumToBoolConverter" />
     <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
   </Window.Resources>
 
   <Window.InputBindings>
+    <KeyBinding Key="Escape"
+                Command="{Binding SelectedTab.ClearToolCommand}" />
     <KeyBinding Key="F"
                 Modifiers="Control"
                 Command="{Binding SelectedTab.ToggleSearchCommand}" />
@@ -305,8 +308,47 @@
             </Grid.ColumnDefinitions>
 
             <!-- Page surface (one of three layouts visible per ViewMode) -->
-            <Grid Grid.Column="0"
-                  SizeChanged="OnPageAreaSizeChanged">
+            <DockPanel Grid.Column="0">
+              <!-- Annotation tool palette (B1b): rubber-band-rect + single-click tools.
+                   Acts on the current page (single-page view); continuous/two-page wiring — B1d. -->
+              <ToolBarTray DockPanel.Dock="Top" IsLocked="True">
+                <ToolBar>
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.Highlight}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Highlight}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolHighlight]}"
+                                Content="H" />
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.Underline}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Underline}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolUnderline]}"
+                                Content="U" />
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.Strikethrough}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Strikethrough}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStrikethrough]}"
+                                Content="S" />
+                  <Separator />
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.Rectangle}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Rectangle}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolRectangle]}"
+                                Content="▭" />
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.Ellipse}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Ellipse}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolEllipse]}"
+                                Content="◯" />
+                  <Separator />
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.StickyNote}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.StickyNote}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStickyNote]}"
+                                Content="✎" />
+                </ToolBar>
+              </ToolBarTray>
+
+              <Grid SizeChanged="OnPageAreaSizeChanged">
               <!-- Single page (with annotation + search overlay) -->
               <ScrollViewer HorizontalScrollBarVisibility="Auto"
                             VerticalScrollBarVisibility="Auto"
@@ -317,7 +359,10 @@
                   <ui:AnnotationLayer PageRender="{Binding CurrentRender}"
                                       Annotations="{Binding CurrentPageAnnotations}"
                                       SearchHighlights="{Binding CurrentPageSearchHighlights}"
-                                      CreateNoteCommand="{Binding AddNoteAtCommand}" />
+                                      CreateNoteCommand="{Binding AddNoteAtCommand}"
+                                      ActiveTool="{Binding ActiveTool}"
+                                      CommitRectToolCommand="{Binding CommitRectToolOnCurrentPageCommand}"
+                                      CommitPointToolCommand="{Binding CommitPointToolOnCurrentPageCommand}" />
                 </Grid>
               </ScrollViewer>
 
@@ -393,7 +438,8 @@
                          VerticalAlignment="Center"
                          HorizontalAlignment="Center"
                          Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}" />
-            </Grid>
+              </Grid>
+            </DockPanel>
 
             <!-- Search sidebar (Ctrl+F toggles IsSearchVisible) -->
             <Border Grid.Column="1"

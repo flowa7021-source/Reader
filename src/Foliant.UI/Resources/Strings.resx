@@ -349,6 +349,24 @@
   <data name="ThemeHighContrast" xml:space="preserve">
     <value>_High Contrast</value>
   </data>
+  <data name="ToolHighlight" xml:space="preserve">
+    <value>Highlight (drag over text)</value>
+  </data>
+  <data name="ToolUnderline" xml:space="preserve">
+    <value>Underline (drag over text)</value>
+  </data>
+  <data name="ToolStrikethrough" xml:space="preserve">
+    <value>Strikethrough (drag over text)</value>
+  </data>
+  <data name="ToolRectangle" xml:space="preserve">
+    <value>Rectangle (drag)</value>
+  </data>
+  <data name="ToolEllipse" xml:space="preserve">
+    <value>Ellipse (drag)</value>
+  </data>
+  <data name="ToolStickyNote" xml:space="preserve">
+    <value>Sticky note (click)</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Batch processing...</value>
   </data>

@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using Foliant.Domain;
+using Foliant.ViewModels;
 
 namespace Foliant.UI.Controls;
 
@@ -37,7 +38,28 @@ internal sealed class AnnotationLayer : FrameworkElement
     public static readonly DependencyProperty CreateNoteCommandProperty = DependencyProperty.Register(
         nameof(CreateNoteCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
 
+    /// <summary>Активный инструмент палитры (B1b). <see cref="AnnotationTool.None"/> — drag/click
+    /// не создаёт аннотацию (только существующее поведение double-click note).</summary>
+    public static readonly DependencyProperty ActiveToolProperty = DependencyProperty.Register(
+        nameof(ActiveTool), typeof(AnnotationTool), typeof(AnnotationLayer),
+        new PropertyMetadata(AnnotationTool.None));
+
+    /// <summary>ICommand, вызывается с PDF-space <see cref="AnnotationRect"/> по завершении
+    /// rubber-band-rect жеста (Highlight/Underline/Strikethrough/Rectangle/Ellipse/Stamp).</summary>
+    public static readonly DependencyProperty CommitRectToolCommandProperty = DependencyProperty.Register(
+        nameof(CommitRectToolCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
+
+    /// <summary>ICommand, вызывается с PDF-space <see cref="AnnotationPoint"/> по single-click
+    /// (StickyNote).</summary>
+    public static readonly DependencyProperty CommitPointToolCommandProperty = DependencyProperty.Register(
+        nameof(CommitPointToolCommand), typeof(ICommand), typeof(AnnotationLayer), new PropertyMetadata(null));
+
     private static readonly SolidColorBrush SearchHighlightBrush = CreateSearchHighlightBrush();
+
+    // Live rubber-band drag state (B1b). _dragStartPx in element-local pixels.
+    private bool _dragging;
+    private Point _dragStartPx;
+    private Point _dragCurrentPx;
 
     public IEnumerable<Annotation>? Annotations
     {
@@ -62,6 +84,24 @@ internal sealed class AnnotationLayer : FrameworkElement
     {
         get => (ICommand?)GetValue(CreateNoteCommandProperty);
         set => SetValue(CreateNoteCommandProperty, value);
+    }
+
+    public AnnotationTool ActiveTool
+    {
+        get => (AnnotationTool)GetValue(ActiveToolProperty);
+        set => SetValue(ActiveToolProperty, value);
+    }
+
+    public ICommand? CommitRectToolCommand
+    {
+        get => (ICommand?)GetValue(CommitRectToolCommandProperty);
+        set => SetValue(CommitRectToolCommandProperty, value);
+    }
+
+    public ICommand? CommitPointToolCommand
+    {
+        get => (ICommand?)GetValue(CommitPointToolCommandProperty);
+        set => SetValue(CommitPointToolCommandProperty, value);
     }
 
     private static void OnAnnotationsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -126,6 +166,13 @@ internal sealed class AnnotationLayer : FrameworkElement
             {
                 Draw(dc, a, page, zoom);
             }
+        }
+
+        if (_dragging)
+        {
+            var preview = new Rect(_dragStartPx, _dragCurrentPx);
+            var pen = new Pen(Brushes.DodgerBlue, 1) { DashStyle = DashStyles.Dash };
+            dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x20, 0x1E, 0x90, 0xFF)), pen, preview);
         }
     }
 
@@ -364,20 +411,96 @@ internal sealed class AnnotationLayer : FrameworkElement
         ArgumentNullException.ThrowIfNull(e);
         base.OnMouseLeftButtonDown(e);
 
-        if (e.ClickCount != 2 || PageRender is not { } render || CreateNoteCommand is null)
+        if (PageRender is not { } render)
         {
             return;
         }
 
-        Point px = e.GetPosition(this);
-        PageSize page = render.PageSize;
-        (double xPt, double yPt) = PageGeometry.PixelToPoint(px.X, px.Y, page, EffectiveZoom(render));
-        var location = new AnnotationPoint(xPt, yPt);
-        if (CreateNoteCommand.CanExecute(location))
+        AnnotationToolGesture gesture = DocumentTabViewModel.GestureFor(ActiveTool);
+
+        // Active palette tool wins over the default double-click-note behaviour.
+        if (gesture == AnnotationToolGesture.RubberBandRect)
         {
-            CreateNoteCommand.Execute(location);
+            _dragging = true;
+            _dragStartPx = e.GetPosition(this);
+            _dragCurrentPx = _dragStartPx;
+            CaptureMouse();
             e.Handled = true;
+            return;
         }
+
+        if (gesture == AnnotationToolGesture.SingleClick && CommitPointToolCommand is not null)
+        {
+            AnnotationPoint at = ToPdfPoint(e.GetPosition(this), render);
+            if (CommitPointToolCommand.CanExecute(at))
+            {
+                CommitPointToolCommand.Execute(at);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        // Default: double-click creates a sticky note (no active rect/click tool).
+        if (e.ClickCount == 2 && CreateNoteCommand is not null)
+        {
+            AnnotationPoint location = ToPdfPoint(e.GetPosition(this), render);
+            if (CreateNoteCommand.CanExecute(location))
+            {
+                CreateNoteCommand.Execute(location);
+                e.Handled = true;
+            }
+        }
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+        base.OnMouseMove(e);
+        if (_dragging)
+        {
+            _dragCurrentPx = e.GetPosition(this);
+            InvalidateVisual();
+        }
+    }
+
+    protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+        base.OnMouseLeftButtonUp(e);
+        if (!_dragging)
+        {
+            return;
+        }
+
+        _dragging = false;
+        ReleaseMouseCapture();
+        _dragCurrentPx = e.GetPosition(this);
+        InvalidateVisual();
+
+        if (PageRender is not { } render || CommitRectToolCommand is null)
+        {
+            return;
+        }
+
+        AnnotationPoint a = ToPdfPoint(_dragStartPx, render);
+        AnnotationPoint b = ToPdfPoint(_dragCurrentPx, render);
+        AnnotationRect rect = PageGeometry.RectFromPoints(a, b);
+        if (rect.Width <= 0 || rect.Height <= 0)
+        {
+            return; // degenerate — ignore click-without-drag
+        }
+
+        if (CommitRectToolCommand.CanExecute(rect))
+        {
+            CommitRectToolCommand.Execute(rect);
+        }
+        e.Handled = true;
+    }
+
+    private static AnnotationPoint ToPdfPoint(Point px, IPageRender render)
+    {
+        (double xPt, double yPt) = PageGeometry.PixelToPoint(px.X, px.Y, render.PageSize, EffectiveZoom(render));
+        return new AnnotationPoint(xPt, yPt);
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types",
