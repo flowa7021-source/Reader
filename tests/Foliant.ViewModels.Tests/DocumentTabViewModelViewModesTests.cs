@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Foliant.Application.Services;
+using Foliant.Application.Settings;
 using Foliant.Domain;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -9,7 +10,10 @@ namespace Foliant.ViewModels.Tests;
 
 public sealed class DocumentTabViewModelViewModesTests
 {
-    private static DocumentTabViewModel CreateVm(int pageCount = 10, PageSize? pageSize = null)
+    private static DocumentTabViewModel CreateVm(
+        int pageCount = 10,
+        PageSize? pageSize = null,
+        ISettingsService? settings = null)
     {
         var document = Substitute.For<IDocument>();
         document.PageCount.Returns(pageCount);
@@ -29,7 +33,17 @@ public sealed class DocumentTabViewModelViewModesTests
         bookmarks.ListAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
                  .Returns(Task.FromResult<IReadOnlyList<Bookmark>>([]));
 
-        return new DocumentTabViewModel(document, "/tmp/x.pdf", search, annotations, bookmarks, NullLogger<DocumentTabViewModel>.Instance);
+        return new DocumentTabViewModel(
+            document, "/tmp/x.pdf", search, annotations, bookmarks,
+            NullLogger<DocumentTabViewModel>.Instance,
+            settings: settings);
+    }
+
+    private static ISettingsService SettingsWith(AppSettings snapshot)
+    {
+        var s = Substitute.For<ISettingsService>();
+        s.Current.Returns(snapshot);
+        return s;
     }
 
     [Fact]
@@ -193,5 +207,112 @@ public sealed class DocumentTabViewModelViewModesTests
 
         vm.FitMode.Should().Be(FitMode.ActualSize);
         vm.Zoom.Should().Be(1.0);
+    }
+
+    // ───── RTL (Q-F3) ─────
+
+    [Fact]
+    public void Default_RightToLeft_IsFalse()
+    {
+        var vm = CreateVm();
+
+        vm.IsRightToLeft.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Constructor_SnapshotsRightToLeftFromSettings()
+    {
+        var settings = SettingsWith(AppSettings.Default with { RightToLeft = true });
+
+        var vm = CreateVm(settings: settings);
+
+        vm.IsRightToLeft.Should().BeTrue();
+    }
+
+    [Fact]
+    public void TwoPage_RightToLeft_SwapsPairOrder()
+    {
+        var vm = CreateVm(pageCount: 4);
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.IsRightToLeft = true;
+
+        vm.CurrentPageIndex = 1;
+        vm.VisiblePageIndices.Should().Equal([1, 0]);
+
+        vm.CurrentPageIndex = 2;
+        vm.VisiblePageIndices.Should().Equal([3, 2]);
+    }
+
+    [Fact]
+    public void TwoPage_RightToLeft_LonePageStaysAlone()
+    {
+        var vm = CreateVm(pageCount: 3); // 0,1,2 → пара (0,1) + одинокая 2
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.IsRightToLeft = true;
+
+        vm.CurrentPageIndex = 2;
+        vm.VisiblePageIndices.Should().Equal([2]); // одинокая страница не переставляется
+    }
+
+    [Fact]
+    public void TwoPage_RightToLeft_CoverSeparate_LoneCoverStaysAlone()
+    {
+        var vm = CreateVm(pageCount: 5);
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.ToggleTwoPageCoverSeparateCommand.Execute(null);
+        vm.IsRightToLeft = true;
+
+        vm.CurrentPageIndex = 0;
+        vm.VisiblePageIndices.Should().Equal([0]); // обложка одна (RTL не меняет)
+
+        vm.CurrentPageIndex = 1;
+        vm.VisiblePageIndices.Should().Equal([2, 1]); // пара перевёрнута
+    }
+
+    [Fact]
+    public void ToggleRightToLeft_FlipsFlag()
+    {
+        var vm = CreateVm();
+        vm.IsRightToLeft.Should().BeFalse();
+
+        vm.ToggleRightToLeftCommand.Execute(null);
+
+        vm.IsRightToLeft.Should().BeTrue();
+
+        vm.ToggleRightToLeftCommand.Execute(null);
+
+        vm.IsRightToLeft.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ToggleRightToLeft_InTwoPageMode_RebuildsVisiblePagesInSwappedOrder()
+    {
+        var vm = CreateVm(pageCount: 4);
+        vm.SetTwoPageViewCommand.Execute(null);
+        vm.VisiblePages.Select(p => p.PageIndex).Should().Equal([0, 1]);
+
+        vm.ToggleRightToLeftCommand.Execute(null);
+
+        vm.VisiblePages.Select(p => p.PageIndex).Should().Equal([1, 0]);
+    }
+
+    [Fact]
+    public void Continuous_RightToLeft_DoesNotAffectPageOrder()
+    {
+        var vm = CreateVm(pageCount: 3);
+        vm.SetContinuousViewCommand.Execute(null);
+        vm.IsRightToLeft = true;
+
+        vm.VisiblePageIndices.Should().Equal([0, 1, 2]);
+    }
+
+    [Fact]
+    public void SinglePage_RightToLeft_DoesNotAffectPageIndex()
+    {
+        var vm = CreateVm(pageCount: 3);
+        vm.IsRightToLeft = true;
+        vm.CurrentPageIndex = 1;
+
+        vm.VisiblePageIndices.Should().Equal([1]);
     }
 }

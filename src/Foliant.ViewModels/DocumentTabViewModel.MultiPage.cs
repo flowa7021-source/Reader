@@ -105,5 +105,9 @@ public sealed partial class DocumentTabViewModel
 
     partial void OnTwoPageCoverSeparateChanged(bool value) => SyncVisiblePages(forceRerender: false);
 
+    // SequenceEqual в SyncVisiblePages смотрит на порядок, поэтому смена RTL (тот же набор
+    // индексов, другой порядок) триггерит пересборку слотов автоматически — forceRerender не нужен.
+    partial void OnIsRightToLeftChanged(bool value) => SyncVisiblePages(forceRerender: false);
+
     partial void OnThemeChanged(RenderTheme value) => SyncVisiblePages(forceRerender: true);
 }

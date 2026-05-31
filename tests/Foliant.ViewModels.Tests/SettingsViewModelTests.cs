@@ -405,4 +405,62 @@ public sealed class SettingsViewModelTests
         vm.OcrModelTier.Should().Be(AppSettings.Default.Ocr.ModelTier);
         vm.OcrModelTier.Should().Be(OcrModelTier.Basic);
     }
+
+    // ───── RTL (Q-F3) ─────
+
+    [Fact]
+    public void Constructor_LoadsRightToLeftFromCurrent()
+    {
+        var vm = CreateVm(AppSettings.Default with { RightToLeft = true });
+
+        vm.RightToLeft.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Default_RightToLeft_IsFalse()
+    {
+        var vm = CreateVm();
+
+        vm.RightToLeft.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SaveCommand_PersistsRightToLeft()
+    {
+        var settings = Substitute.For<ISettingsService>();
+        settings.Current.Returns(AppSettings.Default);
+        AppSettings? persisted = null;
+        await settings.UpdateAsync(
+            Arg.Do<Func<AppSettings, AppSettings>>(f => persisted = f(AppSettings.Default)),
+            Arg.Any<CancellationToken>());
+        var vm = CreateVm(settings: settings);
+        vm.RightToLeft = true;
+
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        persisted.Should().NotBeNull();
+        persisted!.RightToLeft.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsSaved_ResetsToFalse_WhenRightToLeftToggledAfterSave()
+    {
+        var vm = CreateVm();
+        await vm.SaveCommand.ExecuteAsync(null);
+        vm.IsSaved.Should().BeTrue();
+
+        vm.RightToLeft = !vm.RightToLeft;
+
+        vm.IsSaved.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ResetToDefaults_RestoresRightToLeftToFalse()
+    {
+        var vm = CreateVm(AppSettings.Default with { RightToLeft = true });
+
+        vm.ResetToDefaultsCommand.Execute(null);
+
+        vm.RightToLeft.Should().BeFalse();
+    }
 }

@@ -44,6 +44,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private string _defaultAnnotationAuthor = string.Empty;
 
     [ObservableProperty]
+    private bool _rightToLeft;
+
+    [ObservableProperty]
     private bool _isSaved;
 
     public IReadOnlyList<string> AvailableThemes { get; } = ["Auto", "Light", "Dark", "HighContrast"];
@@ -76,6 +79,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         CheckForUpdates = s.CheckForUpdates;
         CrashReportingEnabled = s.CrashReportingEnabled;
         DefaultAnnotationAuthor = s.DefaultAnnotationAuthor ?? string.Empty;
+        RightToLeft = s.RightToLeft;
         IsSaved = false;
     }
 
@@ -100,6 +104,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnCrashReportingEnabledChanged(bool value) => IsSaved = false;
 
     partial void OnDefaultAnnotationAuthorChanged(string value) => IsSaved = false;
+
+    partial void OnRightToLeftChanged(bool value) => IsSaved = false;
 
     [RelayCommand]
     private async Task SaveAsync()
@@ -126,6 +132,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             CheckForUpdates = CheckForUpdates,
             CrashReportingEnabled = CrashReportingEnabled,
             DefaultAnnotationAuthor = string.IsNullOrWhiteSpace(DefaultAnnotationAuthor) ? null : DefaultAnnotationAuthor.Trim(),
+            RightToLeft = RightToLeft,
         }, CancellationToken.None);
 
         // Hot-switch культуры — все XAML-биндинги {Path=[Key]} обновятся через "Item[]" PropertyChanged.
@@ -155,5 +162,6 @@ public sealed partial class SettingsViewModel : ObservableObject
         CheckForUpdates = defaults.CheckForUpdates;
         CrashReportingEnabled = defaults.CrashReportingEnabled;
         DefaultAnnotationAuthor = defaults.DefaultAnnotationAuthor ?? string.Empty;
+        RightToLeft = defaults.RightToLeft;
     }
 }

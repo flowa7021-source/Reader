@@ -26,6 +26,14 @@ public sealed partial class DocumentTabViewModel
     [NotifyPropertyChangedFor(nameof(VisiblePageIndices))]
     private bool _twoPageCoverSeparate;
 
+    /// <summary>Right-to-left чтение (Q-F3): в режиме разворота пары идут «справа налево»
+    /// (бо́льший индекс — первым). Начальное значение берётся из <c>AppSettings.RightToLeft</c>
+    /// при создании VM; runtime-смена настройки требует пере-открытия документа (как Theme/Language).
+    /// Команда <c>ToggleRightToLeft</c> переключает только текущую вкладку — не сохраняет в настройки.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisiblePageIndices))]
+    private bool _isRightToLeft;
+
     /// <summary>True в одностраничном режиме (привязка видимости одностраничной поверхности).</summary>
     public bool IsSinglePageView => ViewMode == ViewMode.SinglePage;
 
@@ -69,7 +77,11 @@ public sealed partial class DocumentTabViewModel
             ? current - ((current - 1) % 2)  // current ≥ 1: нечётная → она же, чётная → −1
             : current - (current % 2);
 
-        return start + 1 < PageCount ? [start, start + 1] : [start];
+        if (start + 1 >= PageCount)
+        {
+            return [start];
+        }
+        return IsRightToLeft ? [start + 1, start] : [start, start + 1];
     }
 
     /// <summary>Сообщить VM размер области просмотра (px); вызывается View при ресайзе.
@@ -121,6 +133,9 @@ public sealed partial class DocumentTabViewModel
 
     [RelayCommand]
     private void ToggleTwoPageCoverSeparate() => TwoPageCoverSeparate = !TwoPageCoverSeparate;
+
+    [RelayCommand]
+    private void ToggleRightToLeft() => IsRightToLeft = !IsRightToLeft;
 
     [RelayCommand]
     private void FitWidth() => FitMode = FitMode.FitWidth;

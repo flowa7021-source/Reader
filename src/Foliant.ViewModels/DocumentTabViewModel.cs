@@ -150,6 +150,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _pdfFormFillService = pdfFormFillService;
         _formDataFormatCatalog = formDataFormatCatalog;
         _logger = logger;
+        // Снимок настройки RTL (Q-F3): runtime-смена через Settings dialog требует пере-открытия
+        // документа. Hot-switch — через ToggleRightToLeftCommand из View меню.
+        IsRightToLeft = settings?.Current.RightToLeft == true;
         Title = Path.GetFileName(filePath);
         PageCount = document.PageCount;
         AnnotationsDocument = new AnnotationsDocumentViewModel(
