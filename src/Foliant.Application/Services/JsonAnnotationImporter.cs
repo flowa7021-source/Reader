@@ -60,12 +60,13 @@ public sealed class JsonAnnotationImporter : IAnnotationImporter
     }
 
     // Те же правила валидности, что у экспортёров: highlight/note/underline/strikethrough/
-    // rectangle/ellipse требуют Bounds; freehand/polygon — ≥2 точек; line/arrow — ровно 2.
+    // rectangle/ellipse/stamp требуют Bounds; freehand/polygon — ≥2 точек; line/arrow — ровно 2.
     private static bool IsValid(Annotation a) => a.Kind switch
     {
         AnnotationKind.Highlight or AnnotationKind.StickyNote
             or AnnotationKind.Underline or AnnotationKind.Strikethrough
-            or AnnotationKind.Rectangle or AnnotationKind.Ellipse => a.Bounds is not null,
+            or AnnotationKind.Rectangle or AnnotationKind.Ellipse
+            or AnnotationKind.Stamp => a.Bounds is not null,
         AnnotationKind.Freehand or AnnotationKind.Polygon => a.InkPoints is { Count: >= 2 },
         AnnotationKind.Line or AnnotationKind.Arrow => a.InkPoints is { Count: 2 },
         _ => false,
