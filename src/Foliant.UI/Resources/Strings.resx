@@ -349,6 +349,36 @@
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Batch processing...</value>
   </data>
+  <data name="MenuToolsViewSignatures" xml:space="preserve">
+    <value>View Si_gnatures...</value>
+  </data>
+  <data name="SignaturesDialogTitle" xml:space="preserve">
+    <value>Digital Signatures</value>
+  </data>
+  <data name="SignaturesColumnSigner" xml:space="preserve">
+    <value>Signer</value>
+  </data>
+  <data name="SignaturesColumnSignedAt" xml:space="preserve">
+    <value>Signed at</value>
+  </data>
+  <data name="SignaturesColumnKind" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="SignaturesColumnReason" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="SignaturesEmptyHint" xml:space="preserve">
+    <value>This document is not digitally signed.</value>
+  </data>
+  <data name="SignaturesCountFormat" xml:space="preserve">
+    <value>{0} signature(s) found in this document.</value>
+  </data>
+  <data name="SignaturesValidate" xml:space="preserve">
+    <value>Validate selected</value>
+  </data>
+  <data name="DialogClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
   <data name="BatchWindowTitle" xml:space="preserve">
     <value>Batch Processing</value>
   </data>

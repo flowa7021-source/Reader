@@ -346,6 +346,36 @@
   <data name="ThemeHighContrast" xml:space="preserve">
     <value>_Высокая контрастность</value>
   </data>
+  <data name="MenuToolsViewSignatures" xml:space="preserve">
+    <value>_Цифровые подписи...</value>
+  </data>
+  <data name="SignaturesDialogTitle" xml:space="preserve">
+    <value>Цифровые подписи</value>
+  </data>
+  <data name="SignaturesColumnSigner" xml:space="preserve">
+    <value>Подписант</value>
+  </data>
+  <data name="SignaturesColumnSignedAt" xml:space="preserve">
+    <value>Дата подписи</value>
+  </data>
+  <data name="SignaturesColumnKind" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="SignaturesColumnReason" xml:space="preserve">
+    <value>Причина</value>
+  </data>
+  <data name="SignaturesEmptyHint" xml:space="preserve">
+    <value>Документ не содержит цифровых подписей.</value>
+  </data>
+  <data name="SignaturesCountFormat" xml:space="preserve">
+    <value>Найдено подписей: {0}.</value>
+  </data>
+  <data name="SignaturesValidate" xml:space="preserve">
+    <value>Проверить выбранную</value>
+  </data>
+  <data name="DialogClose" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Пакетная обработка...</value>
   </data>
