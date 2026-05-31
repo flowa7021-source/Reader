@@ -355,6 +355,11 @@
                                 IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Freehand}}"
                                 ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolFreehand]}"
                                 Content="✐" />
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.Polygon}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Polygon}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolPolygon]}"
+                                Content="⬠" />
                   <Separator />
                   <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
                                 CommandParameter="{x:Static vm:AnnotationTool.StickyNote}"
