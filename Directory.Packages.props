@@ -59,6 +59,7 @@
 
   <ItemGroup Label="Crypto">
     <PackageVersion Include="BouncyCastle.Cryptography" Version="2.5.0" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.0" />
   </ItemGroup>
 
   <!-- DPAPI для хранения лицензии/триала (Windows-only). Microsoft.Win32.Registry пакетом

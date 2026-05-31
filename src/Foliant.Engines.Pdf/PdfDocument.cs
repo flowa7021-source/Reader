@@ -86,7 +86,10 @@ internal sealed partial class PdfDocument : IDocument
 
     public IFormController? GetForms() => null;
 
-    public ISignatureController? GetSignatures() => null;
+    /// <summary>Read-only signatures controller (Q-F25). <c>null</c> для in-memory-документов
+    /// без path'а — <see cref="PdfSignatureController"/> открывает свою PDFium-сессию по path'у.</summary>
+    public ISignatureController? GetSignatures() =>
+        _path is null ? null : new PdfSignatureController(_path);
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types",
         Justification = "DisposeAsync must not throw; close failure is logged via Debug trace and swallowed.")]
