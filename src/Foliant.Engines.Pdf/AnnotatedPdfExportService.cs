@@ -9,8 +9,17 @@ namespace Foliant.Engines.Pdf;
 /// <summary>
 /// PDFium-реализация <see cref="IAnnotatedPdfExportService"/>: читает исходный PDF, добавляет
 /// настоящие редактируемые annotation-объекты (<c>/Highlight</c>, <c>/Underline</c>,
-/// <c>/StrikeOut</c>, <c>/Text</c>, <c>/Ink</c>) через нативный слой PDFium и атомарно пишет
-/// новый PDF. Чистый маппинг доменных аннотаций в числовой,
+/// <c>/StrikeOut</c>, <c>/Text</c>, <c>/Ink</c>, <c>/Square</c>, <c>/Circle</c>) через нативный
+/// слой PDFium и атомарно пишет новый PDF. Square/Circle рисуются path-объектами внутри
+/// annotation, чтобы appearance был виден сразу после открытия PDF (без полагания на
+/// reader-side appearance generation).
+///
+/// Line/Arrow/Polygon пока не embedд'ятся: PDFium 146.x не экспонирует публичные setter'ы для
+/// <c>/L</c>/<c>/Vertices</c>/<c>/LE</c>, а <c>FPDFAnnotAppendObject</c> для этих subtype'ов
+/// отбрасывает path silently. Round-trip этих типов работает через FDF/XFDF/JSON (#75/#76);
+/// native PDF embedding для них — отдельный PR с cos-level fallback'ом.
+///
+/// Чистый маппинг доменных аннотаций в числовой,
 /// PDF-нейтральный вид делает <see cref="AnnotationToPdfSpec"/>; здесь — только нативная запись.
 ///
 /// PDFium не потокобезопасен (даже между документами), поэтому весь нативный участок выполняется
@@ -22,6 +31,8 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
     // PDFium FPDF_ANNOTATION_SUBTYPE (см. public/fpdf_annot.h). В PDFiumCore 146.x именованные
     // константы не экспонируются, поэтому значения зашиты по спецификации PDFium.
     private const int SubtypeText = 1;
+    private const int SubtypeSquare = 5;
+    private const int SubtypeCircle = 6;
     private const int SubtypeHighlight = 9;
     private const int SubtypeUnderline = 10;
     private const int SubtypeStrikeout = 12;
@@ -30,6 +41,10 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
     // FPDF_PAGEOBJ_* draw-mode для path-объекта чернил: только обводка, без заливки.
     private const int PathStrokeOnly = 1;
     private const float InkStrokeWidth = 1.5f;
+    private const float ShapeStrokeWidth = 1.5f;
+    // Cubic Bezier kappa: расстояние от endpoint'а до control-точки для аппроксимации
+    // четверти эллипса четырьмя кубическими Безье. Стандартная константа = 4*(sqrt(2)-1)/3.
+    private const double EllipseKappa = 0.5522847498307936;
 
     private static readonly Lock NativeGate = new();
 
@@ -154,6 +169,8 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
             PdfAnnotationSubtype.Ink => SubtypeInk,
             PdfAnnotationSubtype.Underline => SubtypeUnderline,
             PdfAnnotationSubtype.Strikeout => SubtypeStrikeout,
+            PdfAnnotationSubtype.Square => SubtypeSquare,
+            PdfAnnotationSubtype.Circle => SubtypeCircle,
             _ => -1,
         };
 
@@ -202,6 +219,18 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
                     AppendInkPath(doc, annot, spec);
                     break;
 
+                case PdfAnnotationSubtype.Square:
+                    // /Subtype /Square — прямоугольный контур. PDFium 146.x не экспонирует
+                    // setter для /BS/`/IC` напрямую; rect задаёт bbox, путь рисует обводку.
+                    SetColor(annot, spec.Color);
+                    AppendRectanglePath(annot, spec);
+                    break;
+
+                case PdfAnnotationSubtype.Circle:
+                    SetColor(annot, spec.Color);
+                    AppendEllipsePath(annot, spec);
+                    break;
+
                 default:
                     return false;
             }
@@ -213,6 +242,76 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
         {
             fpdf_annot.FPDFPageCloseAnnot(annot);
         }
+    }
+
+    private static void AppendRectanglePath(FpdfAnnotationT annot, PdfAnnotationSpec spec)
+    {
+        var r = spec.Rect;
+        var path = fpdf_edit.FPDFPageObjCreateNewPath((float)r.XLL, (float)r.YLL);
+        if (path is null)
+        {
+            return;
+        }
+
+        fpdf_edit.FPDFPathLineTo(path, (float)r.XUR, (float)r.YLL);
+        fpdf_edit.FPDFPathLineTo(path, (float)r.XUR, (float)r.YUR);
+        fpdf_edit.FPDFPathLineTo(path, (float)r.XLL, (float)r.YUR);
+        fpdf_edit.FPDFPathClose(path);
+
+        var c = spec.Color;
+        fpdf_edit.FPDFPageObjSetStrokeColor(path, c.R, c.G, c.B, c.A);
+        fpdf_edit.FPDFPageObjSetStrokeWidth(path, ShapeStrokeWidth);
+        fpdf_edit.FPDFPathSetDrawMode(path, fillmode: 0, stroke: PathStrokeOnly);
+        fpdf_annot.FPDFAnnotAppendObject(annot, path);
+    }
+
+    private static void AppendEllipsePath(FpdfAnnotationT annot, PdfAnnotationSpec spec)
+    {
+        // Эллипс, вписанный в bbox, 4 кубическими Безье. Центр (cx,cy), радиусы (rx,ry).
+        // Контрольные точки отстоят от endpoint'ов на kappa*r вдоль касательной (по часовой).
+        var r = spec.Rect;
+        double cx = (r.XLL + r.XUR) / 2.0;
+        double cy = (r.YLL + r.YUR) / 2.0;
+        double rx = (r.XUR - r.XLL) / 2.0;
+        double ry = (r.YUR - r.YLL) / 2.0;
+        if (rx <= 0 || ry <= 0)
+        {
+            return;
+        }
+
+        double kx = rx * EllipseKappa;
+        double ky = ry * EllipseKappa;
+
+        var path = fpdf_edit.FPDFPageObjCreateNewPath((float)(cx + rx), (float)cy);
+        if (path is null)
+        {
+            return;
+        }
+
+        // CCW: right → top → left → bottom → right.
+        fpdf_edit.FPDFPathBezierTo(path,
+            (float)(cx + rx), (float)(cy + ky),
+            (float)(cx + kx), (float)(cy + ry),
+            (float)cx, (float)(cy + ry));
+        fpdf_edit.FPDFPathBezierTo(path,
+            (float)(cx - kx), (float)(cy + ry),
+            (float)(cx - rx), (float)(cy + ky),
+            (float)(cx - rx), (float)cy);
+        fpdf_edit.FPDFPathBezierTo(path,
+            (float)(cx - rx), (float)(cy - ky),
+            (float)(cx - kx), (float)(cy - ry),
+            (float)cx, (float)(cy - ry));
+        fpdf_edit.FPDFPathBezierTo(path,
+            (float)(cx + kx), (float)(cy - ry),
+            (float)(cx + rx), (float)(cy - ky),
+            (float)(cx + rx), (float)cy);
+        fpdf_edit.FPDFPathClose(path);
+
+        var c = spec.Color;
+        fpdf_edit.FPDFPageObjSetStrokeColor(path, c.R, c.G, c.B, c.A);
+        fpdf_edit.FPDFPageObjSetStrokeWidth(path, ShapeStrokeWidth);
+        fpdf_edit.FPDFPathSetDrawMode(path, fillmode: 0, stroke: PathStrokeOnly);
+        fpdf_annot.FPDFAnnotAppendObject(annot, path);
     }
 
     private static void AppendInkPath(FpdfDocumentT doc, FpdfAnnotationT annot, PdfAnnotationSpec spec)
