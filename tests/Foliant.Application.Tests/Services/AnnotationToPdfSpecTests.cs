@@ -128,6 +128,49 @@ public sealed class AnnotationToPdfSpecTests
         AnnotationToPdfSpec.Map(noBoundsEllipse).Should().BeNull();
     }
 
+    // ───── Q-F18 stamp ─────
+
+    [Fact]
+    public void Stamp_MapsToStampSubtypeWithContentsAndOpaqueColor()
+    {
+        var stamp = Annotation.Stamp(2, new AnnotationRect(100, 100, 200, 60), "APPROVED", "#00AA00", T0);
+
+        var spec = AnnotationToPdfSpec.Map(stamp)!;
+
+        spec.PageIndex.Should().Be(2);
+        spec.Subtype.Should().Be(PdfAnnotationSubtype.Stamp);
+        spec.Rect.Should().Be(new PdfRect(100, 100, 300, 160));
+        spec.Contents.Should().Be("APPROVED");
+        spec.Color.Should().Be(new PdfRgba(0, 170, 0, 255));
+    }
+
+    [Fact]
+    public void Stamp_WithoutBoundsOrLabel_IsSkipped()
+    {
+        var noBounds = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Stamp, "#000", null, "X", null, T0);
+        var blankLabel = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Stamp, "#000", new AnnotationRect(0, 0, 10, 10), "   ", null, T0);
+
+        AnnotationToPdfSpec.Map(noBounds).Should().BeNull();
+        AnnotationToPdfSpec.Map(blankLabel).Should().BeNull();
+    }
+
+    [Fact]
+    public void Stamp_PreservesMetadata()
+    {
+        var modified = new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+        var stamp = Annotation.Stamp(0, new AnnotationRect(0, 0, 50, 20), "DRAFT", "#FF0000", T0) with
+        {
+            ModifiedAt = modified,
+            Author = "Иван",
+        };
+
+        var spec = AnnotationToPdfSpec.Map(stamp)!;
+
+        spec.CreatedAt.Should().Be(T0);
+        spec.ModifiedAt.Should().Be(modified);
+        spec.Author.Should().Be("Иван");
+    }
+
     [Fact]
     public void MapMany_DropsInvalid_KeepsValid_PreservingOrder()
     {

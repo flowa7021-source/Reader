@@ -26,12 +26,19 @@ public static class AnnotationToPdfSpec
             AnnotationKind.Strikethrough when annotation.Bounds is { } b => TextMarkup(annotation, b, PdfAnnotationSubtype.Strikeout),
             AnnotationKind.Rectangle when annotation.Bounds is { } b => RectShape(annotation, b, PdfAnnotationSubtype.Square),
             AnnotationKind.Ellipse when annotation.Bounds is { } b => RectShape(annotation, b, PdfAnnotationSubtype.Circle),
+            AnnotationKind.Stamp when annotation.Bounds is { } b && !string.IsNullOrWhiteSpace(annotation.Text) => Stamp(annotation, b),
             // Line/Arrow/Polygon требуют PDFium setters для /L и /Vertices, которых 146.x публично
             // не экспонирует. Round-trip через FDF/XFDF/JSON работает (см. #75/#76); embedding
             // в native PDF /Annots — отдельный PR с cos-level fallback'ом.
             _ => null,
         };
     }
+
+    // Stamp: /Subtype /Stamp + /Contents (label) + opaque rect-border appearance.
+    private static PdfAnnotationSpec Stamp(Annotation a, AnnotationRect b) =>
+        WithMetadata(a, new PdfAnnotationSpec(
+            a.PageIndex, PdfAnnotationSubtype.Stamp, Rect(b), Color(a.ColorHex, OpaqueAlpha),
+            Contents: a.Text));
 
     private static PdfAnnotationSpec RectShape(Annotation a, AnnotationRect b, PdfAnnotationSubtype subtype) =>
         WithMetadata(a, new PdfAnnotationSpec(

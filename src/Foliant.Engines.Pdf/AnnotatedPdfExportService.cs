@@ -9,10 +9,11 @@ namespace Foliant.Engines.Pdf;
 /// <summary>
 /// PDFium-реализация <see cref="IAnnotatedPdfExportService"/>: читает исходный PDF, добавляет
 /// настоящие редактируемые annotation-объекты (<c>/Highlight</c>, <c>/Underline</c>,
-/// <c>/StrikeOut</c>, <c>/Text</c>, <c>/Ink</c>, <c>/Square</c>, <c>/Circle</c>) через нативный
-/// слой PDFium и атомарно пишет новый PDF. Square/Circle рисуются path-объектами внутри
-/// annotation, чтобы appearance был виден сразу после открытия PDF (без полагания на
-/// reader-side appearance generation).
+/// <c>/StrikeOut</c>, <c>/Text</c>, <c>/Ink</c>, <c>/Square</c>, <c>/Circle</c>, <c>/Stamp</c>)
+/// через нативный слой PDFium и атомарно пишет новый PDF. Square/Circle/Stamp рисуются
+/// path/text-объектами внутри annotation, чтобы appearance был виден сразу после открытия PDF
+/// (без полагания на reader-side appearance generation). Stamp = rect-border + центрированный
+/// label-текст (Helvetica, auto-fit).
 ///
 /// Line/Arrow/Polygon пока не embedд'ятся: PDFium 146.x не экспонирует публичные setter'ы для
 /// <c>/L</c>/<c>/Vertices</c>/<c>/LE</c>, а <c>FPDFAnnotAppendObject</c> для этих subtype'ов
@@ -36,15 +37,23 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
     private const int SubtypeHighlight = 9;
     private const int SubtypeUnderline = 10;
     private const int SubtypeStrikeout = 12;
+    private const int SubtypeStamp = 13;
     private const int SubtypeInk = 15;
 
     // FPDF_PAGEOBJ_* draw-mode для path-объекта чернил: только обводка, без заливки.
     private const int PathStrokeOnly = 1;
     private const float InkStrokeWidth = 1.5f;
     private const float ShapeStrokeWidth = 1.5f;
+    private const float StampBorderWidth = 2.0f;
     // Cubic Bezier kappa: расстояние от endpoint'а до control-точки для аппроксимации
     // четверти эллипса четырьмя кубическими Безье. Стандартная константа = 4*(sqrt(2)-1)/3.
     private const double EllipseKappa = 0.5522847498307936;
+    // Stamp-label рисуется Helvetica с авто-fit: высота шрифта = 60% высоты rect, clamp 6..48pt.
+    private const double StampLabelHeightFraction = 0.6;
+    private const double StampLabelMinPt = 6.0;
+    private const double StampLabelMaxPt = 48.0;
+    // Аппроксимация ширины строки Helvetica: средняя ширина глифа ≈ 0.5×fontSize.
+    private const double HelveticaAvgGlyphWidthFactor = 0.5;
 
     private static readonly Lock NativeGate = new();
 
@@ -171,6 +180,7 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
             PdfAnnotationSubtype.Strikeout => SubtypeStrikeout,
             PdfAnnotationSubtype.Square => SubtypeSquare,
             PdfAnnotationSubtype.Circle => SubtypeCircle,
+            PdfAnnotationSubtype.Stamp => SubtypeStamp,
             _ => -1,
         };
 
@@ -229,6 +239,14 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
                 case PdfAnnotationSubtype.Circle:
                     SetColor(annot, spec.Color);
                     AppendEllipsePath(annot, spec);
+                    break;
+
+                case PdfAnnotationSubtype.Stamp:
+                    // /Subtype /Stamp — label-текст в /Contents + appearance: rect-border path +
+                    // центрированный text-object (Helvetica, auto-fit). Acrobat распознаёт как stamp.
+                    SetColor(annot, spec.Color);
+                    SetStringValue(annot, "Contents", spec.Contents ?? string.Empty);
+                    AppendStampAppearance(doc, annot, spec);
                     break;
 
                 default:
@@ -312,6 +330,67 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
         fpdf_edit.FPDFPageObjSetStrokeWidth(path, ShapeStrokeWidth);
         fpdf_edit.FPDFPathSetDrawMode(path, fillmode: 0, stroke: PathStrokeOnly);
         fpdf_annot.FPDFAnnotAppendObject(annot, path);
+    }
+
+    private static void AppendStampAppearance(FpdfDocumentT doc, FpdfAnnotationT annot, PdfAnnotationSpec spec)
+    {
+        var r = spec.Rect;
+        var c = spec.Color;
+
+        // 1) Border: прямоугольный контур в цвет штампа, 2pt.
+        var border = fpdf_edit.FPDFPageObjCreateNewPath((float)r.XLL, (float)r.YLL);
+        if (border is not null)
+        {
+            fpdf_edit.FPDFPathLineTo(border, (float)r.XUR, (float)r.YLL);
+            fpdf_edit.FPDFPathLineTo(border, (float)r.XUR, (float)r.YUR);
+            fpdf_edit.FPDFPathLineTo(border, (float)r.XLL, (float)r.YUR);
+            fpdf_edit.FPDFPathClose(border);
+            fpdf_edit.FPDFPageObjSetStrokeColor(border, c.R, c.G, c.B, c.A);
+            fpdf_edit.FPDFPageObjSetStrokeWidth(border, StampBorderWidth);
+            fpdf_edit.FPDFPathSetDrawMode(border, fillmode: 0, stroke: PathStrokeOnly);
+            fpdf_annot.FPDFAnnotAppendObject(annot, border);
+        }
+
+        // 2) Label: центрированный Helvetica-текст. Высота шрифта = 60% высоты rect (clamp),
+        // ширина оценивается приближённо, чтобы отцентрировать строку по горизонтали.
+        string label = spec.Contents ?? string.Empty;
+        if (string.IsNullOrEmpty(label))
+        {
+            return;
+        }
+
+        double rectH = r.YUR - r.YLL;
+        double rectW = r.XUR - r.XLL;
+        double fontSize = Math.Clamp(rectH * StampLabelHeightFraction, StampLabelMinPt, StampLabelMaxPt);
+
+        var textObj = fpdf_edit.FPDFPageObjNewTextObj(doc, "Helvetica", (float)fontSize);
+        if (textObj is null)
+        {
+            return;
+        }
+
+        SetTextValue(textObj, label);
+        fpdf_edit.FPDFPageObjSetFillColor(textObj, c.R, c.G, c.B, c.A);
+
+        double textWidth = fontSize * HelveticaAvgGlyphWidthFactor * label.Length;
+        double tx = r.XLL + Math.Max(0, (rectW - textWidth) / 2.0);
+        double ty = r.YLL + Math.Max(0, (rectH - fontSize) / 2.0);
+        using var matrix = new FS_MATRIX_ { A = 1, B = 0, C = 0, D = 1, E = (float)tx, F = (float)ty };
+        fpdf_edit.FPDFPageObjSetMatrix(textObj, matrix);
+
+        fpdf_annot.FPDFAnnotAppendObject(annot, textObj);
+    }
+
+    private static void SetTextValue(FpdfPageobjectT textObj, string value)
+    {
+        // FPDFTextSetText: UTF-16LE с trailing NUL.
+        ushort[] buffer = new ushort[value.Length + 1];
+        for (int i = 0; i < value.Length; i++)
+        {
+            buffer[i] = value[i];
+        }
+
+        fpdf_edit.FPDFTextSetText(textObj, ref buffer[0]);
     }
 
     private static void AppendInkPath(FpdfDocumentT doc, FpdfAnnotationT annot, PdfAnnotationSpec spec)
