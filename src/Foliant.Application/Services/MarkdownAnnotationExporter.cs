@@ -112,6 +112,14 @@ public sealed class MarkdownAnnotationExporter : IAnnotationExporter
                 sb.Append(polyPoints.ToString(CultureInfo.InvariantCulture));
                 sb.AppendLine(" vertices)");
                 break;
+
+            case AnnotationKind.Stamp:
+                sb.Append("- **Stamp** «");
+                sb.Append(EscapeMarkdown(a.Text ?? string.Empty));
+                sb.Append("» (");
+                sb.Append(a.ColorHex);
+                sb.AppendLine(")");
+                break;
         }
 
         AppendMetadata(sb, a);

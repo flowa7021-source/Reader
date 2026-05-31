@@ -50,6 +50,9 @@ public sealed partial class DocumentTabViewModel
     /// <summary>Сколько полигонов.</summary>
     public int PolygonCount => CountByKind(AnnotationKind.Polygon);
 
+    /// <summary>Сколько штампов (text-label).</summary>
+    public int StampCount => CountByKind(AnnotationKind.Stamp);
+
     private int CountByKind(AnnotationKind kind)
     {
         int count = 0;
@@ -78,6 +81,7 @@ public sealed partial class DocumentTabViewModel
         OnPropertyChanged(nameof(LineCount));
         OnPropertyChanged(nameof(ArrowCount));
         OnPropertyChanged(nameof(PolygonCount));
+        OnPropertyChanged(nameof(StampCount));
         OnPropertyChanged(nameof(CanExportAnnotatedPdf));
         ExportAnnotatedPdfCommand.NotifyCanExecuteChanged();
         AnnotationsDocument.Rebuild(_allAnnotations);
@@ -271,6 +275,19 @@ public sealed partial class DocumentTabViewModel
             return;
         }
         await PersistShapeAsync(Annotation.Polygon(pageIndex, points, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
+    }
+
+    /// <summary>Добавить штамп (Q-F18): bounds + label (built-in или custom строка).
+    /// <paramref name="label"/> blank → no-op (factory throws иначе).</summary>
+    public async Task AddStampAsync(int pageIndex, AnnotationRect bounds, string label, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        if (string.IsNullOrWhiteSpace(label))
+        {
+            return;
+        }
+        await PersistShapeAsync(Annotation.Stamp(pageIndex, bounds, label, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
     }
 
     /// <summary>Shared persistence path for the five geometric shapes — stamp author,

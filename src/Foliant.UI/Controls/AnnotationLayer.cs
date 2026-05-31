@@ -177,9 +177,46 @@ internal sealed class AnnotationLayer : FrameworkElement
             case AnnotationKind.Polygon when a.InkPoints is { Count: >= 3 }:
                 DrawPolygonShape(dc, a.InkPoints, page, zoom, color);
                 break;
+            case AnnotationKind.Stamp when a.Bounds is { } b:
+                DrawStamp(dc, ToRect(b, page, zoom), color, a.Text);
+                break;
             default:
                 break;
         }
+    }
+
+    /// <summary>Stamp: bordered rect with centered uppercase label (typewriter feel — Approved /
+    /// Rejected / Draft / custom). Label is whatever <see cref="Annotation.Text"/> carries;
+    /// empty label degrades to a plain bordered rect.</summary>
+    private static void DrawStamp(DrawingContext dc, System.Windows.Rect r, Color color, string? label)
+    {
+        var brush = new SolidColorBrush(color);
+        var pen = new Pen(brush, 3) { LineJoin = PenLineJoin.Round };
+        dc.DrawRectangle(null, pen, r);
+
+        if (string.IsNullOrWhiteSpace(label))
+        {
+            return;
+        }
+
+        // Font size auto-fits to ~60% of rect height, clamped 8..72 px.
+        double fontSize = Math.Clamp(r.Height * 0.6, 8.0, 72.0);
+        var typeface = new Typeface(new FontFamily("Arial"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+        var formatted = new FormattedText(
+            label.ToUpperInvariant(),
+            System.Globalization.CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            fontSize,
+            brush,
+            VisualTreeHelper.GetDpi(new System.Windows.Controls.Border()).PixelsPerDip)
+        {
+            TextAlignment = TextAlignment.Center,
+            MaxTextWidth = Math.Max(r.Width - 8, 1),
+        };
+        // Vertical-center the formatted block within the rect.
+        double textY = r.Top + ((r.Height - formatted.Height) / 2.0);
+        dc.DrawText(formatted, new Point(r.Left, textY));
     }
 
     /// <summary>Rectangle (contour, no fill).</summary>

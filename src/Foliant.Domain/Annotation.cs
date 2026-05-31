@@ -12,6 +12,7 @@ public enum AnnotationKind
     Line,
     Arrow,
     Polygon,
+    Stamp,
 }
 
 public sealed record AnnotationRect(double X, double Y, double Width, double Height);
@@ -99,5 +100,16 @@ public sealed record Annotation(
             throw new ArgumentException("Polygon requires at least three points.", nameof(points));
         }
         return new(Guid.NewGuid(), pageIndex, AnnotationKind.Polygon, colorHex, null, null, points, createdAt);
+    }
+
+    /// <summary>Штамп — bounds + label-текст (например, "APPROVED" / "REJECTED" / "DRAFT" / любая
+    /// custom-строка). Рендерится как прямоугольник с обводкой в <paramref name="colorHex"/>
+    /// и центрированной надписью. Image-stamps (PNG → stamp) — следующий PR.</summary>
+    public static Annotation Stamp(int pageIndex, AnnotationRect bounds, string label, string colorHex, DateTimeOffset createdAt)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentException.ThrowIfNullOrWhiteSpace(label);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        return new(Guid.NewGuid(), pageIndex, AnnotationKind.Stamp, colorHex, bounds, label, null, createdAt);
     }
 }

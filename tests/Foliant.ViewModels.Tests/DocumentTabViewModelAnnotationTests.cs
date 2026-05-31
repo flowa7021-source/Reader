@@ -628,4 +628,72 @@ public sealed class DocumentTabViewModelAnnotationTests
         a.Kind.Should().Be(AnnotationKind.Polygon);
         a.InkPoints.Should().HaveCount(3);
     }
+
+    // ───── Stamps (Q-F18, Track R2) ─────
+
+    [Fact]
+    public async Task AddStamp_DispatchesToService()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+        var bounds = new AnnotationRect(100, 100, 200, 80);
+
+        await vm.AddStampAsync(0, bounds, "APPROVED", "#00AA00", CancellationToken.None);
+
+        await ann.Received(1).AddAsync(
+            "/tmp/doc.pdf",
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Stamp && a.Bounds == bounds && a.Text == "APPROVED" && a.ColorHex == "#00AA00"),
+            Arg.Any<CancellationToken>());
+        vm.StampCount.Should().Be(1);
+        vm.CurrentPageAnnotations.Should().ContainSingle(a => a.Kind == AnnotationKind.Stamp);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task AddStamp_BlankLabel_IsNoOp(string label)
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann);
+
+        await vm.AddStampAsync(0, new AnnotationRect(0, 0, 10, 10), label, "#000", CancellationToken.None);
+
+        await ann.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
+        vm.StampCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AddStamp_StampsAuthorFromSettings()
+    {
+        var ann = Substitute.For<IAnnotationService>();
+        var vm = CreateVm(ann, SettingsWithAuthor("Bob"));
+
+        await vm.AddStampAsync(0, new AnnotationRect(0, 0, 10, 10), "DRAFT", "#FF0000", default);
+
+        await ann.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Author == "Bob"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void DomainStampFactory_SetsKindBoundsAndLabel()
+    {
+        var b = new AnnotationRect(1, 2, 3, 4);
+        var a = Annotation.Stamp(0, b, "APPROVED", "#00AA00", DateTimeOffset.UnixEpoch);
+        a.Kind.Should().Be(AnnotationKind.Stamp);
+        a.Bounds.Should().Be(b);
+        a.Text.Should().Be("APPROVED");
+        a.ColorHex.Should().Be("#00AA00");
+        a.InkPoints.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void DomainStampFactory_BlankLabel_Throws(string label)
+    {
+        Action act = () => Annotation.Stamp(0, new AnnotationRect(0, 0, 10, 10), label, "#000", DateTimeOffset.UnixEpoch);
+        act.Should().Throw<ArgumentException>();
+    }
 }
