@@ -62,6 +62,28 @@ public sealed partial class DocumentTabViewModel
     [RelayCommand]
     private void ClearTool() => ActiveTool = AnnotationTool.None;
 
+    /// <summary>ICommand-обёртка для View: завершить rubber-band-rect жест на ТЕКУЩЕЙ странице.
+    /// AnnotationLayer (single-page) передаёт сюда уже сконвертированный PDF-rect; маршрутизация
+    /// и валидация — в <see cref="CommitRectToolAsync"/>.</summary>
+    [RelayCommand]
+    private async Task CommitRectToolOnCurrentPage(AnnotationRect? bounds)
+    {
+        if (bounds is not null)
+        {
+            await CommitRectToolAsync(CurrentPageIndex, bounds).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>ICommand-обёртка: завершить single-click жест (StickyNote) на текущей странице.</summary>
+    [RelayCommand]
+    private async Task CommitPointToolOnCurrentPage(AnnotationPoint? at)
+    {
+        if (at is not null)
+        {
+            await CommitPointToolAsync(CurrentPageIndex, at).ConfigureAwait(false);
+        }
+    }
+
     /// <summary>Завершить rubber-band-rect жест: создать аннотацию rect-группы на странице
     /// <paramref name="pageIndex"/> по PDF-координатам <paramref name="bounds"/>. No-op для
     /// вырожденного прямоугольника, blank stamp-label или не-rect инструмента. Возвращает
