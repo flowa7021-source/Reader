@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Foliant.Engines.Epub</RootNamespace>
+    <Description>EPUB engine. EPUB 2/3 via VersOne.Epub (pure managed, cross-platform). Spine items map to pages; text layer carries chapter content stripped to plain text. Visual render is a blank canvas in Phase 1 — pretty layout (font / wrap / images) is a follow-up.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="VersOne.Epub" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Foliant.Engines.Epub.Tests" />
+  </ItemGroup>
+
+</Project>

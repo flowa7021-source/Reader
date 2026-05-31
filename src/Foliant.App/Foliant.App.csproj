@@ -25,6 +25,7 @@
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
     <ProjectReference Include="..\Foliant.Engines.Pdf\Foliant.Engines.Pdf.csproj" />
     <ProjectReference Include="..\Foliant.Engines.Image\Foliant.Engines.Image.csproj" />
+    <ProjectReference Include="..\Foliant.Engines.Epub\Foliant.Engines.Epub.csproj" />
     <ProjectReference Include="..\Foliant.Engines.Ocr\Foliant.Engines.Ocr.csproj" />
     <ProjectReference Include="..\Foliant.Infrastructure\Foliant.Infrastructure.csproj" />
     <ProjectReference Include="..\Foliant.Plugins.Contracts\Foliant.Plugins.Contracts.csproj" />
