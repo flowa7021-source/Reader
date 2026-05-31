@@ -74,6 +74,60 @@ public sealed class AnnotationToPdfSpecTests
         AnnotationToPdfSpec.Map(onePoint).Should().BeNull();
     }
 
+    // ───── Q-F16 shapes ─────
+
+    [Fact]
+    public void Rectangle_MapsToSquareWithOpaqueColor()
+    {
+        var r = Annotation.Rectangle(0, new AnnotationRect(10, 20, 30, 40), "#00FF00", T0);
+
+        var spec = AnnotationToPdfSpec.Map(r)!;
+
+        spec.Subtype.Should().Be(PdfAnnotationSubtype.Square);
+        spec.Rect.Should().Be(new PdfRect(10, 20, 40, 60));
+        spec.Color.Should().Be(new PdfRgba(0, 255, 0, 255));
+    }
+
+    [Fact]
+    public void Ellipse_MapsToCircleWithOpaqueColor()
+    {
+        var e = Annotation.Ellipse(2, new AnnotationRect(0, 0, 100, 50), "#FF00FF", T0);
+
+        var spec = AnnotationToPdfSpec.Map(e)!;
+
+        spec.Subtype.Should().Be(PdfAnnotationSubtype.Circle);
+        spec.Color.Should().Be(new PdfRgba(255, 0, 255, 255));
+    }
+
+    [Fact]
+    public void Line_Arrow_Polygon_AreSkipped_UntilCosLevelSettersAvailable()
+    {
+        // PDFium 146.x не экспонирует /L /Vertices /LE setter'ы — embedding этих типов
+        // отложен до отдельного PR с cos-level fallback'ом. См. #75/#76 для FDF/XFDF
+        // round-trip'а (там эти типы работают полностью).
+        var line = Annotation.Line(0,
+            [new AnnotationPoint(0, 0), new AnnotationPoint(10, 10)], "#000", T0);
+        var arrow = Annotation.Arrow(0,
+            [new AnnotationPoint(0, 0), new AnnotationPoint(10, 10)], "#000", T0);
+        var poly = Annotation.Polygon(0,
+            [new AnnotationPoint(0, 0), new AnnotationPoint(10, 0), new AnnotationPoint(5, 10)],
+            "#000", T0);
+
+        AnnotationToPdfSpec.Map(line).Should().BeNull();
+        AnnotationToPdfSpec.Map(arrow).Should().BeNull();
+        AnnotationToPdfSpec.Map(poly).Should().BeNull();
+    }
+
+    [Fact]
+    public void Shapes_WithoutRequiredData_AreSkipped()
+    {
+        var noBoundsRect = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Rectangle, "#000", null, null, null, T0);
+        var noBoundsEllipse = new Annotation(Guid.NewGuid(), 0, AnnotationKind.Ellipse, "#000", null, null, null, T0);
+
+        AnnotationToPdfSpec.Map(noBoundsRect).Should().BeNull();
+        AnnotationToPdfSpec.Map(noBoundsEllipse).Should().BeNull();
+    }
+
     [Fact]
     public void MapMany_DropsInvalid_KeepsValid_PreservingOrder()
     {

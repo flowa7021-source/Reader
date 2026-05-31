@@ -14,6 +14,12 @@ public enum PdfAnnotationSubtype
 
     /// <summary>PDF text-markup `/Subtype /StrikeOut` — линия через центр текста, та же геометрия что Highlight.</summary>
     Strikeout,
+
+    /// <summary>PDF `/Subtype /Square` — прямоугольный контур.</summary>
+    Square,
+
+    /// <summary>PDF `/Subtype /Circle` — эллипс/круг.</summary>
+    Circle,
 }
 
 /// <summary>Прямоугольник в PDF user space: нижний-левый и верхний-правый углы.</summary>

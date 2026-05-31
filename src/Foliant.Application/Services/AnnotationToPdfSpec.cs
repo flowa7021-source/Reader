@@ -24,9 +24,18 @@ public static class AnnotationToPdfSpec
             AnnotationKind.Freehand when annotation.InkPoints is { Count: >= 2 } pts => Ink(annotation, pts),
             AnnotationKind.Underline when annotation.Bounds is { } b => TextMarkup(annotation, b, PdfAnnotationSubtype.Underline),
             AnnotationKind.Strikethrough when annotation.Bounds is { } b => TextMarkup(annotation, b, PdfAnnotationSubtype.Strikeout),
+            AnnotationKind.Rectangle when annotation.Bounds is { } b => RectShape(annotation, b, PdfAnnotationSubtype.Square),
+            AnnotationKind.Ellipse when annotation.Bounds is { } b => RectShape(annotation, b, PdfAnnotationSubtype.Circle),
+            // Line/Arrow/Polygon требуют PDFium setters для /L и /Vertices, которых 146.x публично
+            // не экспонирует. Round-trip через FDF/XFDF/JSON работает (см. #75/#76); embedding
+            // в native PDF /Annots — отдельный PR с cos-level fallback'ом.
             _ => null,
         };
     }
+
+    private static PdfAnnotationSpec RectShape(Annotation a, AnnotationRect b, PdfAnnotationSubtype subtype) =>
+        WithMetadata(a, new PdfAnnotationSpec(
+            a.PageIndex, subtype, Rect(b), Color(a.ColorHex, OpaqueAlpha)));
 
     /// <summary>Смаппить список, отбросив невалидные.</summary>
     public static IReadOnlyList<PdfAnnotationSpec> MapMany(IReadOnlyList<Annotation> annotations)

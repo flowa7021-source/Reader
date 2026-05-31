@@ -17,6 +17,8 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
 {
     // PDFium FPDF_ANNOTATION_SUBTYPE values (fpdf_annot.h).
     private const int SubtypeText = 1;
+    private const int SubtypeSquare = 5;
+    private const int SubtypeCircle = 6;
     private const int SubtypeHighlight = 9;
     private const int SubtypeUnderline = 10;
     private const int SubtypeStrikeout = 12;
@@ -133,6 +135,67 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
             var s = byPage[1].Should().ContainSingle().Subject;
             s.Subtype.Should().Be(SubtypeStrikeout);
             (s.ColorR, s.ColorG, s.ColorB).Should().Be(((uint)255, (uint)0, (uint)0));
+        });
+    }
+
+    [Fact]
+    public async Task Export_EmbedsRectangleAndEllipse_RoundTripsViaPdfium()
+    {
+        string source = SourcePath();
+        string target = Path.Combine(_tmpDir, "annotated-shapes.pdf");
+        var when = DateTimeOffset.UnixEpoch;
+        var bounds = new AnnotationRect(50, 200, 100, 60);
+
+        var annotations = new[]
+        {
+            Annotation.Rectangle(0, bounds, "#00FF00", when),
+            Annotation.Ellipse(1, bounds, "#FF00FF", when),
+        };
+
+        await _service.ExportAsync(source, annotations, target, default);
+
+        File.Exists(target).Should().BeTrue();
+
+        WithDocument(target, doc =>
+        {
+            var byPage = ReadAnnotations(doc);
+
+            var sq = byPage[0].Should().ContainSingle().Subject;
+            sq.Subtype.Should().Be(SubtypeSquare);
+            (sq.ColorR, sq.ColorG, sq.ColorB).Should().Be(((uint)0, (uint)255, (uint)0));
+
+            var ci = byPage[1].Should().ContainSingle().Subject;
+            ci.Subtype.Should().Be(SubtypeCircle);
+            (ci.ColorR, ci.ColorG, ci.ColorB).Should().Be(((uint)255, (uint)0, (uint)255));
+        });
+    }
+
+    [Fact]
+    public async Task Export_LinePolygonArrow_AreSkipped_NotInOutput()
+    {
+        // PDFium 146.x limitation: AnnotationToPdfSpec.Map returns null for these kinds.
+        // Они дропаются на app-layer и не попадают в /Annots; раунд-трип через FDF/XFDF/JSON
+        // покрывает их полностью.
+        string source = SourcePath();
+        string target = Path.Combine(_tmpDir, "annotated-lines.pdf");
+        var when = DateTimeOffset.UnixEpoch;
+
+        var annotations = new[]
+        {
+            Annotation.Line(0, [new(10, 10), new(50, 50)], "#000", when),
+            Annotation.Arrow(1, [new(10, 10), new(50, 50)], "#000", when),
+            Annotation.Polygon(2, [new(10, 10), new(20, 10), new(15, 20)], "#000", when),
+        };
+
+        await _service.ExportAsync(source, annotations, target, default);
+
+        File.Exists(target).Should().BeTrue();
+
+        WithDocument(target, doc =>
+        {
+            var byPage = ReadAnnotations(doc);
+            int total = byPage.Values.Sum(p => p.Count);
+            total.Should().Be(0, "PDFium 146.x cannot embed /L /Vertices — these specs map to null");
         });
     }
 
