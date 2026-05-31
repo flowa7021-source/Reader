@@ -352,6 +352,30 @@
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Batch processing...</value>
   </data>
+  <data name="MenuToolsFillForm" xml:space="preserve">
+    <value>_Fill Form...</value>
+  </data>
+  <data name="FormFillDialogTitle" xml:space="preserve">
+    <value>Fill Form</value>
+  </data>
+  <data name="FormFillColumnField" xml:space="preserve">
+    <value>Field</value>
+  </data>
+  <data name="FormFillColumnValue" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="FormFillEmptyHint" xml:space="preserve">
+    <value>This document has no fillable form fields.</value>
+  </data>
+  <data name="FormFillCountFormat" xml:space="preserve">
+    <value>{0} form field(s). Edit values, then Save As to write a filled copy.</value>
+  </data>
+  <data name="FormFillSaveAs" xml:space="preserve">
+    <value>Save As...</value>
+  </data>
+  <data name="FormFillSaveTitle" xml:space="preserve">
+    <value>Save filled PDF as</value>
+  </data>
   <data name="MenuToolsViewSignatures" xml:space="preserve">
     <value>View Si_gnatures...</value>
   </data>
