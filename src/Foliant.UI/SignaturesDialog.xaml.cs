@@ -62,9 +62,18 @@ public partial class SignaturesDialog : Window, INotifyPropertyChanged
         get
         {
             var loc = LocalizationManager.Instance;
-            return Signatures.Count == 0
-                ? loc["SignaturesEmptyHint"]
-                : string.Format(CultureInfo.CurrentCulture, loc["SignaturesCountFormat"], Signatures.Count);
+            if (Signatures.Count == 0)
+            {
+                return loc["SignaturesEmptyHint"];
+            }
+
+            // Substitute {0} directly instead of `string.Format` — the format string is
+            // loaded from resources, so static analyzers (CodeQL cs/format-argument-count)
+            // can't verify the placeholder/arg count and flag it.
+            return loc["SignaturesCountFormat"].Replace(
+                "{0}",
+                Signatures.Count.ToString(CultureInfo.CurrentCulture),
+                StringComparison.Ordinal);
         }
     }
 
