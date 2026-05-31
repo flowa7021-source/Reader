@@ -217,6 +217,10 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsBatch]}"
                   Click="OnBatchMenuItemClick" />
         <Separator />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsViewSignatures]}"
+                  IsEnabled="{Binding SelectedTab.CanViewSignatures, FallbackValue=False}"
+                  Click="OnViewSignaturesMenuItemClick" />
+        <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsImportLicense]}"
                   Click="OnImportLicenseMenuItemClick" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuToolsSettings]}"

@@ -333,6 +333,27 @@ public partial class MainWindow : Window
         window.ShowDialog();
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private void OnViewSignaturesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanViewSignatures: true } tab)
+        {
+            return;
+        }
+
+        try
+        {
+            var dialog = new SignaturesDialog(tab) { Owner = this };
+            dialog.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            var loc = LocalizationManager.Instance;
+            _logger.LogWarning(ex, "Failed to open signatures dialog.");
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void OnExitMenuItemClick(object sender, RoutedEventArgs e)
     {
         System.Windows.Application.Current.Shutdown();
