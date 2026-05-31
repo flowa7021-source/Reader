@@ -286,6 +286,9 @@
   <data name="MenuViewTwoPageCoverSeparate" xml:space="preserve">
     <value>Separate Co_ver Page</value>
   </data>
+  <data name="MenuViewRightToLeft" xml:space="preserve">
+    <value>_Right-to-Left Reading</value>
+  </data>
   <data name="MenuViewThumbnails" xml:space="preserve">
     <value>Thum_bnails</value>
   </data>
@@ -504,6 +507,9 @@
   </data>
   <data name="SettingsDefaultAnnotationAuthor" xml:space="preserve">
     <value>Default annotation author:</value>
+  </data>
+  <data name="SettingsRightToLeft" xml:space="preserve">
+    <value>Right-to-left reading:</value>
   </data>
   <data name="DialogOk" xml:space="preserve">
     <value>OK</value>

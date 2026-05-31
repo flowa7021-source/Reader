@@ -286,6 +286,9 @@
   <data name="MenuViewTwoPageCoverSeparate" xml:space="preserve">
     <value>Обло_жка отдельно</value>
   </data>
+  <data name="MenuViewRightToLeft" xml:space="preserve">
+    <value>Чтение _справа налево</value>
+  </data>
   <data name="MenuViewThumbnails" xml:space="preserve">
     <value>_Миниатюры</value>
   </data>
@@ -504,6 +507,9 @@
   </data>
   <data name="SettingsDefaultAnnotationAuthor" xml:space="preserve">
     <value>Автор аннотаций по умолчанию:</value>
+  </data>
+  <data name="SettingsRightToLeft" xml:space="preserve">
+    <value>Чтение справа налево:</value>
   </data>
   <data name="DialogOk" xml:space="preserve">
     <value>ОК</value>

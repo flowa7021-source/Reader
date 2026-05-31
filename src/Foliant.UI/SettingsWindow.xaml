@@ -4,7 +4,7 @@
         xmlns:loc="clr-namespace:Foliant.UI.Localization"
         Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsTitle]}"
         Width="440"
-        Height="410"
+        Height="440"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
@@ -99,7 +99,8 @@
       </StackPanel>
 
       <!-- Default annotation author (stamps Annotation.Author on creation; round-trips to PDF /T). -->
-      <StackPanel Orientation="Horizontal">
+      <StackPanel Orientation="Horizontal"
+                  Margin="0,0,0,8">
         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsDefaultAnnotationAuthor]}"
                    Width="170"
                    VerticalAlignment="Center"
@@ -107,6 +108,16 @@
         <TextBox Width="200"
                  VerticalAlignment="Center"
                  Text="{Binding DefaultAnnotationAuthor, UpdateSourceTrigger=PropertyChanged}" />
+      </StackPanel>
+
+      <!-- Right-to-left reading (Q-F3): swaps two-page spread order. -->
+      <StackPanel Orientation="Horizontal">
+        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SettingsRightToLeft]}"
+                   Width="170"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource Foreground}" />
+        <CheckBox IsChecked="{Binding RightToLeft}"
+                  VerticalAlignment="Center" />
       </StackPanel>
     </StackPanel>
 

@@ -37,6 +37,12 @@ public sealed record AppSettings
     /// и оттуда в PDF /T, FDF /T, XFDF <c>name</c>. <c>null</c>/пустая строка — без атрибуции.</summary>
     public string? DefaultAnnotationAuthor { get; init; }
 
+    /// <summary>Right-to-left чтение (Q-F3): в режиме разворота страницы пары переставляются
+    /// «справа налево» — индекс с большим номером идёт первым. Continuous/single-page не
+    /// затрагиваются — там вертикальная прокрутка. Полная RTL-редакция текста — Phase 4.
+    /// По умолчанию false (LTR).</summary>
+    public bool RightToLeft { get; init; }
+
     public static AppSettings Default { get; } = new();
 }
 
