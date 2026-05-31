@@ -9,6 +9,10 @@ namespace Foliant.Application.Services;
 /// <see cref="FdfAnnotationExporter"/>, закрывает round-trip обмен с Acrobat (Q-F17): пользователь
 /// экспортирует аннотации в FDF, правит в Acrobat, сохраняет FDF — мы читаем результат сюда.
 ///
+/// Покрытые subtype'ы: <c>/Highlight</c>, <c>/Underline</c>, <c>/StrikeOut</c>, <c>/Text</c>,
+/// <c>/Ink</c>, <c>/Square</c> (Rectangle), <c>/Circle</c> (Ellipse), <c>/Line</c> (с
+/// <c>/LE [/None /OpenArrow]</c> → Arrow), <c>/Polygon</c> (<c>/Vertices</c> плоский массив).
+///
 /// Минимальный cos-токенайзер scope'нут в этот файл (PdfPig свой не экспонирует): числа, имена,
 /// hex-/literal-строки, массивы, словари, references — больше FDF не требует (streams/xref для
 /// аннотаций отсутствуют). Парсинг — best-effort, как в XFDF-importer'е: битые элементы
@@ -95,11 +99,31 @@ file static class FdfAnnotationMapping
             "Highlight" => ReadRect(d) is { } b
                 ? Annotation.Highlight(pageIndex, b, color, createdAt)
                 : null,
+            "Underline" => ReadRect(d) is { } b
+                ? Annotation.Underline(pageIndex, b, color, createdAt)
+                : null,
+            "StrikeOut" => ReadRect(d) is { } b
+                ? Annotation.Strikethrough(pageIndex, b, color, createdAt)
+                : null,
             "Text" => ReadRect(d) is { } b
                 ? Annotation.StickyNote(pageIndex, b, ReadText(d, "Contents"), color, createdAt)
                 : null,
             "Ink" => ReadInkPoints(d) is { Count: > 0 } pts
                 ? Annotation.Freehand(pageIndex, pts, color, createdAt)
+                : null,
+            "Square" => ReadRect(d) is { } b
+                ? Annotation.Rectangle(pageIndex, b, color, createdAt)
+                : null,
+            "Circle" => ReadRect(d) is { } b
+                ? Annotation.Ellipse(pageIndex, b, color, createdAt)
+                : null,
+            "Line" => ReadLineEndpoints(d) is { Length: 2 } line
+                ? (IsLineArrow(d)
+                    ? Annotation.Arrow(pageIndex, line, color, createdAt)
+                    : Annotation.Line(pageIndex, line, color, createdAt))
+                : null,
+            "Polygon" => ReadVertices(d) is { Count: >= 3 } verts
+                ? Annotation.Polygon(pageIndex, verts, color, createdAt)
                 : null,
             _ => null,
         };
@@ -156,6 +180,53 @@ file static class FdfAnnotationMapping
 
     private static string ReadText(CosDict d, string key) =>
         d.Get<CosString>(key) is { } s ? DecodePdfText(s.Bytes) : string.Empty;
+
+    private static AnnotationPoint[]? ReadLineEndpoints(CosDict d)
+    {
+        // /L [x1 y1 x2 y2]
+        if (d.Get<CosArray>("L") is not { Items.Count: 4 } arr
+            || !TryNumber(arr.Items[0], out double x1)
+            || !TryNumber(arr.Items[1], out double y1)
+            || !TryNumber(arr.Items[2], out double x2)
+            || !TryNumber(arr.Items[3], out double y2))
+        {
+            return null;
+        }
+
+        return [new AnnotationPoint(x1, y1), new AnnotationPoint(x2, y2)];
+    }
+
+    private static bool IsLineArrow(CosDict d)
+    {
+        // /LE [head tail] — два name-токена. Arrow ⇔ хотя бы один не "/None".
+        if (d.Get<CosArray>("LE") is not { Items.Count: >= 2 } arr)
+        {
+            return false;
+        }
+
+        return (arr.Items[0] is CosName head && !string.Equals(head.Value, "None", StringComparison.Ordinal))
+            || (arr.Items[1] is CosName tail && !string.Equals(tail.Value, "None", StringComparison.Ordinal));
+    }
+
+    private static List<AnnotationPoint>? ReadVertices(CosDict d)
+    {
+        // /Vertices [x1 y1 x2 y2 …] — плоский массив пар чисел.
+        if (d.Get<CosArray>("Vertices") is not { } arr || arr.Items.Count < 6)
+        {
+            return null;
+        }
+
+        var pts = new List<AnnotationPoint>();
+        for (int i = 0; i + 1 < arr.Items.Count; i += 2)
+        {
+            if (!TryNumber(arr.Items[i], out double x) || !TryNumber(arr.Items[i + 1], out double y))
+            {
+                return null;
+            }
+            pts.Add(new AnnotationPoint(x, y));
+        }
+        return pts;
+    }
 
     private static List<AnnotationPoint>? ReadInkPoints(CosDict d)
     {
