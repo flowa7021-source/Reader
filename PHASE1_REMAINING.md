@@ -94,9 +94,9 @@
 - **PR:** _tbd_
 
 ### 9. B3 — MOBI File-Open filter + Recent menu (после L1)
-- [ ] **Status:** не начато
-- **Файлы:** `MainWindow.xaml.cs` (filter), Strings
-- **Acceptance:** «Open» dialog показывает MOBI; Recent помнит MOBI
+- [~] **Status:** draft PR опубликован
+- **Файлы:** `Strings.resx`/`Strings.ru.resx` (`OpenFileDialogFilter` — добавлены `.mobi`/`.prc`/`.azw`)
+- **Acceptance:** «Open» dialog показывает MOBI ✅. Recent помнит любой открытый путь (extension-agnostic), MOBI работает автоматически.
 - **Размер:** S
 - **Зависимость:** L1 merged
 - **PR:** _tbd_
