@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Foliant.Engines.Fb2</RootNamespace>
+    <Description>FB2 engine. FictionBook 2.0 XML via System.Xml.Linq (pure managed, in-box, кросс-платформенный, без NuGet-зависимостей). Body sections → pages; text-layer carries section text. Visual render — blank canvas в Phase 1 (см. EPUB engine).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Foliant.Engines.Fb2.Tests" />
+  </ItemGroup>
+
+</Project>
