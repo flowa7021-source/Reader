@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Pdf\Foliant.Engines.Pdf.csproj" />
     <ProjectReference Include="..\..\src\Foliant.Infrastructure\Foliant.Infrastructure.csproj" />
   </ItemGroup>
 
