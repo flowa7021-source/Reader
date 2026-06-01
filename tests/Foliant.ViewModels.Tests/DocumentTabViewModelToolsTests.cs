@@ -380,4 +380,92 @@ public sealed class DocumentTabViewModelToolsTests
 
         vm.StampLabels.Should().BeEquivalentTo(["APPROVED", "REJECTED", "DRAFT"]);
     }
+
+    // ───── Q-F18 B1e: stamp-image-path UX commands ─────
+
+    [Fact]
+    public void SetStampImagePathCommand_SetsAndFlagsHasStampImage()
+    {
+        var vm = CreateVm();
+        vm.HasStampImage.Should().BeFalse();
+
+        vm.SetStampImagePathCommand.Execute("/tmp/logo.png");
+
+        vm.StampImagePath.Should().Be("/tmp/logo.png");
+        vm.HasStampImage.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SetStampImagePathCommand_BlankInput_ClearsPath(string? path)
+    {
+        var vm = CreateVm();
+        vm.SetStampImagePathCommand.Execute("/tmp/logo.png");
+        vm.HasStampImage.Should().BeTrue();
+
+        vm.SetStampImagePathCommand.Execute(path);
+
+        vm.StampImagePath.Should().BeNull();
+        vm.HasStampImage.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ClearStampImageCommand_RevertsToTextStamp()
+    {
+        var vm = CreateVm();
+        vm.SetStampImagePathCommand.Execute("/tmp/logo.png");
+
+        vm.ClearStampImageCommand.Execute(null);
+
+        vm.StampImagePath.Should().BeNull();
+        vm.HasStampImage.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CommitRectTool_Stamp_WithMissingImagePath_FallsBackToTextStamp()
+    {
+        // Path set but file doesn't exist → graceful fallback to plain Annotation.Stamp().
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.SelectToolCommand.Execute(AnnotationTool.Stamp);
+        vm.StampLabel = "APPROVED";
+        vm.SetStampImagePathCommand.Execute("/nonexistent/path/never.png");
+
+        bool created = await vm.CommitRectToolAsync(0, new AnnotationRect(0, 0, 100, 40));
+
+        created.Should().BeTrue();
+        await service.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Stamp && a.ImagePath == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CommitRectTool_Stamp_WithExistingImagePath_CreatesImageStamp()
+    {
+        string tmpImg = Path.Combine(Path.GetTempPath(), $"stamp-{Guid.NewGuid():N}.png");
+        File.WriteAllBytes(tmpImg, [0x89, 0x50, 0x4E, 0x47]); // PNG magic — file just needs to exist
+        try
+        {
+            var service = EchoService();
+            var vm = CreateVm(service);
+            vm.SelectToolCommand.Execute(AnnotationTool.Stamp);
+            vm.StampLabel = "APPROVED";
+            vm.SetStampImagePathCommand.Execute(tmpImg);
+
+            bool created = await vm.CommitRectToolAsync(0, new AnnotationRect(0, 0, 100, 40));
+
+            created.Should().BeTrue();
+            await service.Received(1).AddAsync(
+                Arg.Any<string>(),
+                Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Stamp && a.ImagePath == tmpImg && a.Text == "APPROVED"),
+                Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            File.Delete(tmpImg);
+        }
+    }
 }

@@ -290,6 +290,19 @@ public sealed partial class DocumentTabViewModel
         await PersistShapeAsync(Annotation.Stamp(pageIndex, bounds, label, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
     }
 
+    /// <summary>Добавить image-штамп (Q-F18 / A5): bounds + путь к изображению + label-fallback.
+    /// Blank label/imagePath → no-op (factory throws иначе).</summary>
+    public async Task AddImageStampAsync(int pageIndex, AnnotationRect bounds, string imagePath, string label, string colorHex, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(imagePath))
+        {
+            return;
+        }
+        await PersistShapeAsync(Annotation.ImageStamp(pageIndex, bounds, imagePath, label, colorHex, DateTimeOffset.UtcNow), pageIndex, ct);
+    }
+
     /// <summary>Shared persistence path for the five geometric shapes — stamp author,
     /// dispatch to service, rebuild counts, surface on current page if filter matches.</summary>
     private async Task PersistShapeAsync(Annotation shape, int pageIndex, CancellationToken ct)
