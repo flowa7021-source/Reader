@@ -84,4 +84,51 @@ public sealed class AnnotationFactoryTests
         new AnnotationPoint(1, 2).Should().Be(new AnnotationPoint(1, 2));
         new AnnotationPoint(1, 2).Should().NotBe(new AnnotationPoint(2, 1));
     }
+
+    // ───── Q-F18 A5: image-stamp factory ─────
+
+    [Fact]
+    public void ImageStamp_SetsImagePathAndPreservesLabelAsAccessibilityFallback()
+    {
+        var when = DateTimeOffset.UnixEpoch;
+        var bounds = new AnnotationRect(100, 100, 200, 60);
+
+        var stamp = Annotation.ImageStamp(2, bounds, "/tmp/logo.png", "APPROVED", "#00AA00", when);
+
+        stamp.Kind.Should().Be(AnnotationKind.Stamp);
+        stamp.PageIndex.Should().Be(2);
+        stamp.Bounds.Should().Be(bounds);
+        stamp.Text.Should().Be("APPROVED");
+        stamp.ColorHex.Should().Be("#00AA00");
+        stamp.ImagePath.Should().Be("/tmp/logo.png");
+    }
+
+    [Fact]
+    public void Stamp_TextOnly_LeavesImagePathNull()
+    {
+        var stamp = Annotation.Stamp(0, new AnnotationRect(0, 0, 100, 30), "DRAFT", "#FF0000", DateTimeOffset.UnixEpoch);
+
+        stamp.ImagePath.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ImageStamp_NullOrWhitespaceImagePath_Throws(string? imagePath)
+    {
+        var act = () => Annotation.ImageStamp(
+            0, new AnnotationRect(0, 0, 100, 30), imagePath!, "LABEL", "#000000", DateTimeOffset.UnixEpoch);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void ImageStamp_NullOrWhitespaceLabel_Throws()
+    {
+        var act = () => Annotation.ImageStamp(
+            0, new AnnotationRect(0, 0, 100, 30), "/tmp/logo.png", "  ", "#000000", DateTimeOffset.UnixEpoch);
+
+        act.Should().Throw<ArgumentException>();
+    }
 }

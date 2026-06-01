@@ -41,7 +41,8 @@ public sealed record Annotation(
     DateTimeOffset CreatedAt,
     DateTimeOffset? ModifiedAt = null,
     string? Author = null,
-    string? Subject = null)
+    string? Subject = null,
+    string? ImagePath = null)
 {
     public static Annotation Highlight(int pageIndex, AnnotationRect bounds, string colorHex, DateTimeOffset createdAt) =>
         new(Guid.NewGuid(), pageIndex, AnnotationKind.Highlight, colorHex, bounds, null, null, createdAt);
@@ -104,12 +105,25 @@ public sealed record Annotation(
 
     /// <summary>Штамп — bounds + label-текст (например, "APPROVED" / "REJECTED" / "DRAFT" / любая
     /// custom-строка). Рендерится как прямоугольник с обводкой в <paramref name="colorHex"/>
-    /// и центрированной надписью. Image-stamps (PNG → stamp) — следующий PR.</summary>
+    /// и центрированной надписью.</summary>
     public static Annotation Stamp(int pageIndex, AnnotationRect bounds, string label, string colorHex, DateTimeOffset createdAt)
     {
         ArgumentNullException.ThrowIfNull(bounds);
         ArgumentException.ThrowIfNullOrWhiteSpace(label);
         ArgumentNullException.ThrowIfNull(colorHex);
         return new(Guid.NewGuid(), pageIndex, AnnotationKind.Stamp, colorHex, bounds, label, null, createdAt);
+    }
+
+    /// <summary>Image-штамп (Q-F18 A5): рисуется как изображение из <paramref name="imagePath"/>,
+    /// вписанное в <paramref name="bounds"/>. <paramref name="label"/> сохраняется как fallback
+    /// и round-trip'ится (для viewer'ов без поддержки image-stamp и для accessibility/search).
+    /// Color используется только для рамки/fallback-метки, не для изображения.</summary>
+    public static Annotation ImageStamp(int pageIndex, AnnotationRect bounds, string imagePath, string label, string colorHex, DateTimeOffset createdAt)
+    {
+        ArgumentNullException.ThrowIfNull(bounds);
+        ArgumentException.ThrowIfNullOrWhiteSpace(imagePath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(label);
+        ArgumentNullException.ThrowIfNull(colorHex);
+        return new(Guid.NewGuid(), pageIndex, AnnotationKind.Stamp, colorHex, bounds, label, null, createdAt, ImagePath: imagePath);
     }
 }
