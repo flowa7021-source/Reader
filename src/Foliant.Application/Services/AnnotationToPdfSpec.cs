@@ -34,11 +34,14 @@ public static class AnnotationToPdfSpec
         };
     }
 
-    // Stamp: /Subtype /Stamp + /Contents (label) + opaque rect-border appearance.
+    // Stamp: /Subtype /Stamp + /Contents (label) + opaque rect-border appearance. Image-stamps
+    // (A5b): когда указан a.ImagePath — engine рисует embedded image вместо label-text; label
+    // сохраняется в /Contents для accessibility и fallback.
     private static PdfAnnotationSpec Stamp(Annotation a, AnnotationRect b) =>
         WithMetadata(a, new PdfAnnotationSpec(
             a.PageIndex, PdfAnnotationSubtype.Stamp, Rect(b), Color(a.ColorHex, OpaqueAlpha),
-            Contents: a.Text));
+            Contents: a.Text,
+            ImagePath: a.ImagePath));
 
     private static PdfAnnotationSpec RectShape(Annotation a, AnnotationRect b, PdfAnnotationSubtype subtype) =>
         WithMetadata(a, new PdfAnnotationSpec(

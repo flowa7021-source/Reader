@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Foliant.Application.Services;
 using Foliant.Domain;
 using PDFiumCore;
@@ -246,7 +248,7 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
                     // центрированный text-object (Helvetica, auto-fit). Acrobat распознаёт как stamp.
                     SetColor(annot, spec.Color);
                     SetStringValue(annot, "Contents", spec.Contents ?? string.Empty);
-                    AppendStampAppearance(doc, annot, spec);
+                    AppendStampAppearance(doc, page, annot, spec);
                     break;
 
                 default:
@@ -332,7 +334,7 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
         fpdf_annot.FPDFAnnotAppendObject(annot, path);
     }
 
-    private static void AppendStampAppearance(FpdfDocumentT doc, FpdfAnnotationT annot, PdfAnnotationSpec spec)
+    private static void AppendStampAppearance(FpdfDocumentT doc, FpdfPageT page, FpdfAnnotationT annot, PdfAnnotationSpec spec)
     {
         var r = spec.Rect;
         var c = spec.Color;
@@ -351,8 +353,18 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
             fpdf_annot.FPDFAnnotAppendObject(annot, border);
         }
 
-        // 2) Label: центрированный Helvetica-текст. Высота шрифта = 60% высоты rect (clamp),
-        // ширина оценивается приближённо, чтобы отцентрировать строку по горизонтали.
+        // 2) Image-stamp (A5b): если задан ImagePath и файл загружается — embeд'им bitmap
+        // вписанный в rect (с inset чтобы border оставался виден). Pattern совпадает с
+        // PdfiumWatermarkService.StampPageImage: BGRA32 pinned buffer → FPDFBitmapCreateEx →
+        // FPDFImageObjSetBitmap → SetMatrix к destination rect → AppendObject. При неуспехе
+        // (нет файла / decode error) проваливаемся к label-fallback.
+        if (TryAppendStampImage(doc, page, annot, spec))
+        {
+            return;
+        }
+
+        // 3) Label fallback: центрированный Helvetica-текст. Высота шрифта = 60% высоты rect
+        // (clamp), ширина оценивается приближённо, чтобы отцентрировать строку по горизонтали.
         string label = spec.Contents ?? string.Empty;
         if (string.IsNullOrEmpty(label))
         {
@@ -391,6 +403,98 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
         }
 
         fpdf_edit.FPDFTextSetText(textObj, ref buffer[0]);
+    }
+
+    /// <summary>Image-stamp embed (A5b): загружает PNG/JPG/etc. через ImageSharp → BGRA32 buffer,
+    /// создаёт PDFium bitmap + image-object, вписывает Uniform-fit в rect (4pt inset), цепляет
+    /// к annotation. Возвращает <c>true</c>, если image успешно embed'нулся; <c>false</c> —
+    /// для fallback'а к label (нет пути / нет файла / decode error / PDFium-сбой).</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Image-stamp embed failure must not crash the export; fall back to label.")]
+    private static bool TryAppendStampImage(FpdfDocumentT doc, FpdfPageT page, FpdfAnnotationT annot, PdfAnnotationSpec spec)
+    {
+        if (string.IsNullOrWhiteSpace(spec.ImagePath) || !File.Exists(spec.ImagePath))
+        {
+            return false;
+        }
+
+        byte[] bgra;
+        int wPx;
+        int hPx;
+        try
+        {
+            using var img = Image.Load<Bgra32>(spec.ImagePath);
+            wPx = img.Width;
+            hPx = img.Height;
+            bgra = new byte[wPx * hPx * 4];
+            img.CopyPixelDataTo(bgra);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+
+        // Uniform-fit destination rect внутри border-inset.
+        var r = spec.Rect;
+        double rectW = r.XUR - r.XLL;
+        double rectH = r.YUR - r.YLL;
+        const double Inset = 4.0;
+        double innerW = Math.Max(rectW - (2 * Inset), 1);
+        double innerH = Math.Max(rectH - (2 * Inset), 1);
+        double scale = Math.Min(innerW / wPx, innerH / hPx);
+        double dstW = wPx * scale;
+        double dstH = hPx * scale;
+        double dstX = r.XLL + Inset + ((innerW - dstW) / 2.0);
+        double dstY = r.YLL + Inset + ((innerH - dstH) / 2.0);
+
+        GCHandle pin = GCHandle.Alloc(bgra, GCHandleType.Pinned);
+        try
+        {
+            var bitmap = fpdfview.FPDFBitmapCreateEx(wPx, hPx, 4, pin.AddrOfPinnedObject(), wPx * 4);
+            if (bitmap is null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var imgObj = fpdf_edit.FPDFPageObjNewImageObj(doc);
+                if (imgObj is null)
+                {
+                    return false;
+                }
+
+                // Pages=page, count=1 — PDFium деduplicate'нет XObject если этот же image
+                // понадобится для других аннотаций на той же странице.
+                if (fpdf_edit.FPDFImageObjSetBitmap(page, 1, imgObj, bitmap) == 0)
+                {
+                    return false;
+                }
+
+                // Image-object — единичный квадрат [0..1]. Scale + translate к destination rect.
+                using var matrix = new FS_MATRIX_
+                {
+                    A = (float)dstW,
+                    B = 0,
+                    C = 0,
+                    D = (float)dstH,
+                    E = (float)dstX,
+                    F = (float)dstY,
+                };
+                fpdf_edit.FPDFPageObjSetMatrix(imgObj, matrix);
+
+                fpdf_annot.FPDFAnnotAppendObject(annot, imgObj);
+                return true;
+            }
+            finally
+            {
+                fpdfview.FPDFBitmapDestroy(bitmap);
+            }
+        }
+        finally
+        {
+            pin.Free();
+        }
     }
 
     private static void AppendInkPath(FpdfDocumentT doc, FpdfAnnotationT annot, PdfAnnotationSpec spec)
