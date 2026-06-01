@@ -431,10 +431,11 @@
                                       SearchHighlights="{Binding CurrentPageSearchHighlights}"
                                       CreateNoteCommand="{Binding AddNoteAtCommand}"
                                       ActiveTool="{Binding ActiveTool}"
-                                      CommitRectToolCommand="{Binding CommitRectToolOnCurrentPageCommand}"
-                                      CommitPointToolCommand="{Binding CommitPointToolOnCurrentPageCommand}"
-                                      CommitTwoPointToolCommand="{Binding CommitTwoPointToolOnCurrentPageCommand}"
-                                      CommitMultiPointToolCommand="{Binding CommitMultiPointToolOnCurrentPageCommand}" />
+                                      PageIndex="{Binding CurrentPageIndex}"
+                                      CommitRectToolCommand="{Binding CommitRectToolOnPageCommand}"
+                                      CommitPointToolCommand="{Binding CommitPointToolOnPageCommand}"
+                                      CommitTwoPointToolCommand="{Binding CommitTwoPointToolOnPageCommand}"
+                                      CommitMultiPointToolCommand="{Binding CommitMultiPointToolOnPageCommand}" />
                 </Grid>
               </ScrollViewer>
 
@@ -472,7 +473,13 @@
                       <ui:PageSurface PageRender="{Binding Render}" />
                       <ui:AnnotationLayer PageRender="{Binding Render}"
                                           Annotations="{Binding Annotations}"
-                                          SearchHighlights="{Binding SearchHighlights}" />
+                                          SearchHighlights="{Binding SearchHighlights}"
+                                          PageIndex="{Binding PageIndex}"
+                                          ActiveTool="{Binding SelectedItem.ActiveTool, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                          CommitRectToolCommand="{Binding SelectedItem.CommitRectToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                          CommitPointToolCommand="{Binding SelectedItem.CommitPointToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                          CommitTwoPointToolCommand="{Binding SelectedItem.CommitTwoPointToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                          CommitMultiPointToolCommand="{Binding SelectedItem.CommitMultiPointToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}" />
                     </Grid>
                   </DataTemplate>
                 </ListBox.ItemTemplate>
@@ -498,7 +505,13 @@
                         <ui:PageSurface PageRender="{Binding Render}" />
                         <ui:AnnotationLayer PageRender="{Binding Render}"
                                             Annotations="{Binding Annotations}"
-                                            SearchHighlights="{Binding SearchHighlights}" />
+                                            SearchHighlights="{Binding SearchHighlights}"
+                                            PageIndex="{Binding PageIndex}"
+                                            ActiveTool="{Binding SelectedItem.ActiveTool, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                            CommitRectToolCommand="{Binding SelectedItem.CommitRectToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                            CommitPointToolCommand="{Binding SelectedItem.CommitPointToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                            CommitTwoPointToolCommand="{Binding SelectedItem.CommitTwoPointToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
+                                            CommitMultiPointToolCommand="{Binding SelectedItem.CommitMultiPointToolOnPageCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}" />
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

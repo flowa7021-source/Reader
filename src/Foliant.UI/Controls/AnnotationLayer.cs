@@ -44,6 +44,12 @@ internal sealed class AnnotationLayer : FrameworkElement
         nameof(ActiveTool), typeof(AnnotationTool), typeof(AnnotationLayer),
         new PropertyMetadata(AnnotationTool.None, OnActiveToolChanged));
 
+    /// <summary>Индекс страницы, к которой относится этот layer (B1d-multipage). Single-page
+    /// биндит <c>CurrentPageIndex</c>; continuous/two-page — per-page
+    /// <c>RenderedPageViewModel.PageIndex</c>. Подставляется в payload commit-команд.</summary>
+    public static readonly DependencyProperty PageIndexProperty = DependencyProperty.Register(
+        nameof(PageIndex), typeof(int), typeof(AnnotationLayer), new PropertyMetadata(0));
+
     private static void OnActiveToolChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         // Смена инструмента (в т.ч. Esc → ClearTool) прерывает незавершённый polygon.
@@ -122,6 +128,12 @@ internal sealed class AnnotationLayer : FrameworkElement
     {
         get => (AnnotationTool)GetValue(ActiveToolProperty);
         set => SetValue(ActiveToolProperty, value);
+    }
+
+    public int PageIndex
+    {
+        get => (int)GetValue(PageIndexProperty);
+        set => SetValue(PageIndexProperty, value);
     }
 
     public ICommand? CommitRectToolCommand
@@ -548,9 +560,10 @@ internal sealed class AnnotationLayer : FrameworkElement
         if (gesture == AnnotationToolGesture.SingleClick && CommitPointToolCommand is not null)
         {
             AnnotationPoint at = ToPdfPoint(e.GetPosition(this), render);
-            if (CommitPointToolCommand.CanExecute(at))
+            var payload = new PointOnPagePayload(PageIndex, at);
+            if (CommitPointToolCommand.CanExecute(payload))
             {
-                CommitPointToolCommand.Execute(at);
+                CommitPointToolCommand.Execute(payload);
             }
             e.Handled = true;
             return;
@@ -652,9 +665,10 @@ internal sealed class AnnotationLayer : FrameworkElement
             return; // degenerate — ignore click-without-drag
         }
 
-        if (CommitRectToolCommand.CanExecute(rect))
+        var payload = new RectOnPagePayload(PageIndex, rect);
+        if (CommitRectToolCommand.CanExecute(payload))
         {
-            CommitRectToolCommand.Execute(rect);
+            CommitRectToolCommand.Execute(payload);
         }
     }
 
@@ -672,7 +686,7 @@ internal sealed class AnnotationLayer : FrameworkElement
             return; // no drag
         }
 
-        var payload = new TwoPointPayload(start, end);
+        var payload = new TwoPointOnPagePayload(PageIndex, start, end);
         if (CommitTwoPointToolCommand.CanExecute(payload))
         {
             CommitTwoPointToolCommand.Execute(payload);
@@ -692,9 +706,10 @@ internal sealed class AnnotationLayer : FrameworkElement
             points.Add(ToPdfPoint(p, render));
         }
 
-        if (CommitMultiPointToolCommand.CanExecute(points))
+        var payload = new MultiPointOnPagePayload(PageIndex, points);
+        if (CommitMultiPointToolCommand.CanExecute(payload))
         {
-            CommitMultiPointToolCommand.Execute(points);
+            CommitMultiPointToolCommand.Execute(payload);
         }
     }
 
@@ -713,9 +728,10 @@ internal sealed class AnnotationLayer : FrameworkElement
                     points.Add(ToPdfPoint(p, render));
                 }
 
-                if (CommitMultiPointToolCommand.CanExecute(points))
+                var payload = new MultiPointOnPagePayload(PageIndex, points);
+                if (CommitMultiPointToolCommand.CanExecute(payload))
                 {
-                    CommitMultiPointToolCommand.Execute(points);
+                    CommitMultiPointToolCommand.Execute(payload);
                 }
             }
         }
