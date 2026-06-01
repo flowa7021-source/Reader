@@ -316,6 +316,25 @@ public sealed class XfdfAnnotationImporterTests
         a.Bounds.Should().Be(new AnnotationRect(100, 100, 200, 60));
         a.Text.Should().Be("APPROVED");
         a.ColorHex.Should().Be("#00AA00");
+        a.ImagePath.Should().BeNull();
+    }
+
+    [Fact]
+    public void RoundTrip_ImageStamp_PreservesImagePathAndLabel()
+    {
+        var when = new DateTimeOffset(2026, 5, 31, 12, 0, 0, TimeSpan.Zero);
+        var src = new[]
+        {
+            Annotation.ImageStamp(1, new AnnotationRect(50, 50, 150, 40), "C:\\logos\\seal.png", "APPROVED", "#00AA00", when),
+        };
+
+        var xfdf = new XfdfAnnotationExporter().Export(src);
+        var a = _sut.Import(xfdf).Should().ContainSingle().Subject;
+
+        a.Kind.Should().Be(AnnotationKind.Stamp);
+        a.ImagePath.Should().Be("C:\\logos\\seal.png");
+        a.Text.Should().Be("APPROVED");
+        a.Bounds.Should().Be(new AnnotationRect(50, 50, 150, 40));
     }
 
     [Fact]

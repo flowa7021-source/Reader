@@ -16,7 +16,8 @@ namespace Foliant.Application.Services;
 /// <item>Line → <c>/Subtype /Line</c> + <c>/L [x1 y1 x2 y2]</c>.</item>
 /// <item>Arrow → <c>/Subtype /Line</c> + <c>/LE [/None /OpenArrow]</c>.</item>
 /// <item>Polygon → <c>/Subtype /Polygon</c> + <c>/Vertices [x1 y1 x2 y2 …]</c>.</item>
-/// <item>Stamp → <c>/Subtype /Stamp</c> + <c>/Rect</c> + <c>/Contents</c> (label-текст).</item>
+/// <item>Stamp → <c>/Subtype /Stamp</c> + <c>/Rect</c> + <c>/Contents</c> (label-текст);
+///       image-stamps дополнительно пишут custom <c>/FoliantImagePath</c> (A5c).</item>
 /// </list>
 /// Координаты — PDF user space; цвет — массив <c>[r g b]</c> 0..1; текст —
 /// UTF-16BE hex-строка (корректно для кириллицы). Stateless, без I/O.
@@ -67,9 +68,15 @@ public sealed class FdfAnnotationExporter : IAnnotationExporter
         AnnotationKind.Polygon when a.InkPoints is { Count: >= 3 } pts =>
             $"<< /Type /Annot /Subtype /Polygon /Page {Page(a)} {ColorEntry(a.ColorHex)} /Vertices [{Vertices(pts)}]{Metadata(a)} >>",
         AnnotationKind.Stamp when a.Bounds is { } b =>
-            $"<< /Type /Annot /Subtype /Stamp {PageRectColor(a, b)} /Contents {PdfText(a.Text)}{Metadata(a)} >>",
+            $"<< /Type /Annot /Subtype /Stamp {PageRectColor(a, b)} /Contents {PdfText(a.Text)}{ImagePathEntry(a)}{Metadata(a)} >>",
         _ => null,
     };
+
+    // Image-stamp (A5c): путь к изображению — в custom-ключ /FoliantImagePath (PDF-словари
+    // допускают произвольные ключи; Acrobat игнорирует незнакомый, Foliant round-trip'ит).
+    // Пустой/null ImagePath → ключ не пишется.
+    private static string ImagePathEntry(Annotation a) =>
+        string.IsNullOrEmpty(a.ImagePath) ? string.Empty : $" /FoliantImagePath {PdfText(a.ImagePath)}";
 
     private static string TextMarkupDict(string subtype, Annotation a, AnnotationRect b) =>
         $"<< /Type /Annot /Subtype /{subtype} {PageRectColor(a, b)} /QuadPoints [{QuadPoints(b)}]{Metadata(a)} >>";

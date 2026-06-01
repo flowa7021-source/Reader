@@ -25,6 +25,10 @@ public sealed class XfdfAnnotationExporter : IAnnotationExporter
 {
     private static readonly XNamespace Ns = "http://ns.adobe.com/xfdf/";
 
+    /// <summary>Собственный namespace Foliant для non-standard атрибутов (image-stamp path).
+    /// Сторонние XFDF-инструменты игнорируют незнакомый namespace; Foliant round-trip'ит.</summary>
+    private static readonly XNamespace FoliantNs = "https://github.com/flowa7021-source/Reader/xfdf";
+
     public string FormatName => "XFDF";
 
     public string FileExtension => "xfdf";
@@ -115,10 +119,17 @@ public sealed class XfdfAnnotationExporter : IAnnotationExporter
     {
         // PDF /Subtype /Stamp с label-текстом в /Contents. Иконка (/Name /Draft etc.) —
         // не выставляется: наши штампы — custom-label, Acrobat показывает rect-border + текст.
+        // Image-stamps (A5c): путь к изображению — в custom-атрибут foliant:imagepath. Это
+        // НЕ стандартный XFDF — сторонние viewer'ы его игнорируют, но Foliant→XFDF→Foliant
+        // round-trip'ит ImagePath. Атрибут в собственном namespace, чтобы не конфликтовать.
         var element = new XElement(Ns + "stamp", CommonAttributes(a), new XAttribute("rect", Rect(b)));
         if (!string.IsNullOrEmpty(a.Text))
         {
             element.Add(new XElement(Ns + "contents", a.Text));
+        }
+        if (!string.IsNullOrEmpty(a.ImagePath))
+        {
+            element.Add(new XAttribute(FoliantNs + "imagepath", a.ImagePath));
         }
         return element;
     }

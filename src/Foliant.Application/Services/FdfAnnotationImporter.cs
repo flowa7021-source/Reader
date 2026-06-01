@@ -192,7 +192,12 @@ file static class FdfAnnotationMapping
         {
             return null;
         }
-        return Annotation.Stamp(pageIndex, bounds, label, color, createdAt);
+
+        // Image-stamp (A5c): custom /FoliantImagePath ключ. Пустой/отсутствует → текст-stamp.
+        string imagePath = ReadText(d, "FoliantImagePath");
+        return string.IsNullOrWhiteSpace(imagePath)
+            ? Annotation.Stamp(pageIndex, bounds, label, color, createdAt)
+            : Annotation.ImageStamp(pageIndex, bounds, imagePath, label, color, createdAt);
     }
 
     private static AnnotationPoint[]? ReadLineEndpoints(CosDict d)
