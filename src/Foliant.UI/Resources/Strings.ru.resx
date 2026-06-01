@@ -433,6 +433,15 @@
   <data name="ToolPolygon" xml:space="preserve">
     <value>Многоугольник (клик — вершина, двойной клик — замкнуть)</value>
   </data>
+  <data name="ToolStamp" xml:space="preserve">
+    <value>Штамп (протяните прямоугольник; текст — из списка)</value>
+  </data>
+  <data name="ToolStampLabel" xml:space="preserve">
+    <value>Текст штампа (выберите готовый или введите свой)</value>
+  </data>
+  <data name="ToolColorPaletteTooltip" xml:space="preserve">
+    <value>Цвет для новых аннотаций</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Пакетная обработка...</value>
   </data>

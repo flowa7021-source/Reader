@@ -311,4 +311,39 @@ public sealed class DocumentTabViewModelToolsTests
 
         await service.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
     }
+
+    // ───── B1d: color swatch + stamp label collection ─────
+
+    [Fact]
+    public void SetNewAnnotationColorCommand_UpdatesProperty()
+    {
+        var vm = CreateVm();
+        string original = vm.NewAnnotationColorHex;
+
+        vm.SetNewAnnotationColorCommand.Execute("#2196F3");
+
+        vm.NewAnnotationColorHex.Should().Be("#2196F3").And.NotBe(original);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SetNewAnnotationColorCommand_BlankInput_NoOp(string? hex)
+    {
+        var vm = CreateVm();
+        string before = vm.NewAnnotationColorHex;
+
+        vm.SetNewAnnotationColorCommand.Execute(hex);
+
+        vm.NewAnnotationColorHex.Should().Be(before);
+    }
+
+    [Fact]
+    public void StampLabels_HasDefaultPresets()
+    {
+        var vm = CreateVm();
+
+        vm.StampLabels.Should().BeEquivalentTo(["APPROVED", "REJECTED", "DRAFT"]);
+    }
 }
