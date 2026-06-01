@@ -46,6 +46,9 @@ jobs:
       # Infrastructure, ViewModels, Engines and the DjVu plugin. WPF + native smoke run on Windows below.
       # -maxcpucount:1: passing -f to a *solution* build sets TargetFramework globally, which
       # breaks project-reference dedup and races on shared outputs (Domain.deps.json). Serialize.
+      # CS0535 gate (§1 «дрейф интерфейс/имплементация» в docs/DEV_RETROSPECTIVE.md): этот build
+      # обязан красно падать, если в кросс-платформенных impl не реализован новый член интерфейса.
+      # CS0535 — error по C#-спеке, плюс -warnaserror подтягивает любые сопутствующие warning'и.
       - name: Build (warnings as errors)
         run: dotnet build Foliant.CrossPlatform.slnf -c Release -f net10.0 -warnaserror -maxcpucount:1
 
@@ -124,8 +127,34 @@ jobs:
       - name: Restore
         run: dotnet restore Foliant.sln
 
+      # CS0535 gate, Windows-side (§1 «дрейф интерфейс/имплементация» в docs/DEV_RETROSPECTIVE.md):
+      # Windows-only impls (Foliant.App, Foliant.UI, net10.0-windows TFM в Infrastructure/DjVu) НЕ
+      # покрываются Linux-джобом выше — interface drift в них всплывает ТОЛЬКО здесь. CS0535 — error
+      # по C#-спеке; -warnaserror добавляет страховку от косвенных warning'ов. Лог пишем в файл,
+      # чтобы следующий шаг мог явно проверить отсутствие CS0535 как safety-net.
       - name: Build (warnings as errors)
-        run: dotnet build Foliant.sln -c Release --no-restore -warnaserror
+        shell: pwsh
+        run: |
+          dotnet build Foliant.sln -c Release --no-restore -warnaserror 2>&1 | Tee-Object -FilePath build.log
+          exit $LASTEXITCODE
+
+      # Safety-net на случай, если кто-то в будущем ослабит -warnaserror или подавит CS0535
+      # через .editorconfig/SuppressMessage: явный grep по build-логу. CS0535 здесь — всегда красный.
+      - name: Assert no CS0535 (interface drift safety-net)
+        if: always()
+        shell: pwsh
+        run: |
+          if (-not (Test-Path build.log)) {
+            Write-Host "build.log not found (build step failed before producing output); nothing to scan."
+            exit 0
+          }
+          $hits = Select-String -Path build.log -Pattern 'CS0535' -SimpleMatch
+          if ($hits) {
+            Write-Host "::error::CS0535 detected — interface implementation drift. See docs/DEV_RETROSPECTIVE.md §1."
+            $hits | ForEach-Object { Write-Host $_.Line }
+            exit 1
+          }
+          Write-Host "No CS0535 in build output."
 
       # Slow = тесты, требующие нативных движков/моделей (PaddleOCR, DjVu, PDF-mutation
       # roundtrip) — на чистом раннере их моделей нет; E2E — отдельный UI-прогон.
