@@ -48,4 +48,5 @@ public sealed record PdfAnnotationSpec(
     DateTimeOffset? CreatedAt = null,
     DateTimeOffset? ModifiedAt = null,
     string? Author = null,
-    string? Subject = null);
+    string? Subject = null,
+    string? ImagePath = null);

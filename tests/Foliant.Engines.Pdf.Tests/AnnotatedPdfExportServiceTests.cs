@@ -199,6 +199,96 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Export_EmbedsImageStamp_AttachesImageObjectViaPdfium()
+    {
+        string source = SourcePath();
+        string imagePath = MakeSampleImage(64, 32);
+        string target = Path.Combine(_tmpDir, "annotated-image-stamp.pdf");
+        var when = DateTimeOffset.UnixEpoch;
+
+        var annotations = new[]
+        {
+            Annotation.ImageStamp(0, new AnnotationRect(100, 100, 200, 60), imagePath, "APPROVED", "#00AA00", when),
+        };
+
+        await _service.ExportAsync(source, annotations, target, default);
+
+        File.Exists(target).Should().BeTrue();
+
+        WithDocument(target, doc =>
+        {
+            var stamp = ReadAnnotations(doc)[0].Should().ContainSingle().Subject;
+            stamp.Subtype.Should().Be(SubtypeStamp);
+            // /Contents retains the fallback label for accessibility/search.
+            stamp.Contents.Should().Be("APPROVED");
+            AssertRect(stamp.Rect, left: 100, bottom: 100, right: 300, top: 160);
+
+            // Image-stamp path attaches an FPDF_PAGEOBJ_IMAGE inside the annotation; text-only
+            // stamp attaches a path (border) + text. Distinguish by walking annotation objects.
+            int imageObjects = CountAnnotationObjectsOfType(doc, pageIndex: 0, fpdfType: FPDF_PAGEOBJ_IMAGE);
+            imageObjects.Should().BeGreaterThan(0, "image-stamp should attach at least one image page-object");
+        });
+    }
+
+    private string MakeSampleImage(int wPx, int hPx)
+    {
+        using var img = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(wPx, hPx);
+        img.ProcessPixelRows(rows =>
+        {
+            for (int y = 0; y < rows.Height; y++)
+            {
+                var row = rows.GetRowSpan(y);
+                for (int x = 0; x < row.Length; x++)
+                {
+                    row[x] = new SixLabors.ImageSharp.PixelFormats.Rgba32(
+                        (byte)((x * 4) % 256), (byte)((y * 8) % 256), 128, 255);
+                }
+            }
+        });
+        string path = Path.Combine(_tmpDir, $"stamp-{Guid.NewGuid():N}.png");
+        SixLabors.ImageSharp.ImageExtensions.SaveAsPng(img, path);
+        return path;
+    }
+
+    // FPDF_PAGEOBJ_IMAGE = 3 per public/fpdf_edit.h.
+    private const int FPDF_PAGEOBJ_IMAGE = 3;
+
+    private static int CountAnnotationObjectsOfType(FpdfDocumentT doc, int pageIndex, int fpdfType)
+    {
+        int total = 0;
+        var page = fpdfview.FPDF_LoadPage(doc, pageIndex);
+        try
+        {
+            int annotCount = fpdf_annot.FPDFPageGetAnnotCount(page);
+            for (int i = 0; i < annotCount; i++)
+            {
+                var annot = fpdf_annot.FPDFPageGetAnnot(page, i);
+                try
+                {
+                    int objCount = fpdf_annot.FPDFAnnotGetObjectCount(annot);
+                    for (int j = 0; j < objCount; j++)
+                    {
+                        var obj = fpdf_annot.FPDFAnnotGetObject(annot, j);
+                        if (fpdf_edit.FPDFPageObjGetType(obj) == fpdfType)
+                        {
+                            total++;
+                        }
+                    }
+                }
+                finally
+                {
+                    fpdf_annot.FPDFPageCloseAnnot(annot);
+                }
+            }
+        }
+        finally
+        {
+            fpdfview.FPDF_ClosePage(page);
+        }
+        return total;
+    }
+
+    [Fact]
     public async Task Export_LinePolygonArrow_AreSkipped_NotInOutput()
     {
         // PDFium 146.x limitation: AnnotationToPdfSpec.Map returns null for these kinds.

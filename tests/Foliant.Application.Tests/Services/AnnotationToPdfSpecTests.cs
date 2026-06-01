@@ -241,4 +241,27 @@ public sealed class AnnotationToPdfSpecTests
         spec.Author.Should().Be("Иван");
         spec.Subject.Should().Be("Замечание");
     }
+
+    // ───── Q-F18 A5b: image-stamp ImagePath plumbing ─────
+
+    [Fact]
+    public void ImageStamp_PassesImagePathThroughToPdfSpec()
+    {
+        var stamp = Annotation.ImageStamp(
+            0, new AnnotationRect(10, 20, 200, 60), "/tmp/logo.png", "APPROVED", "#00AA00", T0);
+
+        var spec = AnnotationToPdfSpec.Map(stamp)!;
+
+        spec.Subtype.Should().Be(PdfAnnotationSubtype.Stamp);
+        spec.Contents.Should().Be("APPROVED");
+        spec.ImagePath.Should().Be("/tmp/logo.png");
+    }
+
+    [Fact]
+    public void TextStamp_LeavesImagePathNullOnSpec()
+    {
+        var stamp = Annotation.Stamp(0, new AnnotationRect(0, 0, 100, 30), "DRAFT", "#FF0000", T0);
+
+        AnnotationToPdfSpec.Map(stamp)!.ImagePath.Should().BeNull();
+    }
 }
