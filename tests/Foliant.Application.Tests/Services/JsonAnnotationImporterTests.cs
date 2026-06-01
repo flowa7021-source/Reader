@@ -112,4 +112,42 @@ public sealed class JsonAnnotationImporterTests
         a.Subject.Should().Be("Question");
         a.ModifiedAt.Should().Be(modified);
     }
+
+    // ───── Q-F18 A5: image-stamp ImagePath round-trip ─────
+
+    [Fact]
+    public void Roundtrip_ImageStamp_PreservesImagePathAndLabel()
+    {
+        var source = new[]
+        {
+            Annotation.ImageStamp(
+                pageIndex: 2,
+                bounds: new AnnotationRect(100, 100, 200, 60),
+                imagePath: "C:\\logos\\company.png",
+                label: "APPROVED",
+                colorHex: "#00AA00",
+                createdAt: DateTimeOffset.UnixEpoch),
+        };
+
+        var imported = _sut.Import(new JsonAnnotationExporter().Export(source));
+
+        var a = imported.Should().ContainSingle().Subject;
+        a.Kind.Should().Be(AnnotationKind.Stamp);
+        a.ImagePath.Should().Be("C:\\logos\\company.png");
+        a.Text.Should().Be("APPROVED");
+        a.ColorHex.Should().Be("#00AA00");
+    }
+
+    [Fact]
+    public void Roundtrip_TextStamp_ImagePathIsNull()
+    {
+        var source = new[]
+        {
+            Annotation.Stamp(0, new AnnotationRect(0, 0, 100, 30), "DRAFT", "#FF0000", DateTimeOffset.UnixEpoch),
+        };
+
+        var imported = _sut.Import(new JsonAnnotationExporter().Export(source));
+
+        imported.Should().ContainSingle().Subject.ImagePath.Should().BeNull();
+    }
 }

@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Foliant.Domain;
 using Foliant.ViewModels;
 
@@ -327,7 +329,7 @@ internal sealed class AnnotationLayer : FrameworkElement
                 DrawPolygonShape(dc, a.InkPoints, page, zoom, color);
                 break;
             case AnnotationKind.Stamp when a.Bounds is { } b:
-                DrawStamp(dc, ToRect(b, page, zoom), color, a.Text);
+                DrawStamp(dc, ToRect(b, page, zoom), color, a.Text, a.ImagePath);
                 break;
             default:
                 break;
@@ -336,12 +338,31 @@ internal sealed class AnnotationLayer : FrameworkElement
 
     /// <summary>Stamp: bordered rect with centered uppercase label (typewriter feel — Approved /
     /// Rejected / Draft / custom). Label is whatever <see cref="Annotation.Text"/> carries;
-    /// empty label degrades to a plain bordered rect.</summary>
-    private static void DrawStamp(DrawingContext dc, System.Windows.Rect r, Color color, string? label)
+    /// empty label degrades to a plain bordered rect. If <paramref name="imagePath"/> is set
+    /// and the file loads, the image is rendered inscribed in the rect (Uniform stretch),
+    /// otherwise the label fallback is drawn.</summary>
+    private static void DrawStamp(DrawingContext dc, System.Windows.Rect r, Color color, string? label, string? imagePath)
     {
         var brush = new SolidColorBrush(color);
         var pen = new Pen(brush, 3) { LineJoin = PenLineJoin.Round };
         dc.DrawRectangle(null, pen, r);
+
+        if (!string.IsNullOrWhiteSpace(imagePath) && TryLoadStampImage(imagePath) is { } bitmap)
+        {
+            // Uniform-fit the bitmap inside the rect with a small inset so the border stays visible.
+            const double Inset = 4.0;
+            var inner = new System.Windows.Rect(r.Left + Inset, r.Top + Inset,
+                Math.Max(r.Width - (2 * Inset), 1), Math.Max(r.Height - (2 * Inset), 1));
+            double scale = Math.Min(inner.Width / bitmap.PixelWidth, inner.Height / bitmap.PixelHeight);
+            double w = bitmap.PixelWidth * scale;
+            double h = bitmap.PixelHeight * scale;
+            var dest = new System.Windows.Rect(
+                inner.Left + ((inner.Width - w) / 2.0),
+                inner.Top + ((inner.Height - h) / 2.0),
+                w, h);
+            dc.DrawImage(bitmap, dest);
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(label))
         {
@@ -366,6 +387,49 @@ internal sealed class AnnotationLayer : FrameworkElement
         // Vertical-center the formatted block within the rect.
         double textY = r.Top + ((r.Height - formatted.Height) / 2.0);
         dc.DrawText(formatted, new Point(r.Left, textY));
+    }
+
+    // Tiny LRU-ish cache for stamp images: keep the last 8 loaded bitmaps in memory to avoid
+    // re-decoding on every OnRender. Per-process; thread-affined to the WPF UI dispatcher.
+    private static readonly Dictionary<string, BitmapImage> StampImageCache = new(StringComparer.OrdinalIgnoreCase);
+    private const int StampImageCacheMax = 8;
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types",
+        Justification = "Image-stamp load failure must not crash rendering; fall back to label.")]
+    private static BitmapImage? TryLoadStampImage(string imagePath)
+    {
+        if (StampImageCache.TryGetValue(imagePath, out var cached))
+        {
+            return cached;
+        }
+
+        if (!File.Exists(imagePath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;       // close the file handle eagerly
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            if (StampImageCache.Count >= StampImageCacheMax)
+            {
+                // Drop one arbitrary entry — small cache, exact LRU not worth the bookkeeping.
+                StampImageCache.Remove(StampImageCache.Keys.First());
+            }
+            StampImageCache[imagePath] = bitmap;
+            return bitmap;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     /// <summary>Rectangle (contour, no fill).</summary>
