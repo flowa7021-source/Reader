@@ -18,6 +18,7 @@
     <converters:DepthToIndentConverter x:Key="DepthToIndentConverter" />
     <converters:OneBasedPageConverter x:Key="OneBasedPageConverter" />
     <converters:EnumToBoolConverter x:Key="EnumToBoolConverter" />
+    <converters:EnumToVisibilityConverter x:Key="EnumToVisibilityConverter" />
     <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
   </Window.Resources>
 
@@ -339,6 +340,11 @@
                                 IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Ellipse}}"
                                 ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolEllipse]}"
                                 Content="◯" />
+                  <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
+                                CommandParameter="{x:Static vm:AnnotationTool.Stamp}"
+                                IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.Stamp}}"
+                                ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStamp]}"
+                                Content="◈" />
                   <Separator />
                   <ToggleButton Command="{Binding SelectedTab.SelectToolCommand}"
                                 CommandParameter="{x:Static vm:AnnotationTool.Line}"
@@ -366,6 +372,49 @@
                                 IsChecked="{Binding SelectedTab.ActiveTool, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static vm:AnnotationTool.StickyNote}}"
                                 ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStickyNote]}"
                                 Content="✎" />
+                </ToolBar>
+
+                <!-- Color swatch palette (B1d): clicking sets NewAnnotationColorHex for next-
+                     created annotation. IsChecked highlights the currently-selected swatch. -->
+                <ToolBar ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolColorPaletteTooltip]}">
+                  <ToggleButton Command="{Binding SelectedTab.SetNewAnnotationColorCommand}"
+                                CommandParameter="#FFEB3B"
+                                IsChecked="{Binding SelectedTab.NewAnnotationColorHex, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=#FFEB3B}"
+                                Width="20" Height="20" Background="#FFEB3B" />
+                  <ToggleButton Command="{Binding SelectedTab.SetNewAnnotationColorCommand}"
+                                CommandParameter="#FF9800"
+                                IsChecked="{Binding SelectedTab.NewAnnotationColorHex, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=#FF9800}"
+                                Width="20" Height="20" Background="#FF9800" />
+                  <ToggleButton Command="{Binding SelectedTab.SetNewAnnotationColorCommand}"
+                                CommandParameter="#F44336"
+                                IsChecked="{Binding SelectedTab.NewAnnotationColorHex, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=#F44336}"
+                                Width="20" Height="20" Background="#F44336" />
+                  <ToggleButton Command="{Binding SelectedTab.SetNewAnnotationColorCommand}"
+                                CommandParameter="#4CAF50"
+                                IsChecked="{Binding SelectedTab.NewAnnotationColorHex, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=#4CAF50}"
+                                Width="20" Height="20" Background="#4CAF50" />
+                  <ToggleButton Command="{Binding SelectedTab.SetNewAnnotationColorCommand}"
+                                CommandParameter="#2196F3"
+                                IsChecked="{Binding SelectedTab.NewAnnotationColorHex, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=#2196F3}"
+                                Width="20" Height="20" Background="#2196F3" />
+                  <ToggleButton Command="{Binding SelectedTab.SetNewAnnotationColorCommand}"
+                                CommandParameter="#9C27B0"
+                                IsChecked="{Binding SelectedTab.NewAnnotationColorHex, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=#9C27B0}"
+                                Width="20" Height="20" Background="#9C27B0" />
+                  <ToggleButton Command="{Binding SelectedTab.SetNewAnnotationColorCommand}"
+                                CommandParameter="#000000"
+                                IsChecked="{Binding SelectedTab.NewAnnotationColorHex, Mode=OneWay, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=#000000}"
+                                Width="20" Height="20" Background="#000000" />
+                </ToolBar>
+
+                <!-- Stamp label combo (B1d): visible only when Stamp tool is active. Editable —
+                     user may type custom label; preset items fill StampLabels collection. -->
+                <ToolBar Visibility="{Binding SelectedTab.ActiveTool, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter={x:Static vm:AnnotationTool.Stamp}, FallbackValue=Collapsed}">
+                  <ComboBox Width="160"
+                            IsEditable="True"
+                            ItemsSource="{Binding SelectedTab.StampLabels}"
+                            Text="{Binding SelectedTab.StampLabel, UpdateSourceTrigger=PropertyChanged}"
+                            ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStampLabel]}" />
                 </ToolBar>
               </ToolBarTray>
 

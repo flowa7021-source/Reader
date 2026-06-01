@@ -379,6 +379,15 @@
   <data name="ToolPolygon" xml:space="preserve">
     <value>Polygon (click vertices, double-click to close)</value>
   </data>
+  <data name="ToolStamp" xml:space="preserve">
+    <value>Stamp (drag rectangle; label from combo)</value>
+  </data>
+  <data name="ToolStampLabel" xml:space="preserve">
+    <value>Stamp label (pick preset or type custom)</value>
+  </data>
+  <data name="ToolColorPaletteTooltip" xml:space="preserve">
+    <value>Color for new annotations</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Batch processing...</value>
   </data>

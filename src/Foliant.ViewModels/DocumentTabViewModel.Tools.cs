@@ -34,6 +34,22 @@ public sealed partial class DocumentTabViewModel
     /// <summary>Размер стороны заметки в PDF-pt при single-click размещении (квадрат).</summary>
     private const double StickyNoteSizePt = 18.0;
 
+    /// <summary>Готовые тексты для штампа (B1d): пользователь выбирает один из них в ComboBox'е,
+    /// либо вводит свой текст. Сами по себе значения не локализуются — это PDF-метки,
+    /// которые попадают в <c>/Contents</c> штампа и видны как есть в Acrobat и других reader'ах.</summary>
+    public IReadOnlyList<string> StampLabels { get; } = ["APPROVED", "REJECTED", "DRAFT"];
+
+    /// <summary>Установить новый цвет для аннотаций палитры (B1d). Toolbar-swatch вызывает её
+    /// через <c>CommandParameter="#RRGGBB"</c>. Пустую/whitespace строку игнорируем.</summary>
+    [RelayCommand]
+    private void SetNewAnnotationColor(string? hex)
+    {
+        if (!string.IsNullOrWhiteSpace(hex))
+        {
+            NewAnnotationColorHex = hex;
+        }
+    }
+
     /// <summary>True, если активен любой инструмент создания (не None).</summary>
     public bool IsAnnotationCreationActive => ActiveTool != AnnotationTool.None;
 
