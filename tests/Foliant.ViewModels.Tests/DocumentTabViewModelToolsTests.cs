@@ -252,18 +252,52 @@ public sealed class DocumentTabViewModelToolsTests
         (await vm.CommitPointToolAsync(0, new AnnotationPoint(0, 0))).Should().BeFalse();
     }
 
-    // ───── B1c: two-point / multi-point current-page ICommand wrappers ─────
+    // ───── B1d-multipage: on-page commit wrappers (page index from payload) ─────
 
     [Fact]
-    public async Task CommitTwoPointToolOnCurrentPageCommand_UsesCurrentPageIndex()
+    public async Task CommitRectToolOnPageCommand_UsesPayloadPageIndex_NotCurrent()
     {
         var service = EchoService();
         var vm = CreateVm(service);
-        vm.CurrentPageIndex = 2;
+        vm.CurrentPageIndex = 0; // current is page 0, but payload targets page 2
+        vm.SelectToolCommand.Execute(AnnotationTool.Rectangle);
+
+        await vm.CommitRectToolOnPageCommand.ExecuteAsync(
+            new RectOnPagePayload(2, new AnnotationRect(0, 0, 10, 10)));
+
+        await service.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Rectangle && a.PageIndex == 2),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CommitPointToolOnPageCommand_UsesPayloadPageIndex_NotCurrent()
+    {
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.CurrentPageIndex = 0;
+        vm.SelectToolCommand.Execute(AnnotationTool.StickyNote);
+
+        await vm.CommitPointToolOnPageCommand.ExecuteAsync(
+            new PointOnPagePayload(2, new AnnotationPoint(50, 50)));
+
+        await service.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.StickyNote && a.PageIndex == 2),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CommitTwoPointToolOnPageCommand_UsesPayloadPageIndex_NotCurrent()
+    {
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.CurrentPageIndex = 0;
         vm.SelectToolCommand.Execute(AnnotationTool.Arrow);
 
-        await vm.CommitTwoPointToolOnCurrentPageCommand.ExecuteAsync(
-            new TwoPointPayload(new AnnotationPoint(0, 0), new AnnotationPoint(40, 50)));
+        await vm.CommitTwoPointToolOnPageCommand.ExecuteAsync(
+            new TwoPointOnPagePayload(2, new AnnotationPoint(0, 0), new AnnotationPoint(40, 50)));
 
         await service.Received(1).AddAsync(
             Arg.Any<string>(),
@@ -272,42 +306,42 @@ public sealed class DocumentTabViewModelToolsTests
     }
 
     [Fact]
-    public async Task CommitTwoPointToolOnCurrentPageCommand_NullPayload_NoOp()
+    public async Task CommitMultiPointToolOnPageCommand_Freehand_UsesPayloadPageIndex_NotCurrent()
     {
         var service = EchoService();
         var vm = CreateVm(service);
-        vm.SelectToolCommand.Execute(AnnotationTool.Line);
+        vm.CurrentPageIndex = 0;
+        vm.SelectToolCommand.Execute(AnnotationTool.Freehand);
 
-        await vm.CommitTwoPointToolOnCurrentPageCommand.ExecuteAsync(null);
+        await vm.CommitMultiPointToolOnPageCommand.ExecuteAsync(
+            new MultiPointOnPagePayload(2, [new(0, 0), new(5, 5), new(10, 2)]));
+
+        await service.Received(1).AddAsync(
+            Arg.Any<string>(),
+            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Freehand && a.PageIndex == 2),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CommitRectToolOnPageCommand_NullPayload_NoOp()
+    {
+        var service = EchoService();
+        var vm = CreateVm(service);
+        vm.SelectToolCommand.Execute(AnnotationTool.Rectangle);
+
+        await vm.CommitRectToolOnPageCommand.ExecuteAsync(null);
 
         await service.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task CommitMultiPointToolOnCurrentPageCommand_Freehand_UsesCurrentPageIndex()
-    {
-        var service = EchoService();
-        var vm = CreateVm(service);
-        vm.CurrentPageIndex = 1;
-        vm.SelectToolCommand.Execute(AnnotationTool.Freehand);
-
-        await vm.CommitMultiPointToolOnCurrentPageCommand.ExecuteAsync(
-            new List<AnnotationPoint> { new(0, 0), new(5, 5), new(10, 2) });
-
-        await service.Received(1).AddAsync(
-            Arg.Any<string>(),
-            Arg.Is<Annotation>(a => a.Kind == AnnotationKind.Freehand && a.PageIndex == 1),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task CommitMultiPointToolOnCurrentPageCommand_NullPoints_NoOp()
+    public async Task CommitMultiPointToolOnPageCommand_NullPayload_NoOp()
     {
         var service = EchoService();
         var vm = CreateVm(service);
         vm.SelectToolCommand.Execute(AnnotationTool.Freehand);
 
-        await vm.CommitMultiPointToolOnCurrentPageCommand.ExecuteAsync(null);
+        await vm.CommitMultiPointToolOnPageCommand.ExecuteAsync(null);
 
         await service.DidNotReceive().AddAsync(Arg.Any<string>(), Arg.Any<Annotation>(), Arg.Any<CancellationToken>());
     }

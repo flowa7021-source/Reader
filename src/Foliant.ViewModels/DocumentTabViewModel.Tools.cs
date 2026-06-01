@@ -78,48 +78,50 @@ public sealed partial class DocumentTabViewModel
     [RelayCommand]
     private void ClearTool() => ActiveTool = AnnotationTool.None;
 
-    /// <summary>ICommand-обёртка для View: завершить rubber-band-rect жест на ТЕКУЩЕЙ странице.
-    /// AnnotationLayer (single-page) передаёт сюда уже сконвертированный PDF-rect; маршрутизация
-    /// и валидация — в <see cref="CommitRectToolAsync"/>.</summary>
+    /// <summary>ICommand-обёртка для View (B1b/B1d-multipage): завершить rubber-band-rect жест
+    /// на странице из payload. AnnotationLayer.PageIndex DP передаёт нужный индекс — single-page
+    /// биндит его на <see cref="CurrentPageIndex"/>, continuous/two-page — на per-page
+    /// <c>RenderedPageViewModel.PageIndex</c>. Маршрутизация и валидация — в
+    /// <see cref="CommitRectToolAsync"/>.</summary>
     [RelayCommand]
-    private async Task CommitRectToolOnCurrentPage(AnnotationRect? bounds)
-    {
-        if (bounds is not null)
-        {
-            await CommitRectToolAsync(CurrentPageIndex, bounds).ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>ICommand-обёртка: завершить single-click жест (StickyNote) на текущей странице.</summary>
-    [RelayCommand]
-    private async Task CommitPointToolOnCurrentPage(AnnotationPoint? at)
-    {
-        if (at is not null)
-        {
-            await CommitPointToolAsync(CurrentPageIndex, at).ConfigureAwait(false);
-        }
-    }
-
-    /// <summary>ICommand-обёртка (B1c): завершить two-point жест (Line / Arrow) на текущей
-    /// странице. View передаёт пару PDF-точек; валидация — в <see cref="CommitTwoPointToolAsync"/>.</summary>
-    [RelayCommand]
-    private async Task CommitTwoPointToolOnCurrentPage(TwoPointPayload? payload)
+    private async Task CommitRectToolOnPage(RectOnPagePayload? payload)
     {
         if (payload is not null)
         {
-            await CommitTwoPointToolAsync(CurrentPageIndex, payload.Start, payload.End).ConfigureAwait(false);
+            await CommitRectToolAsync(payload.PageIndex, payload.Bounds).ConfigureAwait(false);
         }
     }
 
-    /// <summary>ICommand-обёртка (B1c): завершить multi-point жест (Freehand / Polygon) на
-    /// текущей странице. View передаёт собранные PDF-точки; валидация (≥2 / ≥3) — в
-    /// <see cref="CommitMultiPointToolAsync"/>.</summary>
+    /// <summary>ICommand-обёртка (B1d-multipage): single-click жест (StickyNote) на странице
+    /// из payload.</summary>
     [RelayCommand]
-    private async Task CommitMultiPointToolOnCurrentPage(IReadOnlyList<AnnotationPoint>? points)
+    private async Task CommitPointToolOnPage(PointOnPagePayload? payload)
     {
-        if (points is not null)
+        if (payload is not null)
         {
-            await CommitMultiPointToolAsync(CurrentPageIndex, points).ConfigureAwait(false);
+            await CommitPointToolAsync(payload.PageIndex, payload.At).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>ICommand-обёртка (B1c/B1d-multipage): two-point жест (Line / Arrow) на странице
+    /// из payload.</summary>
+    [RelayCommand]
+    private async Task CommitTwoPointToolOnPage(TwoPointOnPagePayload? payload)
+    {
+        if (payload is not null)
+        {
+            await CommitTwoPointToolAsync(payload.PageIndex, payload.Start, payload.End).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>ICommand-обёртка (B1c/B1d-multipage): multi-point жест (Freehand / Polygon) на
+    /// странице из payload. Валидация (≥2 / ≥3) — в <see cref="CommitMultiPointToolAsync"/>.</summary>
+    [RelayCommand]
+    private async Task CommitMultiPointToolOnPage(MultiPointOnPagePayload? payload)
+    {
+        if (payload is not null)
+        {
+            await CommitMultiPointToolAsync(payload.PageIndex, payload.Points).ConfigureAwait(false);
         }
     }
 
@@ -230,6 +232,18 @@ public sealed partial class DocumentTabViewModel
     }
 }
 
-/// <summary>View-supplied envelope для <c>CommitTwoPointToolOnCurrentPageCommand</c>: пара
-/// PDF-точек (начало/конец) two-point жеста Line / Arrow.</summary>
-public sealed record TwoPointPayload(AnnotationPoint Start, AnnotationPoint End);
+/// <summary>View-supplied envelope для <c>CommitRectToolOnPageCommand</c>: PDF-rect + индекс
+/// страницы, на которой завершён жест (B1d-multipage).</summary>
+public sealed record RectOnPagePayload(int PageIndex, AnnotationRect Bounds);
+
+/// <summary>View-supplied envelope для <c>CommitPointToolOnPageCommand</c>: PDF-точка +
+/// индекс страницы (B1d-multipage).</summary>
+public sealed record PointOnPagePayload(int PageIndex, AnnotationPoint At);
+
+/// <summary>View-supplied envelope для <c>CommitTwoPointToolOnPageCommand</c>: пара PDF-точек
+/// (начало/конец) two-point жеста (Line / Arrow) + индекс страницы (B1d-multipage).</summary>
+public sealed record TwoPointOnPagePayload(int PageIndex, AnnotationPoint Start, AnnotationPoint End);
+
+/// <summary>View-supplied envelope для <c>CommitMultiPointToolOnPageCommand</c>: собранные
+/// PDF-точки (Freehand / Polygon) + индекс страницы (B1d-multipage).</summary>
+public sealed record MultiPointOnPagePayload(int PageIndex, IReadOnlyList<AnnotationPoint> Points);
