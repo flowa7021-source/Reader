@@ -430,6 +430,9 @@
   <data name="ToolFreehand" xml:space="preserve">
     <value>От руки (рисуйте протягиванием)</value>
   </data>
+  <data name="ToolPolygon" xml:space="preserve">
+    <value>Многоугольник (клик — вершина, двойной клик — замкнуть)</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Пакетная обработка...</value>
   </data>

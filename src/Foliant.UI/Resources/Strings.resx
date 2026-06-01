@@ -376,6 +376,9 @@
   <data name="ToolFreehand" xml:space="preserve">
     <value>Freehand (drag to draw)</value>
   </data>
+  <data name="ToolPolygon" xml:space="preserve">
+    <value>Polygon (click vertices, double-click to close)</value>
+  </data>
   <data name="MenuToolsBatch" xml:space="preserve">
     <value>_Batch processing...</value>
   </data>

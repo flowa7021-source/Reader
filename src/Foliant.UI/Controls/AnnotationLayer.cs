@@ -42,7 +42,16 @@ internal sealed class AnnotationLayer : FrameworkElement
     /// не создаёт аннотацию (только существующее поведение double-click note).</summary>
     public static readonly DependencyProperty ActiveToolProperty = DependencyProperty.Register(
         nameof(ActiveTool), typeof(AnnotationTool), typeof(AnnotationLayer),
-        new PropertyMetadata(AnnotationTool.None));
+        new PropertyMetadata(AnnotationTool.None, OnActiveToolChanged));
+
+    private static void OnActiveToolChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        // Смена инструмента (в т.ч. Esc → ClearTool) прерывает незавершённый polygon.
+        if (d is AnnotationLayer layer && layer._polygonActive)
+        {
+            layer.CancelPolygon();
+        }
+    }
 
     /// <summary>ICommand, вызывается с PDF-space <see cref="AnnotationRect"/> по завершении
     /// rubber-band-rect жеста (Highlight/Underline/Strikethrough/Rectangle/Ellipse/Stamp).</summary>
@@ -76,6 +85,13 @@ internal sealed class AnnotationLayer : FrameworkElement
     private Point _dragStartPx;
     private Point _dragCurrentPx;
     private readonly List<Point> _freehandPx = [];
+
+    // Polygon click-to-add-vertex state (B1c-poly): накапливает вершины по одиночным кликам,
+    // закрывается двойным кликом (или Enter); Esc/смена инструмента — отмена. _polygonHoverPx —
+    // позиция курсора для «резиновой» линии от последней вершины.
+    private readonly List<Point> _polygonPx = [];
+    private Point _polygonHoverPx;
+    private bool _polygonActive;
 
     public IEnumerable<Annotation>? Annotations
     {
@@ -199,6 +215,29 @@ internal sealed class AnnotationLayer : FrameworkElement
         if (_dragging)
         {
             DrawPreview(dc);
+        }
+
+        if (_polygonActive && _polygonPx.Count > 0)
+        {
+            DrawPolygonPreview(dc);
+        }
+    }
+
+    private void DrawPolygonPreview(DrawingContext dc)
+    {
+        var pen = new Pen(Brushes.DodgerBlue, 1) { DashStyle = DashStyles.Dash };
+        for (int i = 1; i < _polygonPx.Count; i++)
+        {
+            dc.DrawLine(pen, _polygonPx[i - 1], _polygonPx[i]);
+        }
+
+        // Rubber-band-сегмент от последней вершины к курсору.
+        dc.DrawLine(pen, _polygonPx[^1], _polygonHoverPx);
+
+        // Маркеры вершин.
+        foreach (Point v in _polygonPx)
+        {
+            dc.DrawEllipse(Brushes.DodgerBlue, null, v, 2.5, 2.5);
         }
     }
 
@@ -469,6 +508,26 @@ internal sealed class AnnotationLayer : FrameworkElement
 
         AnnotationToolGesture gesture = DocumentTabViewModel.GestureFor(ActiveTool);
 
+        // Polygon (MultiPoint gesture, но click-based, не press-drag): одиночный клик добавляет
+        // вершину; двойной клик закрывает и коммитит. Обрабатывается до press-drag-блока.
+        if (ActiveTool == AnnotationTool.Polygon)
+        {
+            Point click = e.GetPosition(this);
+            if (e.ClickCount == 2)
+            {
+                CommitPolygon(render);
+            }
+            else
+            {
+                _polygonActive = true;
+                _polygonPx.Add(click);
+                _polygonHoverPx = click;
+                InvalidateVisual();
+            }
+            e.Handled = true;
+            return;
+        }
+
         // Active palette tool wins over the default double-click-note behaviour. RubberBandRect,
         // TwoPoint и MultiPoint(Freehand) — все press-drag-release, разнятся только commit'ом.
         if (gesture is AnnotationToolGesture.RubberBandRect
@@ -513,6 +572,14 @@ internal sealed class AnnotationLayer : FrameworkElement
     {
         ArgumentNullException.ThrowIfNull(e);
         base.OnMouseMove(e);
+
+        if (_polygonActive)
+        {
+            _polygonHoverPx = e.GetPosition(this);
+            InvalidateVisual();
+            return;
+        }
+
         if (!_dragging)
         {
             return;
@@ -629,6 +696,40 @@ internal sealed class AnnotationLayer : FrameworkElement
         {
             CommitMultiPointToolCommand.Execute(points);
         }
+    }
+
+    private void CommitPolygon(IPageRender render)
+    {
+        // Двойной клик закрывает полигон. Нужно ≥3 вершины (доменная фабрика Polygon требует это).
+        // Последний клик двойного — это та же точка, что уже добавлена первым кликом double-click'а,
+        // поэтому отдельную вершину для второго клика не добавляем.
+        try
+        {
+            if (CommitMultiPointToolCommand is not null && _polygonPx.Count >= 3)
+            {
+                var points = new List<AnnotationPoint>(_polygonPx.Count);
+                foreach (Point p in _polygonPx)
+                {
+                    points.Add(ToPdfPoint(p, render));
+                }
+
+                if (CommitMultiPointToolCommand.CanExecute(points))
+                {
+                    CommitMultiPointToolCommand.Execute(points);
+                }
+            }
+        }
+        finally
+        {
+            CancelPolygon();
+        }
+    }
+
+    private void CancelPolygon()
+    {
+        _polygonActive = false;
+        _polygonPx.Clear();
+        InvalidateVisual();
     }
 
     private static AnnotationPoint ToPdfPoint(Point px, IPageRender render)
