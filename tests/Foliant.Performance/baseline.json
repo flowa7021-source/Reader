@@ -1,12 +1,14 @@
 {
-  "OpenPdf500Pages":      { "P50_ms": 250,    "P95_ms": 500    },
-  "RenderPage1080p_Cold": { "P50_ms": 80,     "P95_ms": 150    },
-  "RenderPage1080p_Warm": { "P50_ms": 3,      "P95_ms": 8      },
-  "SearchAcross10kPages": { "P50_ms": 1,      "P95_ms": 3      },
-  "OcrPageRus":           { "P50_ms": 1500,   "P95_ms": 3000   },
-  "Construct":            { "P50_ms": 0.0001, "P95_ms": 0.0005 },
-  "ToFileName":           { "P50_ms": 0.0005, "P95_ms": 0.002  },
-  "PutWithEviction":      { "P50_ms": 1.5,    "P95_ms": 4      },
-  "TryGetHitMix":         { "P50_ms": 0.3,    "P95_ms": 1      },
-  "ComputeFingerprint":   { "P50_ms": 0.5,    "P95_ms": 1.5    }
+  "OpenPdf500Pages":                  { "P50_ms": 250,    "P95_ms": 500    },
+  "RenderPage1080p_Cold":             { "P50_ms": 80,     "P95_ms": 150    },
+  "RenderPage1080p_Warm":             { "P50_ms": 3,      "P95_ms": 8      },
+  "Open_100_Page_Pdf":                { "P50_ms": 1000,   "P95_ms": 2000   },
+  "Render_Single_Page_At_100_Percent":{ "P50_ms": 200,    "P95_ms": 500    },
+  "SearchAcross10kPages":             { "P50_ms": 1,      "P95_ms": 3      },
+  "OcrPageRus":                       { "P50_ms": 1500,   "P95_ms": 3000   },
+  "Construct":                        { "P50_ms": 0.0001, "P95_ms": 0.0005 },
+  "ToFileName":                       { "P50_ms": 0.0005, "P95_ms": 0.002  },
+  "PutWithEviction":                  { "P50_ms": 1.5,    "P95_ms": 4      },
+  "TryGetHitMix":                     { "P50_ms": 0.3,    "P95_ms": 1      },
+  "ComputeFingerprint":               { "P50_ms": 0.5,    "P95_ms": 1.5    }
 }
