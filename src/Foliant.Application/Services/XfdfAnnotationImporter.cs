@@ -116,7 +116,15 @@ public sealed class XfdfAnnotationImporter : IAnnotationImporter
             return null;
         }
 
-        return WithMetadata(Annotation.Stamp(page, bounds, label, Color(el), Created(el)), el);
+        // Image-stamp (A5c): foliant:imagepath custom-атрибут. Ищем по LocalName, чтобы не
+        // зависеть от namespace-prefix. Пустой/отсутствует → текстовый stamp.
+        string? imagePath = el.Attributes()
+            .FirstOrDefault(at => at.Name.LocalName == "imagepath")?.Value;
+
+        Annotation core = string.IsNullOrWhiteSpace(imagePath)
+            ? Annotation.Stamp(page, bounds, label, Color(el), Created(el))
+            : Annotation.ImageStamp(page, bounds, imagePath, label, Color(el), Created(el));
+        return WithMetadata(core, el);
     }
 
     private static Annotation? ParsePolygon(XElement el)
