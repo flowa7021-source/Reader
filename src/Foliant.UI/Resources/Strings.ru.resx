@@ -439,6 +439,24 @@
   <data name="ToolStampLabel" xml:space="preserve">
     <value>Текст штампа (выберите готовый или введите свой)</value>
   </data>
+  <data name="ToolStampPickImage" xml:space="preserve">
+    <value>Выбрать изображение…</value>
+  </data>
+  <data name="ToolStampPickImageTooltip" xml:space="preserve">
+    <value>Использовать PNG/JPG как изображение штампа; текст останется как accessibility-fallback.</value>
+  </data>
+  <data name="ToolStampPickImageTitle" xml:space="preserve">
+    <value>Выберите изображение штампа</value>
+  </data>
+  <data name="ToolStampPickImageFilter" xml:space="preserve">
+    <value>Изображения (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="ToolStampClearImage" xml:space="preserve">
+    <value>Очистить изображение</value>
+  </data>
+  <data name="ToolStampClearImageTooltip" xml:space="preserve">
+    <value>Вернуться к текстовому штампу с заданной меткой.</value>
+  </data>
   <data name="ToolColorPaletteTooltip" xml:space="preserve">
     <value>Цвет для новых аннотаций</value>
   </data>

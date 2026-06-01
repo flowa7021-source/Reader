@@ -407,14 +407,22 @@
                                 Width="20" Height="20" Background="#000000" />
                 </ToolBar>
 
-                <!-- Stamp label combo (B1d): visible only when Stamp tool is active. Editable —
-                     user may type custom label; preset items fill StampLabels collection. -->
+                <!-- Stamp label combo + image picker (B1d / B1e): visible only when Stamp tool is
+                     active. Editable combo — preset labels or custom; Pick image… → ImageStamp
+                     instead of text-stamp; Clear → revert to text. -->
                 <ToolBar Visibility="{Binding SelectedTab.ActiveTool, Converter={StaticResource EnumToVisibilityConverter}, ConverterParameter={x:Static vm:AnnotationTool.Stamp}, FallbackValue=Collapsed}">
                   <ComboBox Width="160"
                             IsEditable="True"
                             ItemsSource="{Binding SelectedTab.StampLabels}"
                             Text="{Binding SelectedTab.StampLabel, UpdateSourceTrigger=PropertyChanged}"
                             ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStampLabel]}" />
+                  <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStampPickImage]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStampPickImageTooltip]}"
+                          Click="OnPickStampImageClick" />
+                  <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStampClearImage]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ToolStampClearImageTooltip]}"
+                          Command="{Binding SelectedTab.ClearStampImageCommand}"
+                          Visibility="{Binding SelectedTab.HasStampImage, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}" />
                 </ToolBar>
               </ToolBarTray>
 

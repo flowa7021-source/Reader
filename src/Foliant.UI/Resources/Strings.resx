@@ -385,6 +385,24 @@
   <data name="ToolStampLabel" xml:space="preserve">
     <value>Stamp label (pick preset or type custom)</value>
   </data>
+  <data name="ToolStampPickImage" xml:space="preserve">
+    <value>Pick image…</value>
+  </data>
+  <data name="ToolStampPickImageTooltip" xml:space="preserve">
+    <value>Use a PNG/JPG file as the stamp appearance; label stays as accessibility fallback.</value>
+  </data>
+  <data name="ToolStampPickImageTitle" xml:space="preserve">
+    <value>Pick stamp image</value>
+  </data>
+  <data name="ToolStampPickImageFilter" xml:space="preserve">
+    <value>Images (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tiff;*.tif|All files (*.*)|*.*</value>
+  </data>
+  <data name="ToolStampClearImage" xml:space="preserve">
+    <value>Clear image</value>
+  </data>
+  <data name="ToolStampClearImageTooltip" xml:space="preserve">
+    <value>Revert to text stamp using the label.</value>
+  </data>
   <data name="ToolColorPaletteTooltip" xml:space="preserve">
     <value>Color for new annotations</value>
   </data>

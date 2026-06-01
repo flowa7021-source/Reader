@@ -380,6 +380,28 @@ public partial class MainWindow : Window
         System.Windows.Application.Current.Shutdown();
     }
 
+    /// <summary>Stamp tool: pick an image to use as the next image-stamp (B1e). Cancel keeps the
+    /// existing path (use the Clear button to revert to text-stamp).</summary>
+    private void OnPickStampImageClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is null)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var dialog = new OpenFileDialog
+        {
+            Title = loc["ToolStampPickImageTitle"],
+            Filter = loc["ToolStampPickImageFilter"],
+            Multiselect = false,
+        };
+        if (dialog.ShowDialog(this) == true)
+        {
+            _vm.SelectedTab.SetStampImagePathCommand.Execute(dialog.FileName);
+        }
+    }
+
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnExportFormDataMenuItemClick(object sender, RoutedEventArgs e)
     {

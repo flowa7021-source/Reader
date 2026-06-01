@@ -39,6 +39,30 @@ public sealed partial class DocumentTabViewModel
     /// которые попадают в <c>/Contents</c> штампа и видны как есть в Acrobat и других reader'ах.</summary>
     public IReadOnlyList<string> StampLabels { get; } = ["APPROVED", "REJECTED", "DRAFT"];
 
+    /// <summary>Опциональный путь к изображению-штампу (Q-F18 / A5). Когда задан и файл
+    /// существует — следующий drag Stamp-инструментом создаёт <see cref="Annotation.ImageStamp"/>;
+    /// иначе — текстовый <see cref="Annotation.Stamp"/>. Сбрасывается через
+    /// <see cref="ClearStampImageCommand"/>.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStampImage))]
+    private string? _stampImagePath;
+
+    /// <summary>True если выбран image-штамп (toolbar показывает «Clear» кнопку).</summary>
+    public bool HasStampImage => !string.IsNullOrWhiteSpace(StampImagePath);
+
+    /// <summary>Установить путь к image-штампу (Q-F18 / A5 UX). View вызывает после
+    /// OpenFileDialog. Whitespace/null игнорируется как ClearStampImage.</summary>
+    [RelayCommand]
+    private void SetStampImagePath(string? path)
+    {
+        StampImagePath = string.IsNullOrWhiteSpace(path) ? null : path;
+    }
+
+    /// <summary>Сбросить выбранное image-штампа изображение → следующий drag создаст
+    /// текст-штамп с <see cref="StampLabel"/>.</summary>
+    [RelayCommand]
+    private void ClearStampImage() => StampImagePath = null;
+
     /// <summary>Установить новый цвет для аннотаций палитры (B1d). Toolbar-swatch вызывает её
     /// через <c>CommandParameter="#RRGGBB"</c>. Пустую/whitespace строку игнорируем.</summary>
     [RelayCommand]
@@ -151,7 +175,17 @@ public sealed partial class DocumentTabViewModel
                 {
                     return false;
                 }
-                await AddStampAsync(pageIndex, bounds, StampLabel, color, ct).ConfigureAwait(false);
+                // B1e: image-stamp если выбран путь к изображению (через toolbar Pick image…).
+                // Файл проверяется на наличие — если потерян, fallback к тексту, чтобы пользователь
+                // не получил silent no-op без подсказки в логах.
+                if (HasStampImage && File.Exists(StampImagePath!))
+                {
+                    await AddImageStampAsync(pageIndex, bounds, StampImagePath!, StampLabel, color, ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    await AddStampAsync(pageIndex, bounds, StampLabel, color, ct).ConfigureAwait(false);
+                }
                 break;
             default: return false;
         }
