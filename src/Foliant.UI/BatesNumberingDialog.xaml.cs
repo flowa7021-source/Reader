@@ -41,7 +41,7 @@ public partial class BatesNumberingDialog : Window, INotifyPropertyChanged
     public string StartNumberText { get => _startNumber; set { _startNumber = value; Notify(); Notify(nameof(IsValid)); } }
     public string DigitsText { get => _digits; set { _digits = value; Notify(); Notify(nameof(IsValid)); } }
     public int PositionIndex { get => _positionIndex; set { _positionIndex = value; Notify(); } }
-    public double FontSize { get => _fontSize; set { _fontSize = value; Notify(); } }
+    public double StampFontSize { get => _fontSize; set { _fontSize = value; Notify(); } }
     public double R { get => _r; set { _r = value; Notify(); } }
     public double G { get => _g; set { _g = value; Notify(); } }
     public double B { get => _b; set { _b = value; Notify(); } }
@@ -80,7 +80,7 @@ public partial class BatesNumberingDialog : Window, INotifyPropertyChanged
             StartNumber: start,
             Digits: digits,
             Position: (BatesPosition)dialog.PositionIndex,
-            FontSize: dialog.FontSize,
+            FontSize: dialog.StampFontSize,
             R: (byte)Math.Clamp(dialog.R, 0, 255),
             G: (byte)Math.Clamp(dialog.G, 0, 255),
             B: (byte)Math.Clamp(dialog.B, 0, 255),

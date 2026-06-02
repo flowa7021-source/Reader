@@ -83,10 +83,10 @@
                  Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BatesFontSizeLabel]}" />
       <Slider Grid.Row="5" Grid.Column="1" Margin="0,4"
               Minimum="6" Maximum="24" SmallChange="1" LargeChange="2"
-              Value="{Binding FontSize, Mode=TwoWay}" />
+              Value="{Binding StampFontSize, Mode=TwoWay}" />
       <TextBlock Grid.Row="5" Grid.Column="2" VerticalAlignment="Center" TextAlignment="Right"
                  Foreground="{DynamicResource Foreground}"
-                 Text="{Binding FontSize, StringFormat={}{0:0} pt}" />
+                 Text="{Binding StampFontSize, StringFormat={}{0:0} pt}" />
 
       <!-- Color R/G/B -->
       <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center"
