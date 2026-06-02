@@ -10,7 +10,7 @@ namespace Foliant.UI;
 /// de-duplicated list of 0-based indices for <c>DocumentTabViewModel.ExtractSelectionCommand</c>.
 /// Mirrors <see cref="CropDialog"/>'s self-DataContext + static <see cref="Prompt"/> shape. The
 /// property is named <c>SelectionText</c> (not a <see cref="Window"/> member). Validation is bound
-/// to <paramref name="pageCount"/> so OK stays disabled until every referenced page exists.
+/// to the constructor's <c>pageCount</c> so OK stays disabled until every referenced page exists.
 /// </summary>
 public partial class ExtractSelectionDialog : Window, INotifyPropertyChanged
 {
