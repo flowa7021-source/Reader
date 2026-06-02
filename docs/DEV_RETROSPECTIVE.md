@@ -50,7 +50,7 @@ Application/plugins → Infra/Engines/VM → хвосты → рантайм-т�
 - [ ] IDisposable-поля диспозятся; нет `EndOfStream`/sync-IO в async.
 - [ ] Doc-комментарии: есть `<summary>`, `cref` резолвится.
 - [ ] Новый файл/partial — все нужные `using` на месте.
-- [ ] Добавлен член интерфейса → реализован во всех impl.
+- [ ] Добавлен член интерфейса → реализован во всех impl. *CI-гейт:* CS0535 ловится явно на обеих платформах — Linux-джоб `verify.yml` собирает `Foliant.CrossPlatform.slnf -warnaserror` (Domain/Application/Infrastructure/ViewModels/Engines/Plugins), Windows-джобы `verify.yml` и `ci.yml` собирают полный `Foliant.sln -warnaserror` (включая Foliant.App/Foliant.UI и Windows-only TFM), плюс safety-net grep по build-логу в `verify.yml`.
 - [ ] Тесты: не проверяют невозможное; моки настроены; предусловия сценария корректны.
 - [ ] Есть рантайм/integration-проверка для логики, которую аналайзер не поймает.
 

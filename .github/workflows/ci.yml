@@ -53,6 +53,10 @@ jobs:
       - name: Verify formatting
         run: dotnet format Foliant.sln --verify-no-changes --no-restore
 
+      # CS0535 gate (§1 «дрейф интерфейс/имплементация» в docs/DEV_RETROSPECTIVE.md): полный
+      # Foliant.sln на Windows-раннере — единственная точка, где компилируются Windows-only impls
+      # (Foliant.App, Foliant.UI), поэтому interface drift в них падает именно тут. CS0535 —
+      # error по C#-спеке; -warnaserror добавляет страховку от сопутствующих warning'ов.
       - name: Build
         run: dotnet build Foliant.sln -c Release --no-restore -warnaserror
 
