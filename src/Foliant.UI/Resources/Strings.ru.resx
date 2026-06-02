@@ -121,6 +121,36 @@
   <data name="CropPagesSaveDialogTitle" xml:space="preserve">
     <value>Сохранить обрезанный PDF как</value>
   </data>
+  <data name="MenuFileRedact" xml:space="preserve">
+    <value>Найти и _затереть...</value>
+  </data>
+  <data name="RedactionDialogTitle" xml:space="preserve">
+    <value>Найти и затереть</value>
+  </data>
+  <data name="RedactionQueryLabel" xml:space="preserve">
+    <value>Найти:</value>
+  </data>
+  <data name="RedactionMatchCase" xml:space="preserve">
+    <value>С учётом регистра</value>
+  </data>
+  <data name="RedactionWholeWord" xml:space="preserve">
+    <value>Слово целиком</value>
+  </data>
+  <data name="RedactionRegex" xml:space="preserve">
+    <value>Регулярное выражение</value>
+  </data>
+  <data name="RedactionFoldDiacritics" xml:space="preserve">
+    <value>Без учёта диакритики</value>
+  </data>
+  <data name="RedactionOkButton" xml:space="preserve">
+    <value>Затереть</value>
+  </data>
+  <data name="RedactionCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="RedactionSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с затиркой как</value>
+  </data>
   <data name="MenuFileExit" xml:space="preserve">
     <value>В_ыход</value>
   </data>

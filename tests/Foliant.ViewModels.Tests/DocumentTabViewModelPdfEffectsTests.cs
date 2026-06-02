@@ -13,7 +13,9 @@ public sealed class DocumentTabViewModelPdfEffectsTests
         string filePath = "/tmp/x.pdf",
         IWatermarkService? watermark = null,
         IHeaderFooterService? headerFooter = null,
-        IPdfCropService? crop = null)
+        IPdfCropService? crop = null,
+        IRedactionService? redaction = null,
+        IFindAndRedactService? findAndRedact = null)
     {
         var document = Substitute.For<IDocument>();
         document.PageCount.Returns(3);
@@ -34,7 +36,9 @@ public sealed class DocumentTabViewModelPdfEffectsTests
             NullLogger<DocumentTabViewModel>.Instance,
             watermarkService: watermark,
             headerFooterService: headerFooter,
-            cropService: crop);
+            cropService: crop,
+            redactionService: redaction,
+            findAndRedactService: findAndRedact);
     }
 
     private static WatermarkSpec SampleWatermark() =>
@@ -273,5 +277,165 @@ public sealed class DocumentTabViewModelPdfEffectsTests
         await vm.CropPagesCommand.ExecuteAsync(new CropPagesRequest(SampleCrop(), "/tmp/out.pdf"));
 
         await svc.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default!, default!, default);
+    }
+
+    // ───── RedactPagesCommand / FindAndRedactCommand ─────
+
+    private static IReadOnlyList<RedactionRegion> SampleRegions() =>
+    [
+        new(PageIndex: 0, Rect: new AnnotationRect(100, 200, 50, 12)),
+        new(PageIndex: 1, Rect: new AnnotationRect(120, 220, 80, 12)),
+    ];
+
+    private static FindAndRedactOptions SampleOptions() =>
+        new(CaseSensitive: true, WholeWord: false, Regex: true, FoldDiacritics: false);
+
+    [Fact]
+    public void CanRedactPages_NoServices_False()
+    {
+        var vm = CreateVm(redaction: null, findAndRedact: null);
+        vm.CanRedactPages.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanRedactPages_NonPdfSource_False()
+    {
+        var vm = CreateVm(filePath: "/tmp/foo.djvu",
+            redaction: Substitute.For<IRedactionService>(),
+            findAndRedact: Substitute.For<IFindAndRedactService>());
+        vm.CanRedactPages.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanRedactPages_PdfSourceAndRedactionService_True()
+    {
+        var vm = CreateVm(filePath: "/tmp/foo.PDF", redaction: Substitute.For<IRedactionService>());
+        vm.CanRedactPages.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task RedactPagesCommand_ForwardsRegionsAndPath_ToService()
+    {
+        var svc = Substitute.For<IRedactionService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", redaction: svc);
+
+        var regions = SampleRegions();
+        await vm.RedactPagesCommand.ExecuteAsync(new RedactPagesRequest(regions, "/tmp/out.pdf"));
+
+        await svc.Received(1).RedactAsync("/tmp/in.pdf", "/tmp/out.pdf", regions, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RedactPagesCommand_NullRequest_IsNoOp()
+    {
+        var svc = Substitute.For<IRedactionService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", redaction: svc);
+
+        await vm.RedactPagesCommand.ExecuteAsync(null);
+
+        await svc.DidNotReceiveWithAnyArgs().RedactAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task RedactPagesCommand_EmptyRegions_IsNoOp()
+    {
+        var svc = Substitute.For<IRedactionService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", redaction: svc);
+
+        await vm.RedactPagesCommand.ExecuteAsync(new RedactPagesRequest([], "/tmp/out.pdf"));
+
+        await svc.DidNotReceiveWithAnyArgs().RedactAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task RedactPagesCommand_ServiceThrows_DoesNotPropagate()
+    {
+        var svc = Substitute.For<IRedactionService>();
+        svc.RedactAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IReadOnlyList<RedactionRegion>>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromException(new InvalidOperationException("boom")));
+        var vm = CreateVm(filePath: "/tmp/in.pdf", redaction: svc);
+
+        Func<Task> act = async () =>
+            await vm.RedactPagesCommand.ExecuteAsync(new RedactPagesRequest(SampleRegions(), "/tmp/out.pdf"));
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task FindAndRedactCommand_ForwardsQueryAndOptions_ToService()
+    {
+        var svc = Substitute.For<IFindAndRedactService>();
+        svc.RedactMatchesAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<string>(), Arg.Any<FindAndRedactOptions>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult(2));
+        var vm = CreateVm(filePath: "/tmp/in.pdf", findAndRedact: svc);
+
+        var opts = SampleOptions();
+        await vm.FindAndRedactCommand.ExecuteAsync(new FindAndRedactRequest("secret", opts, "/tmp/out.pdf"));
+
+        await svc.Received(1).RedactMatchesAsync(
+            Arg.Any<IDocument>(),
+            "/tmp/in.pdf",
+            "/tmp/out.pdf",
+            "secret",
+            opts,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task FindAndRedactCommand_NullRequest_IsNoOp()
+    {
+        var svc = Substitute.For<IFindAndRedactService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", findAndRedact: svc);
+
+        await vm.FindAndRedactCommand.ExecuteAsync(null);
+
+        await svc.DidNotReceiveWithAnyArgs().RedactMatchesAsync(default!, default!, default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task FindAndRedactCommand_BlankQuery_IsNoOp()
+    {
+        var svc = Substitute.For<IFindAndRedactService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", findAndRedact: svc);
+
+        await vm.FindAndRedactCommand.ExecuteAsync(new FindAndRedactRequest("  ", new FindAndRedactOptions(), "/tmp/out.pdf"));
+
+        await svc.DidNotReceiveWithAnyArgs().RedactMatchesAsync(default!, default!, default!, default!, default!, default);
+    }
+
+    [Fact]
+    public void FindAndRedactCommand_OnNonPdfDocument_DoesNotExecute()
+    {
+        var svc = Substitute.For<IFindAndRedactService>();
+        var vm = CreateVm(filePath: "/tmp/in.png", findAndRedact: svc);
+
+        vm.FindAndRedactCommand.CanExecute(new FindAndRedactRequest("x", new FindAndRedactOptions(), "/tmp/out.pdf"))
+            .Should().BeFalse();
+    }
+
+    [Fact]
+    public void FindAndRedactCommand_ServiceNotRegistered_NoOp()
+    {
+        var vm = CreateVm(filePath: "/tmp/in.pdf", findAndRedact: null);
+
+        vm.CanRedactPages.Should().BeFalse();
+        vm.FindAndRedactCommand.CanExecute(new FindAndRedactRequest("x", new FindAndRedactOptions(), "/tmp/out.pdf"))
+            .Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task FindAndRedactCommand_ServiceThrows_DoesNotPropagate()
+    {
+        var svc = Substitute.For<IFindAndRedactService>();
+        svc.RedactMatchesAsync(Arg.Any<IDocument>(), Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<string>(), Arg.Any<FindAndRedactOptions>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromException<int>(new InvalidOperationException("bad regex")));
+        var vm = CreateVm(filePath: "/tmp/in.pdf", findAndRedact: svc);
+
+        Func<Task> act = async () =>
+            await vm.FindAndRedactCommand.ExecuteAsync(new FindAndRedactRequest("x", new FindAndRedactOptions(), "/tmp/out.pdf"));
+
+        await act.Should().NotThrowAsync();
     }
 }

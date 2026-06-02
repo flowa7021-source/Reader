@@ -208,6 +208,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileCropPages]}"
                   IsEnabled="{Binding SelectedTab.CanCropPages, FallbackValue=False}"
                   Click="OnCropPagesMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileRedact]}"
+                  IsEnabled="{Binding SelectedTab.CanRedactPages, FallbackValue=False}"
+                  Click="OnRedactPagesMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExit]}"
                   Click="OnExitMenuItemClick" />

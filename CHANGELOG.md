@@ -8,6 +8,28 @@
 ## [Unreleased]
 
 ### Added
+- **Q-F32 (UI wiring) — Find-and-Redact меню + диалог**. `IFindAndRedactService`
+  зарегистрирован в `AppHostBuilder` (singleton) и пробрасывается в
+  `DocumentTabViewModel` factory. Расширены команды VM в
+  `DocumentTabViewModel.PdfEffects.cs`: `CanRedactPages` (true ↔ PDF + хотя бы
+  один из `IRedactionService`/`IFindAndRedactService` зарегистрирован),
+  `RedactPagesCommand(RedactPagesRequest)` для координатных регионов (batch /
+  программные сценарии) и `FindAndRedactCommand(FindAndRedactRequest)` поверх
+  `IFindAndRedactService.RedactMatchesAsync`. Новый WPF-диалог `RedactionDialog`
+  (по образцу `CropDialog`): TextBox для query + чекбоксы «Match case» / «Whole
+  word» / «Regex» / «Fold diacritics» / OK/Cancel. Меню File → «Find and
+  Redact...» (`MenuFileRedact`) с обработчиком `OnRedactPagesMenuItemClick`,
+  открывающим SaveFileDialog → диалог → `FindAndRedactCommand.ExecuteAsync`.
+  Strings: 9 новых ключей в `Strings.resx` / `Strings.ru.resx`
+  (`MenuFileRedact`, `RedactionDialogTitle`, `RedactionQueryLabel`,
+  `RedactionMatchCase`, `RedactionWholeWord`, `RedactionRegex`,
+  `RedactionFoldDiacritics`, `RedactionOkButton`, `RedactionCancelButton`,
+  `RedactionSaveDialogTitle`). **12 новых VM-тестов** в
+  `DocumentTabViewModelPdfEffectsTests` (CanRedactPages-гейты, forward в оба
+  сервиса, null/blank/empty-region guard'ы, non-PDF / service-not-registered
+  → CanExecute=false, исключения сервиса не пропагируются). MVP: визуальный
+  drawing регионов мышью отложен в Wave 5+ (`RedactPagesCommand` уже принимает
+  готовые `RedactionRegion`'ы — батч / плагины подключаются без UI).
 - **Q-F32 (partial follow-up) — find-and-redact wrapper**. Поверх координатного
   `IRedactionService` (PR #102) добавлен `IFindAndRedactService` /
   `FindAndRedactService`: принимает документ, путь источника/цели, query (текст или

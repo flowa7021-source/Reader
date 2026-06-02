@@ -28,6 +28,14 @@ public sealed partial class DocumentTabViewModel
         _cropService is not null
         && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Can the current document have regions redacted: at least one redaction service
+    /// is wired (coordinate <see cref="IRedactionService"/> or its find-and-redact wrapper) and
+    /// the source is a PDF. Both UI entry points (coordinate API + find-and-redact dialog) gate
+    /// on this single property so menu visibility stays in sync.</summary>
+    public bool CanRedactPages =>
+        (_redactionService is not null || _findAndRedactService is not null)
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Apply <paramref name="request"/>'s watermark spec to the source PDF and write the
     /// result to <see cref="ApplyWatermarkRequest.TargetPath"/>. View supplies both pieces; we don't
     /// guess paths or specs. No-op when the service is absent or the source is not a PDF.</summary>
@@ -115,6 +123,71 @@ public sealed partial class DocumentTabViewModel
             _logger.LogWarning(ex, "Failed to crop pages to '{Path}'.", request.TargetPath);
         }
     }
+
+    /// <summary>Redact coordinate regions in the source PDF and write the result to
+    /// <see cref="RedactPagesRequest.TargetPath"/>. The view supplies both the region list (no
+    /// MVP UX for mouse-drawn regions yet — this entry point exists for batch / programmatic
+    /// callers) and the target path. No-op when the service is absent, the source is not a PDF,
+    /// or the region list is empty.</summary>
+    [RelayCommand(CanExecute = nameof(CanRedactPages))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Redaction failure must not crash the tab.")]
+    private async Task RedactPagesAsync(RedactPagesRequest? request, CancellationToken ct)
+    {
+        if (_redactionService is null
+            || request is null
+            || string.IsNullOrWhiteSpace(request.TargetPath)
+            || request.Regions.Count == 0
+            || !CanRedactPages)
+        {
+            return;
+        }
+
+        try
+        {
+            await _redactionService.RedactAsync(_filePath, request.TargetPath, request.Regions, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // user-cancelled — ignore
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to redact regions to '{Path}'.", request.TargetPath);
+        }
+    }
+
+    /// <summary>Find every match of <see cref="FindAndRedactRequest.Query"/> (text or regex per
+    /// <see cref="FindAndRedactRequest.Options"/>) and physically redact each one, writing the
+    /// result to <see cref="FindAndRedactRequest.TargetPath"/>. No-op when the wrapper service is
+    /// absent, the query is blank, the source is not a PDF, or no matches are found (in which case
+    /// the wrapper deliberately does not produce an output file — see <see cref="IFindAndRedactService"/>).</summary>
+    [RelayCommand(CanExecute = nameof(CanRedactPages))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Find-and-redact failure must not crash the tab.")]
+    private async Task FindAndRedactAsync(FindAndRedactRequest? request, CancellationToken ct)
+    {
+        if (_findAndRedactService is null
+            || request is null
+            || string.IsNullOrWhiteSpace(request.Query)
+            || string.IsNullOrWhiteSpace(request.TargetPath)
+            || !CanRedactPages)
+        {
+            return;
+        }
+
+        try
+        {
+            await _findAndRedactService.RedactMatchesAsync(
+                _document, _filePath, request.TargetPath, request.Query, request.Options, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // user-cancelled — ignore
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed find-and-redact for '{Query}' → '{Path}'.", request.Query, request.TargetPath);
+        }
+    }
 }
 
 /// <summary>View-supplied envelope for ApplyWatermarkCommand: spec collected in dialog + target path
@@ -126,3 +199,12 @@ public sealed record ApplyHeaderFooterRequest(HeaderFooterSpec Spec, string Targ
 
 /// <summary>View-supplied envelope for CropPagesCommand: spec collected via dialog + target path picked via Save-As.</summary>
 public sealed record CropPagesRequest(CropSpec Spec, string TargetPath);
+
+/// <summary>View-supplied envelope for RedactPagesCommand: coordinate regions + target path.
+/// Exists so future batch / programmatic callers can wire redaction without going through the
+/// find-and-redact dialog; the MVP UI only exposes the latter.</summary>
+public sealed record RedactPagesRequest(IReadOnlyList<RedactionRegion> Regions, string TargetPath);
+
+/// <summary>View-supplied envelope for FindAndRedactCommand: search query collected via dialog +
+/// matching options (case / whole-word / regex / fold-diacritics) + target path picked via Save-As.</summary>
+public sealed record FindAndRedactRequest(string Query, FindAndRedactOptions Options, string TargetPath);

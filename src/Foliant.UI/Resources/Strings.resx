@@ -121,6 +121,36 @@
   <data name="CropPagesSaveDialogTitle" xml:space="preserve">
     <value>Save cropped PDF as</value>
   </data>
+  <data name="MenuFileRedact" xml:space="preserve">
+    <value>Find and _Redact...</value>
+  </data>
+  <data name="RedactionDialogTitle" xml:space="preserve">
+    <value>Find and Redact</value>
+  </data>
+  <data name="RedactionQueryLabel" xml:space="preserve">
+    <value>Find:</value>
+  </data>
+  <data name="RedactionMatchCase" xml:space="preserve">
+    <value>Match case</value>
+  </data>
+  <data name="RedactionWholeWord" xml:space="preserve">
+    <value>Whole word</value>
+  </data>
+  <data name="RedactionRegex" xml:space="preserve">
+    <value>Regular expression</value>
+  </data>
+  <data name="RedactionFoldDiacritics" xml:space="preserve">
+    <value>Fold diacritics</value>
+  </data>
+  <data name="RedactionOkButton" xml:space="preserve">
+    <value>Redact</value>
+  </data>
+  <data name="RedactionCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="RedactionSaveDialogTitle" xml:space="preserve">
+    <value>Save redacted PDF as</value>
+  </data>
   <data name="MenuFileExit" xml:space="preserve">
     <value>E_xit</value>
   </data>
