@@ -64,11 +64,15 @@ public sealed class GeneratedAssetTests
         doc.PageCount.Should().Be(10);
     }
 
+    // broken-bad-xref.pdf намеренно НЕ здесь: PDFium восстанавливает повреждённую xref-таблицу
+    // (rebuild-xref — штатное lenient-поведение ридера, как Acrobat/Foxit), поэтому файл
+    // открывается без ошибки. Это корректно: реальные PDF с битым xref должны открываться.
+    // Строгий разбор bad-xref проверяется отдельно в BadXrefPdf_FailsUnderStrictParsing
+    // (PdfPig, LenientParsingOff). Здесь — только реально неоткрываемые файлы.
     [Theory]
     [Trait("Category", "Slow")]
     [InlineData("broken-truncated.pdf")]
     [InlineData("broken-empty.pdf")]
-    [InlineData("broken-bad-xref.pdf")]
     public async Task BrokenPdf_FailsViaPdfiumLoader(string name)
     {
         var loader = new PdfDocumentLoader(NullLogger<PdfDocumentLoader>.Instance);
@@ -77,6 +81,20 @@ public sealed class GeneratedAssetTests
         var act = async () => await loader.LoadAsync(path, default);
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*PDFium*");
+    }
+
+    // Контр-тест к комментарию выше: тот же bad-xref ассет через ленивый PDFium-loader
+    // (как в проде) ОТКРЫВАЕТСЯ — фиксирует, что recovery работает и регрессия его не сломает.
+    [Fact]
+    [Trait("Category", "Slow")]
+    public async Task BadXrefPdf_RecoversViaPdfiumLoader()
+    {
+        var loader = new PdfDocumentLoader(NullLogger<PdfDocumentLoader>.Instance);
+        string path = Path.Combine(AssetsDir, "broken-bad-xref.pdf");
+
+        await using var doc = await loader.LoadAsync(path, default);
+
+        doc.PageCount.Should().BeGreaterThan(0);
     }
 
     private static string ResolveAssetsDir()
