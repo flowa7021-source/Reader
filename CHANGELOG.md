@@ -19,6 +19,16 @@
   follow-up. Тесты: `PdfiumRedactionServiceTests` (6 integration-тестов на реальном PDFium —
   слово под областью исчезает из текстового слоя, текст вне области сохраняется, пустой список →
   валидный PDF, невалидный индекс страницы → guard, выход переоткрывается как валидный PDF).
+- **Q-F26 (partial) — PAdES-B криптовалидация подписей PDF**. `PdfSignatureController.ValidateAsync`
+  больше не заглушка: делегирует в новый `PadesValidator` (pure, без PDFium). Валидируется
+  B-level: (1) CMS/PKCS#7 подпись против дайджеста подписанных байт (`SignedCms.CheckSignature`
+  detached); (2) целостность документа — `/ByteRange` покрывает весь файл кроме окна `/Contents`
+  (incremental-update после подписи → `DocumentUntouchedSinceSigning=false`); (3) цепочка
+  сертификата до доверенного корня (`X509Chain`, с опциональным custom trust-anchor) + срок
+  действия. `/ByteRange`+`/Contents` парсятся напрямую из сырых байт (`ByteRangeParser`, точные
+  офсеты + DER-trim zero-padding). T-level (TSA timestamp) / LT / LTA / revocation (CRL/OCSP) —
+  **не** проверяются на этом уровне (Phase 2 follow-up). **7 hermetic-тестов** в
+  `PadesValidatorTests` (self-signed cert + подписанный ByteRange генерируются в самом тесте).
 - **A5c — image-stamp `ImagePath` round-trip через XFDF/FDF (закрытие угловых случаев)**. XFDF
   пишет custom `foliant:imagepath` атрибут в собственном namespace, FDF — custom `/FoliantImagePath`
   ключ в annotation-словаре (PR #95). Этот follow-up добивает acceptance-чеклист: (a) Stamp с

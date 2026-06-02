@@ -173,7 +173,7 @@ public sealed class PdfSignatureControllerTests : IDisposable
 
     [Fact]
     [Trait("Category", "Slow")]
-    public async Task ValidateAsync_HonestNotImplemented()
+    public async Task ValidateAsync_UnsignedPdf_ReportsNoSignature()
     {
         string path = WriteTinyPdf("for-validate.pdf");
         var ctrl = new PdfSignatureController(path);
@@ -184,6 +184,6 @@ public sealed class PdfSignatureControllerTests : IDisposable
         result.IsValid.Should().BeFalse();
         result.CertificateTrusted.Should().BeFalse();
         result.DocumentUntouchedSinceSigning.Should().BeFalse();
-        result.FailureReason.Should().Contain("not implemented");
+        result.FailureReason.Should().Contain("No parsable signature");
     }
 }

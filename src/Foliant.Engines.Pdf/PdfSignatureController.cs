@@ -11,8 +11,9 @@ namespace Foliant.Engines.Pdf;
 /// <summary>
 /// Read-only PDFium-обёртка над цифровыми подписями PDF (Q-F25). Eagerly загружает
 /// список подписей из документа на construction и кэширует. <see cref="ValidateAsync"/>
-/// возвращает честный «не реализовано» — криптовалидация цепочки сертификатов / TSA
-/// timestamp / revocation — Phase 2+ (Q-F26 PAdES B+T).
+/// делегирует в <see cref="PadesValidator"/> реальную PAdES-B криптовалидацию (CMS verify +
+/// ByteRange integrity + cert chain). TSA timestamp / revocation (PAdES T/LT/LTA) — Phase 2+
+/// (Q-F26).
 ///
 /// SignerName парсится из PKCS#7 SignedData blob'а через in-box
 /// <see cref="SignedCms"/> — CN из Subject первого SignerInfo certificate.
@@ -28,26 +29,24 @@ namespace Foliant.Engines.Pdf;
 public sealed class PdfSignatureController : ISignatureController
 {
     private static readonly Lock NativeGate = new();
+    private readonly string _pdfPath;
 
     public IReadOnlyList<DocumentSignature> Signatures { get; }
 
     public PdfSignatureController(string pdfPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pdfPath);
+        _pdfPath = pdfPath;
         Signatures = ReadSignatures(pdfPath);
     }
 
-    public Task<SignatureValidationResult> ValidateAsync(DocumentSignature signature, CancellationToken ct)
+    /// <summary>PAdES-B validation delegated to <see cref="PadesValidator"/> (CMS verify +
+    /// ByteRange integrity + cert chain). T-level / revocation remain Phase 2 (Q-F26).</summary>
+    public async Task<SignatureValidationResult> ValidateAsync(DocumentSignature signature, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(signature);
-        ct.ThrowIfCancellationRequested();
-        // Honest "not implemented": Q-F25 (read-only) shipped; Q-F26 (full PAdES B+T validation)
-        // — Phase 2. Caller decides UX (typically «требует ручной проверки» banner).
-        return Task.FromResult(new SignatureValidationResult(
-            IsValid: false,
-            CertificateTrusted: false,
-            DocumentUntouchedSinceSigning: false,
-            FailureReason: "Signature validation is not implemented (Phase 1 ships read-only metadata; full PAdES B+T validation — Phase 2)."));
+        byte[] bytes = await File.ReadAllBytesAsync(_pdfPath, ct).ConfigureAwait(false);
+        return PadesValidator.Validate(bytes);
     }
 
     private static List<DocumentSignature> ReadSignatures(string pdfPath)
