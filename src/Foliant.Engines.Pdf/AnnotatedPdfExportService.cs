@@ -17,10 +17,11 @@ namespace Foliant.Engines.Pdf;
 /// (без полагания на reader-side appearance generation). Stamp = rect-border + центрированный
 /// label-текст (Helvetica, auto-fit).
 ///
-/// Line/Arrow/Polygon пока не embedд'ятся: PDFium 146.x не экспонирует публичные setter'ы для
-/// <c>/L</c>/<c>/Vertices</c>/<c>/LE</c>, а <c>FPDFAnnotAppendObject</c> для этих subtype'ов
-/// отбрасывает path silently. Round-trip этих типов работает через FDF/XFDF/JSON (#75/#76);
-/// native PDF embedding для них — отдельный PR с cos-level fallback'ом.
+/// Line/Arrow/Polygon — embedд'ятся cos-level пост-процессором (<see cref="PdfPigAnnotationAppender"/>):
+/// PDFium 146.x не экспонирует setter'ы для <c>/L</c>/<c>/Vertices</c>/<c>/LE</c>, поэтому после
+/// PDFium-сохранения мы инкрементально дописываем эти аннотации как полноценные cos-объекты с
+/// /Type /Annot /Subtype /Line|/Polygon. Round-trip через FDF/XFDF/JSON (#75/#76) и UI-render
+/// продолжают работать как раньше — это закрывает 11/11 типов в native PDF /Annots.
 ///
 /// Чистый маппинг доменных аннотаций в числовой,
 /// PDF-нейтральный вид делает <see cref="AnnotationToPdfSpec"/>; здесь — только нативная запись.
@@ -71,7 +72,13 @@ public sealed class AnnotatedPdfExportService : IAnnotatedPdfExportService
 
         IReadOnlyList<PdfAnnotationSpec> specs = AnnotationToPdfSpec.MapMany(annotations);
         byte[] source = await File.ReadAllBytesAsync(sourcePdfPath, ct).ConfigureAwait(false);
-        byte[] output = await Task.Run(() => Embed(source, specs, ct), ct).ConfigureAwait(false);
+        byte[] pdfium = await Task.Run(() => Embed(source, specs, ct), ct).ConfigureAwait(false);
+
+        // cos-level fallback для Line/Arrow/Polygon, которые PDFium 146.x не умеет писать публичными
+        // setter'ами. Аппендер делает no-op, если этих типов нет — остальные 8 уже embedд'ятся выше.
+        byte[] output = await Task.Run(
+            () => PdfPigAnnotationAppender.AppendLinePolygonAnnotations(pdfium, annotations), ct).ConfigureAwait(false);
+
         await WriteAtomicAsync(targetPath, output, ct).ConfigureAwait(false);
     }
 

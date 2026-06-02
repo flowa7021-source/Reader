@@ -288,34 +288,8 @@ public sealed class AnnotatedPdfExportServiceTests : IDisposable
         return total;
     }
 
-    [Fact]
-    public async Task Export_LinePolygonArrow_AreSkipped_NotInOutput()
-    {
-        // PDFium 146.x limitation: AnnotationToPdfSpec.Map returns null for these kinds.
-        // Они дропаются на app-layer и не попадают в /Annots; раунд-трип через FDF/XFDF/JSON
-        // покрывает их полностью.
-        string source = SourcePath();
-        string target = Path.Combine(_tmpDir, "annotated-lines.pdf");
-        var when = DateTimeOffset.UnixEpoch;
-
-        var annotations = new[]
-        {
-            Annotation.Line(0, [new(10, 10), new(50, 50)], "#000", when),
-            Annotation.Arrow(1, [new(10, 10), new(50, 50)], "#000", when),
-            Annotation.Polygon(2, [new(10, 10), new(20, 10), new(15, 20)], "#000", when),
-        };
-
-        await _service.ExportAsync(source, annotations, target, default);
-
-        File.Exists(target).Should().BeTrue();
-
-        WithDocument(target, doc =>
-        {
-            var byPage = ReadAnnotations(doc);
-            int total = byPage.Values.Sum(p => p.Count);
-            total.Should().Be(0, "PDFium 146.x cannot embed /L /Vertices — these specs map to null");
-        });
-    }
+    // Note: Line/Arrow/Polygon embedding is now covered by `AnnotatedPdfExportServiceLineArrowPolygonTests`
+    // (cos-level fallback via PdfPigAnnotationAppender). The previous "skipped" assertion is obsolete.
 
     [Fact]
     public async Task Export_EmptyAnnotations_ProducesValidCopyWithSamePageCount()
