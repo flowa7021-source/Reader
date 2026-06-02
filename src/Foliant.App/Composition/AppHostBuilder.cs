@@ -159,6 +159,9 @@ internal static class AppHostBuilder
         services.AddSingleton<IPdfCropService, PdfiumCropService>();
         services.AddSingleton<IPdfFormFillService, PdfiumFormFillService>();
         services.AddSingleton<IPdfMergeService, PdfiumMergeService>();
+        services.AddSingleton<IRedactionService, PdfiumRedactionService>();
+        services.AddSingleton<IPdfSplitService, PdfPigSplitService>();
+        services.AddSingleton<IBatesNumberingService, PdfiumBatesNumberingService>();
         services.AddSingleton<IBatchJobRunner>(sp => new BatchJobRunner(
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<BatchJobRunner>(),
             watermark: sp.GetService<IWatermarkService>(),
@@ -283,7 +286,10 @@ internal static class AppHostBuilder
                 cropService: sp.GetService<IPdfCropService>(),
                 pdfFormReader: sp.GetService<IPdfFormReader>(),
                 pdfFormFillService: sp.GetService<IPdfFormFillService>(),
-                formDataFormatCatalog: sp.GetService<IFormDataFormatCatalog>()));
+                formDataFormatCatalog: sp.GetService<IFormDataFormatCatalog>(),
+                redactionService: sp.GetService<IRedactionService>(),
+                splitService: sp.GetService<IPdfSplitService>(),
+                batesService: sp.GetService<IBatesNumberingService>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.
