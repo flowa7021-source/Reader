@@ -35,14 +35,25 @@
 
 ## Сборка
 
+Требуется .NET 10 SDK. Подробности и кросс-платформенные нюансы — в [`docs/BUILD.md`](docs/BUILD.md).
+
+**Linux / macOS** (cross-platform слой — Domain / Application / Infrastructure / ViewModels / Engines / Plugins, без WPF UI):
+
+```bash
+git clone https://github.com/flowa7021-source/Reader.git
+cd Reader
+dotnet build Foliant.CrossPlatform.slnf -c Release -f net10.0 -warnaserror
+dotnet test  Foliant.CrossPlatform.slnf -c Release -f net10.0 --filter "Category!=Slow&Category!=Integration&Category!=E2E"
+```
+
+**Windows** (полная сборка с WPF UI + нативка PDFium/PaddleOCR; необходима для запуска самого приложения):
+
 ```powershell
-# Phase 0: build instructions появятся после S3 (см. IMPLEMENTATION_PLAN.md, Phase 0/неделя 3).
-# Кратко (когда будет готово):
 git clone https://github.com/flowa7021-source/Reader.git
 cd Reader
 pwsh tools/fetch-natives.ps1
-dotnet build -c Release
-dotnet test
+dotnet build Foliant.sln -c Release -warnaserror
+dotnet test  Foliant.sln -c Release --filter "Category!=Slow&Category!=E2E"
 ```
 
 ## Лицензия

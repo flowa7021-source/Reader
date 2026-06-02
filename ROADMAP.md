@@ -12,13 +12,17 @@
 
 ---
 
-## Статус-снимок
+## Статус-снимок (после #107 на main, 2026-06-02)
 
-- **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus).
-- **Q-F фичи:** 23 ✅, 1 ✅ (Q-F18 image-stamps закрыт в #92–96), 9 заморожены Phase 2+.
-- **Тесты:** Domain 218 / Application 372 / ViewModels 583, gates D90/A80/I70/V60.
-- **LOC:** ~25 000 в src/, ~1 100+ юнит-тестов в tests/.
-- **Скрытых заглушек нет** — все ограничения Phase 1 явно документированы в коде.
+- **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
+- **Q-F фичи:** 24 ✅ (Q-F18 image-stamps #92–96; A5c XFDF/FDF #95+#100), **+ 2 Phase-2 partial merged** (Q-F26 PAdES-B #103, Q-F32 redaction MVP #102), 8 заморожены Phase 2+.
+- **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases на 2026-06-02):
+  - Domain 218 / Application 372 / ViewModels 583 (target gates D90/A80/I70/V60 держатся).
+  - Engines.Pdf 121 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 (1 skip — Windows-only).
+  - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
+  - **Итого: 1685 executed (full Slow/Integration набор — ещё больше; см. `dotnet test` без фильтра).**
+- **LOC:** ~25 000 в src/, 14 тестовых проектов.
+- **Скрытых заглушек нет** — все ограничения явно документированы в коде.
 
 > **⚠️ Дрейф документов (выявлено 2026-06-02).** Планировочные файлы
 > (`PHASE1_REMAINING.md` → производный `ROADMAP.md`) систематически отставали
@@ -132,26 +136,42 @@
 > что `OcrCerIntegrationTests` уже полнофункционален (нужны лишь бинарные
 > ассеты — D1, Windows-gated), а спекулятивная v1→v2 миграция нарушает YAGNI.
 
-### Волна 2 — 🚧 in-flight (2026-06-02)
+### Волна 2 — ✅ merged (2026-06-02)
 
 Крупные Phase-2 фичи, изолированные по файлам, верифицируемые на Linux
 (PDFium + BouncyCastle 2.5.0 работают в sandbox; `Engines.Pdf.Tests` ∈ CrossPlatform slnf):
 
-| # | Track | Файлы | Сложность | Статус |
-|---|---|---|---|---|
-| **F26** | PAdES-B валидация подписи (CMS verify + ByteRange integrity + cert chain) | `Engines.Pdf/PadesValidator.cs` (new) + `PdfSignatureController.cs` (delegate) + tests | Высокая | 🚧 агент |
-| **F32** | Physical redaction MVP (strip intersecting text + opaque box) | `Application/Services/IRedactionService.cs` (new) + `Engines.Pdf/PdfiumRedactionService.cs` (new) + tests | Высокая | 🚧 агент |
+| # | Track | PR | Что закрылось |
+|---|---|---|---|
+| **F26** | PAdES-B валидация подписи (CMS verify + ByteRange integrity + cert chain) | #103 | `PadesValidator.cs` + `ByteRangeParser.cs`; `ValidateAsync` больше не stub. T-level (TSA) / revocation (CRL/OCSP) — отдельный follow-up (см. Волну 4). |
+| **F32** | Physical redaction MVP (strip intersecting text + opaque box) | #102 | `IRedactionService` + `PdfiumRedactionService` (координатный MVP). Find-and-redact по тексту/regex — отдельный follow-up (Волна 3 — C2). |
 
-Обе — pure Engine/Application, **не трогают** `MainWindow.xaml(.cs)`/`Strings`/
-`AppHostBuilder`. DI+UI wiring каждой — отдельный серийный follow-up PR (трогает
-shared-файлы, не параллелится). Конфликт возможен только на `CHANGELOG.md`
-`[Unreleased]` — тривиальный rebase при серийном merge.
+### Волна 3 — ✅ merged (2026-06-02, late)
 
-### Волна 3 — кандидаты (после merge волны 2)
+Параллельный пул дополнительных фич с нулевым пересечением файлов:
 
-- **F26-wiring / F32-wiring** — DI + UI (Tools-меню, redaction-toolbar). Серийно (MainWindow/Strings).
-- **F8 OCG** — read + toggle слоёв (`PdfOcgService`, pure Engine). Параллелизуемо.
-- **A2b** — native /Annots line/arrow/polygon (cos-level write, риск rabbit-hole). Изолировать, осторожно.
+| # | Track | PR | Что закрылось |
+|---|---|---|---|
+| Split | `IPdfSplitService` / `PdfPigSplitService` — split-every-N + non-contiguous selection | #105 | 14 тестов, pure-managed PdfPig. DI/UI wiring — отдельный PR. |
+| Bates | `IBatesNumberingService` / `PdfiumBatesNumberingService` — юридическая нумерация страниц | #106 | 13 тестов, PDFium. Монотонный счётчик по абсолютному индексу. DI/UI wiring — отдельный PR. |
+| Git | `CHANGELOG.md merge=union` в `.gitattributes` | #107 | Профилактика: параллельные PR больше не конфликтуют по `[Unreleased]`. |
+
+### Волна 4 — кандидаты (in-flight / следующая итерация)
+
+- **W0** (DI-only): зарегистрировать 3 merged-сервиса (Redaction/Split/Bates) в `AppHostBuilder` + расширить `DocumentTabViewModel` factory. **Без UI** — отдельная серия W1–W4.
+- **W1/W2/W3/W4** (UI-серия): диалоги + меню для Redaction / Bates / Split + Sig-UX green-OK banner. Серийно (трогают `MainWindow.xaml`+`Strings*.resx`).
+- **C1**: A2b native /Annots embed для Line/Arrow/Polygon через PdfPig cos-write (закрывает Q-F17 = 11/11 native).
+- **C2**: F32 follow-up — `SearchService` отдаёт bbox + новый `IFindAndRedactService` (find-and-redact wrapper).
+- **C3**: Husky.Net pre-push hook — автоматизирует чек-лист из `DEV_RETROSPECTIVE` §3.
+
+### Отложить (Волна 5+)
+
+- **F26 follow-up T-level/revocation** — очень высокая сложность (TSA-сервер для тестов, OCSP/CRL HTTP-клиент), 2–3 спринта.
+- **F30** AES-256 + 8 permissions — требует архитектурного решения (QPDF внешний бинарь vs raw cos-write через PdfPig).
+- **F-PdfA** — нужен veraPDF NuGet; средняя сложность, низкий приоритет.
+- **F8 OCG editing** — нет PDFium-bindings; требует cos-level write.
+- **D6b/D8b** EPUB/FB2/MOBI визуальный рендер — стратегическое решение (Trek 2 п.3).
+- **E1 inline-editor** — стратегическое решение (Trek 2 п.4 — второй разработчик).
 - **D6b/D8b** — визуальный рендер EPUB/FB2/MOBI (layout-движок, очень высокая сложность). Не для параллельного спрея — отдельный фокус-спринт.
 
 P4, P5 — следующая волна после merge первой.
@@ -177,4 +197,5 @@ P4, P5 — следующая волна после merge первой.
 | Дата | Изменения |
 |---|---|
 | 2026-06-01 | Файл создан. Roadmap фазы 2 разнесён на 3 потока (A/B/C). Определён пул P1–P5 для параллельного выполнения. |
-| 2026-06-02 | Reconcile с реальностью: волна 1 (P1–P3) merged #98/#99/#100; выявлен дрейф документов (perf-gate/Upd/OCR-runner уже в main); запущена волна 2 (F26 PAdES-B, F32 redaction). Реальный остаток Phase 1 = D1 + E1 (Windows-gated). |
+| 2026-06-02 (день) | Reconcile с реальностью: волна 1 (P1–P3) merged #98/#99/#100; выявлен дрейф документов (perf-gate/Upd/OCR-runner уже в main); запущена волна 2 (F26 PAdES-B, F32 redaction). Реальный остаток Phase 1 = D1 + E1 (Windows-gated). |
+| 2026-06-02 (вечер) | Волна 2 merged (#102 F32, #103 PAdES-B), волна 3 merged (#105 split, #106 Bates, #107 gitattributes union-merge), bad-xref fix (#104). Reconcile #2: повторный дрейф (Trek 3 пункт 2 perf-gate / пункт 6 CS0535 — оба уже в main). Запущена волна 4: W0 DI-only, C1 A2b native /Annots, C2 F32-follow-up find-and-redact, C3 Husky pre-push. |
