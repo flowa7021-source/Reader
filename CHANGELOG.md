@@ -8,6 +8,26 @@
 ## [Unreleased]
 
 ### Added
+- **Q-F32 (partial follow-up) — find-and-redact wrapper**. Поверх координатного
+  `IRedactionService` (PR #102) добавлен `IFindAndRedactService` /
+  `FindAndRedactService`: принимает документ, путь источника/цели, query (текст или
+  .NET Regex) и `FindAndRedactOptions` (`CaseSensitive`, `WholeWord`, `Regex`,
+  `FoldDiacritics`). Substring-путь делегирует `ISearchService` (реюз whole-word /
+  fold-diacritics / case-sensitivity); regex-путь читает text layer напрямую и
+  применяет .NET Regex с `RegexOptions.IgnoreCase` при `CaseSensitive=false` и
+  2-секундным timeout. Каждое совпадение → `RedactionRegion(pageIndex, bbox)` →
+  `IRedactionService.RedactAsync`. Нулевые матчи → output не пишется, возврат 0.
+  Bbox = геометрия `TextRun`'а, в который попало начало совпадения (PDF text layer
+  пер-строчный — sub-character координат нет). Параллельно расширен `SearchHit`
+  опциональным полем `Bbox`: `SearchService.SearchInDocumentAsync` теперь
+  populates его per-hit на основе per-run start-offsets (бинарный поиск по
+  отсортированному массиву начал). Поле необязательное (`AnnotationRect?`, default
+  `null`) — позиционные конструкторы `new SearchHit("", "/p", 0, "snippet", 1.0)`
+  в sidebar / SqliteFtsIndex / ViewModels-тестах продолжают работать. **16 тестов**:
+  4 на bbox-population в `SearchServiceTests`, 12 на `FindAndRedactServiceTests`
+  (substring/regex/whole-word/case-sensitivity/0-matches/argument-validation/
+  cancellation/multi-page). DI-wiring (`AppHostBuilder`) и Find-And-Redact UI —
+  follow-up.
 - **Q-F32 (partial) — физический redaction PDF (координатный MVP)**. Новый порт
   `IRedactionService` + PDFium-реализация `PdfiumRedactionService`: на вход путь к PDF и список
   областей (`RedactionRegion` = страница + `AnnotationRect` в PDF user space). Для каждой области

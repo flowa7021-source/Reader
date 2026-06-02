@@ -289,4 +289,68 @@ public sealed class SearchServiceTests
         // Только последнее ("café" → "cafe") совпадает; "Café"/"CAFÉ" — другой case.
         result.Should().ContainSingle();
     }
+
+    // ───── Bbox population (Q-F32 find-and-redact follow-up) ─────
+
+    [Fact]
+    public async Task SearchHit_Bbox_IsPopulated_FromMatchingRunGeometry()
+    {
+        // Single-run page: bbox должен совпадать с геометрией этого run'а.
+        var doc = MakeDocWithRuns([new TextRun("the quick brown fox", 12.5, 34.25, 56.75, 7.125)]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf", new SearchQuery("fox"), default);
+
+        result.Should().ContainSingle();
+        result[0].Bbox.Should().NotBeNull();
+        result[0].Bbox.Should().Be(new AnnotationRect(12.5, 34.25, 56.75, 7.125));
+    }
+
+    [Fact]
+    public async Task SearchHit_Bbox_PicksRunContainingMatchStart_AcrossMultipleRuns()
+    {
+        // 3 runs на одной странице: "alpha ", "needle ", "gamma". Match "needle" попадает во 2-й run.
+        var doc = MakeDocWithRuns([
+            new TextRun("alpha ", 10, 10, 5, 5),
+            new TextRun("needle ", 20, 20, 6, 6),
+            new TextRun("gamma", 30, 30, 7, 7)]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf", new SearchQuery("needle"), default);
+
+        result.Should().ContainSingle();
+        result[0].Bbox.Should().Be(new AnnotationRect(20, 20, 6, 6));
+    }
+
+    [Fact]
+    public async Task SearchHit_Bbox_NullTextLayer_PageProducesNoHits_NoBboxConcerns()
+    {
+        // Sanity-проверка для обратной совместимости: hits с null-layer = пустой результат.
+        var doc = Substitute.For<IDocument>();
+        doc.PageCount.Returns(1);
+        doc.GetTextLayerAsync(0, Arg.Any<CancellationToken>()).Returns((TextLayer?)null);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf", new SearchQuery("anything"), default);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SearchHit_Bbox_MultipleMatchesInSameRun_AllShareThatRunsBbox()
+    {
+        // Один run "foo bar foo baz foo" — три hit'а с одинаковым bbox.
+        var doc = MakeDocWithRuns([new TextRun("foo bar foo baz foo", 11, 22, 33, 44)]);
+
+        var result = await _sut.SearchInDocumentAsync(doc, "/x.pdf", new SearchQuery("foo"), default);
+
+        result.Should().HaveCount(3);
+        result.Should().AllSatisfy(h => h.Bbox.Should().Be(new AnnotationRect(11, 22, 33, 44)));
+    }
+
+    private static IDocument MakeDocWithRuns(TextRun[] runs)
+    {
+        var doc = Substitute.For<IDocument>();
+        doc.PageCount.Returns(1);
+        doc.GetTextLayerAsync(0, Arg.Any<CancellationToken>())
+           .Returns(Task.FromResult<TextLayer?>(new TextLayer(0, runs)));
+        return doc;
+    }
 }
