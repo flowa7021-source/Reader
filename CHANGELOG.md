@@ -36,6 +36,14 @@
   выборки страниц строго в указанном порядке. 0-based индексы, атомарная запись (tmp + Move),
   невалидные/out-of-range → `ArgumentOutOfRangeException`, пустая выборка → `ArgumentException`.
   **11 тестов** в `PdfPigSplitServiceTests` (pure-managed, без PDFium). DI-проводка — follow-up.
+- **Bates numbering — последовательные юридические штампы страниц (паритет с Acrobat Pro)**.
+  Новый `BatesNumberingSpec` (Domain: `Prefix`/`Suffix`/`StartNumber`/`Digits` zero-pad/`BatesPosition`
+  нижний угол/`FontSize`/RGB/опциональный `PageRange`), порт `IBatesNumberingService` и реализация
+  `PdfiumBatesNumberingService` (PDFium text-object в нижнем углу, монотонный счётчик по абсолютному
+  индексу страницы → номера стабильны при печати поддиапазона, atomic save в новый файл — оригинал не
+  мутируется). В отличие от header/footer: нет произвольного текста/placeholder'ов, только
+  `{Prefix}{номер:D{Digits}}{Suffix}`. **13 тестов** (`PdfiumBatesNumberingServiceTests`, `Slow`).
+  DI-wiring — follow-up.
 - **A5c — image-stamp `ImagePath` round-trip через XFDF/FDF (закрытие угловых случаев)**. XFDF
   пишет custom `foliant:imagepath` атрибут в собственном namespace, FDF — custom `/FoliantImagePath`
   ключ в annotation-словаре (PR #95). Этот follow-up добивает acceptance-чеклист: (a) Stamp с
