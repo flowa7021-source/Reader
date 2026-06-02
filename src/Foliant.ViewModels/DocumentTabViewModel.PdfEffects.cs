@@ -36,6 +36,12 @@ public sealed partial class DocumentTabViewModel
         (_redactionService is not null || _findAndRedactService is not null)
         && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Can the current document have Bates numbering stamped: service present and source
+    /// is a PDF. Same gate shape as crop/redact.</summary>
+    public bool CanApplyBates =>
+        _batesService is not null
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Apply <paramref name="request"/>'s watermark spec to the source PDF and write the
     /// result to <see cref="ApplyWatermarkRequest.TargetPath"/>. View supplies both pieces; we don't
     /// guess paths or specs. No-op when the service is absent or the source is not a PDF.</summary>
@@ -188,6 +194,36 @@ public sealed partial class DocumentTabViewModel
             _logger.LogWarning(ex, "Failed find-and-redact for '{Query}' → '{Path}'.", request.Query, request.TargetPath);
         }
     }
+
+    /// <summary>Stamp sequential Bates numbering on the source PDF and write the result to
+    /// <see cref="ApplyBatesRequest.TargetPath"/>. The service formats the page text itself from
+    /// <see cref="ApplyBatesRequest.Spec"/> (prefix + zero-padded counter + suffix). No-op when the
+    /// service is absent, the source is not a PDF, or the request is missing a target path.</summary>
+    [RelayCommand(CanExecute = nameof(CanApplyBates))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Bates failure must not crash the tab.")]
+    private async Task ApplyBatesAsync(ApplyBatesRequest? request, CancellationToken ct)
+    {
+        if (_batesService is null
+            || request is null
+            || string.IsNullOrWhiteSpace(request.TargetPath)
+            || !CanApplyBates)
+        {
+            return;
+        }
+
+        try
+        {
+            await _batesService.ApplyAsync(_filePath, request.Spec, request.TargetPath, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // user-cancelled — ignore
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to apply Bates numbering to '{Path}'.", request.TargetPath);
+        }
+    }
 }
 
 /// <summary>View-supplied envelope for ApplyWatermarkCommand: spec collected in dialog + target path
@@ -208,3 +244,6 @@ public sealed record RedactPagesRequest(IReadOnlyList<RedactionRegion> Regions, 
 /// <summary>View-supplied envelope for FindAndRedactCommand: search query collected via dialog +
 /// matching options (case / whole-word / regex / fold-diacritics) + target path picked via Save-As.</summary>
 public sealed record FindAndRedactRequest(string Query, FindAndRedactOptions Options, string TargetPath);
+
+/// <summary>View-supplied envelope for ApplyBatesCommand: spec collected via dialog + target path picked via Save-As.</summary>
+public sealed record ApplyBatesRequest(BatesNumberingSpec Spec, string TargetPath);

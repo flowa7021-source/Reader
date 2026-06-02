@@ -682,4 +682,52 @@
   <data name="AnnotationContextDelete" xml:space="preserve">
     <value>Удалить</value>
   </data>
+  <data name="MenuFileBatesNumbering" xml:space="preserve">
+    <value>_Bates-нумерация…</value>
+  </data>
+  <data name="BatesDialogTitle" xml:space="preserve">
+    <value>Bates-нумерация</value>
+  </data>
+  <data name="BatesPrefixLabel" xml:space="preserve">
+    <value>Префикс</value>
+  </data>
+  <data name="BatesSuffixLabel" xml:space="preserve">
+    <value>Суффикс</value>
+  </data>
+  <data name="BatesStartNumberLabel" xml:space="preserve">
+    <value>Начальный номер</value>
+  </data>
+  <data name="BatesDigitsLabel" xml:space="preserve">
+    <value>Разрядов (zero-pad)</value>
+  </data>
+  <data name="BatesFontSizeLabel" xml:space="preserve">
+    <value>Размер шрифта</value>
+  </data>
+  <data name="BatesPositionLabel" xml:space="preserve">
+    <value>Позиция</value>
+  </data>
+  <data name="BatesColorLabel" xml:space="preserve">
+    <value>Цвет</value>
+  </data>
+  <data name="BatesPageRangeLabel" xml:space="preserve">
+    <value>Диапазон страниц</value>
+  </data>
+  <data name="BatesPositionBottomLeft" xml:space="preserve">
+    <value>Внизу слева</value>
+  </data>
+  <data name="BatesPositionBottomCenter" xml:space="preserve">
+    <value>Внизу по центру</value>
+  </data>
+  <data name="BatesPositionBottomRight" xml:space="preserve">
+    <value>Внизу справа</value>
+  </data>
+  <data name="BatesOkButton" xml:space="preserve">
+    <value>Применить</value>
+  </data>
+  <data name="BatesCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="BatesSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с Bates-нумерацией как</value>
+  </data>
 </root>

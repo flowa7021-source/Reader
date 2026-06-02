@@ -8,6 +8,28 @@
 ## [Unreleased]
 
 ### Added
+- **Q-F (UI wiring) — Bates-нумерация меню + диалог**. `IBatesNumberingService`
+  уже зарегистрирован в `AppHostBuilder` и проброшен в `DocumentTabViewModel`
+  factory (PR #106) — здесь добавлена только UI-обвязка. Команда VM в
+  `DocumentTabViewModel.PdfEffects.cs`: `CanApplyBates` (true ↔ PDF +
+  `IBatesNumberingService` зарегистрирован) и
+  `ApplyBatesCommand(ApplyBatesRequest)` поверх
+  `IBatesNumberingService.ApplyAsync(source, spec, target, ct)`. Новый
+  WPF-диалог `BatesNumberingDialog` (по образцу `HeaderFooterDialog`): TextBox
+  для Prefix/Suffix, валидируемые поля Start number / Digits, слайдеры Font
+  size + R/G/B, ComboBox позиции (BottomLeft/Center/Right), TextBox Page range
+  (пусто = все страницы; счётчик при этом не сдвигается) + OK/Cancel. Меню File
+  → «Bates Numbering…» (`MenuFileBatesNumbering`, после Header/Footer) с
+  обработчиком `OnApplyBatesMenuItemClick`: SaveFileDialog → диалог →
+  `ApplyBatesCommand.ExecuteAsync`. Strings: 17 новых ключей в `Strings.resx` /
+  `Strings.ru.resx` (`MenuFileBatesNumbering`, `BatesDialogTitle`,
+  `BatesPrefixLabel`, `BatesSuffixLabel`, `BatesStartNumberLabel`,
+  `BatesDigitsLabel`, `BatesFontSizeLabel`, `BatesPositionLabel`,
+  `BatesColorLabel`, `BatesPageRangeLabel`, `BatesPositionBottomLeft/Center/Right`,
+  `BatesOkButton`, `BatesCancelButton`, `BatesSaveDialogTitle`). 8 VM-тестов в
+  `DocumentTabViewModelPdfEffectsTests.cs` (форвардинг spec+path, CanExecute
+  gate'ы для non-PDF / отсутствующего сервиса, guard'ы null-request /
+  blank-target, suppression исключений сервиса).
 - **Q-F32 (UI wiring) — Find-and-Redact меню + диалог**. `IFindAndRedactService`
   зарегистрирован в `AppHostBuilder` (singleton) и пробрасывается в
   `DocumentTabViewModel` factory. Расширены команды VM в

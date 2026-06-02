@@ -15,7 +15,8 @@ public sealed class DocumentTabViewModelPdfEffectsTests
         IHeaderFooterService? headerFooter = null,
         IPdfCropService? crop = null,
         IRedactionService? redaction = null,
-        IFindAndRedactService? findAndRedact = null)
+        IFindAndRedactService? findAndRedact = null,
+        IBatesNumberingService? bates = null)
     {
         var document = Substitute.For<IDocument>();
         document.PageCount.Returns(3);
@@ -38,7 +39,8 @@ public sealed class DocumentTabViewModelPdfEffectsTests
             headerFooterService: headerFooter,
             cropService: crop,
             redactionService: redaction,
-            findAndRedactService: findAndRedact);
+            findAndRedactService: findAndRedact,
+            batesService: bates);
     }
 
     private static WatermarkSpec SampleWatermark() =>
@@ -48,6 +50,10 @@ public sealed class DocumentTabViewModelPdfEffectsTests
         HeaderFooterSpec.FromCenterTexts(headerText: "Doc", footerText: "{page}/{total}", fontSize: 10, r: 64, g: 64, b: 64);
 
     private static CropSpec SampleCrop() => new(Left: 0.05, Top: 0.10, Right: 0.05, Bottom: 0.10);
+
+    private static BatesNumberingSpec SampleBates() =>
+        new(Prefix: "ACME-", Suffix: "", StartNumber: 1, Digits: 6,
+            Position: BatesPosition.BottomRight, FontSize: 10, R: 0, G: 0, B: 0);
 
     // ───── CanAddWatermark / CanAddHeaderFooter gates ─────
 
@@ -435,6 +441,90 @@ public sealed class DocumentTabViewModelPdfEffectsTests
 
         Func<Task> act = async () =>
             await vm.FindAndRedactCommand.ExecuteAsync(new FindAndRedactRequest("x", new FindAndRedactOptions(), "/tmp/out.pdf"));
+
+        await act.Should().NotThrowAsync();
+    }
+
+    // ───── CanApplyBates gate / ApplyBatesCommand ─────
+
+    [Fact]
+    public void CanApplyBates_NoService_False()
+    {
+        var vm = CreateVm(bates: null);
+        vm.CanApplyBates.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanApplyBates_PdfSourceAndService_True()
+    {
+        var vm = CreateVm(filePath: "/tmp/foo.PDF", bates: Substitute.For<IBatesNumberingService>());
+        vm.CanApplyBates.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ApplyBatesCommand_ForwardsSpecAndPath_ToService()
+    {
+        var svc = Substitute.For<IBatesNumberingService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", bates: svc);
+
+        var spec = SampleBates();
+        await vm.ApplyBatesCommand.ExecuteAsync(new ApplyBatesRequest(spec, "/tmp/out.pdf"));
+
+        await svc.Received(1).ApplyAsync("/tmp/in.pdf", spec, "/tmp/out.pdf", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public void ApplyBatesCommand_OnNonPdfDocument_DoesNotExecute()
+    {
+        var svc = Substitute.For<IBatesNumberingService>();
+        var vm = CreateVm(filePath: "/tmp/in.png", bates: svc);
+
+        vm.ApplyBatesCommand.CanExecute(new ApplyBatesRequest(SampleBates(), "/tmp/out.pdf"))
+            .Should().BeFalse();
+    }
+
+    [Fact]
+    public void ApplyBatesCommand_ServiceNotRegistered_NoOp()
+    {
+        var vm = CreateVm(filePath: "/tmp/in.pdf", bates: null);
+
+        vm.CanApplyBates.Should().BeFalse();
+        vm.ApplyBatesCommand.CanExecute(new ApplyBatesRequest(SampleBates(), "/tmp/out.pdf"))
+            .Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ApplyBatesCommand_NullRequest_IsNoOp()
+    {
+        var svc = Substitute.For<IBatesNumberingService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", bates: svc);
+
+        await vm.ApplyBatesCommand.ExecuteAsync(null);
+
+        await svc.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task ApplyBatesCommand_BlankTargetPath_IsNoOp()
+    {
+        var svc = Substitute.For<IBatesNumberingService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", bates: svc);
+
+        await vm.ApplyBatesCommand.ExecuteAsync(new ApplyBatesRequest(SampleBates(), "  "));
+
+        await svc.DidNotReceiveWithAnyArgs().ApplyAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task ApplyBatesCommand_ServiceThrows_DoesNotPropagate()
+    {
+        var svc = Substitute.For<IBatesNumberingService>();
+        svc.ApplyAsync(Arg.Any<string>(), Arg.Any<BatesNumberingSpec>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromException(new InvalidOperationException("boom")));
+        var vm = CreateVm(filePath: "/tmp/in.pdf", bates: svc);
+
+        Func<Task> act = async () =>
+            await vm.ApplyBatesCommand.ExecuteAsync(new ApplyBatesRequest(SampleBates(), "/tmp/out.pdf"));
 
         await act.Should().NotThrowAsync();
     }
