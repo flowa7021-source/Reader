@@ -73,10 +73,14 @@
   закрывается — Phase 2.
 
 ### A5c — XFDF/FDF stamp-image-href round-trip
-- [ ] **Status:** не начато (низкий приоритет)
-- **Что:** Сохранение `ImagePath` в XFDF/FDF как custom-атрибута. Не-портативно для сторонних viewer'ов.
-- **Acceptance:** Foliant → XFDF → Foliant сохраняет ImagePath.
-- **Заметка:** JSON round-trip уже работает (A5); это улучшает только Foliant-to-Foliant XFDF-обмен.
+- [x] **Status:** ✅ done (PR #95 + follow-up edge-cases)
+- **Что:** Сохранение `ImagePath` в XFDF (`foliant:imagepath` атрибут в собственном namespace) и FDF
+  (`/FoliantImagePath` ключ). Не-портативно для сторонних viewer'ов — они игнорируют незнакомые
+  ключи/атрибуты; Foliant↔Foliant round-trip сохраняет путь.
+- **Acceptance:** Foliant → XFDF → Foliant сохраняет ImagePath; то же для FDF; не-stamp типы
+  никогда не несут ImagePath после round-trip; Unicode / XML-метасимволы / PDF-литералы
+  проходят без потерь.
+- **Заметка:** JSON round-trip работает с A5 (PR #90); теперь и XFDF/FDF тоже.
 
 ### D1 — OCR golden-scan corpus
 - [ ] **Status:** инфраструктура готова; нужны `tests/assets/ocr-scan-{ru,en}.png` + `.gt.txt`.
@@ -96,8 +100,8 @@
 - **22 PR закрыто** в этой сессии. Annotation-палитра feature-complete, Q-F1 = 5/5, Q-F17 = 11/11,
   Q-F24/Q-F25 имеют UI, Q-F18 image-stamps в флайте.
 - **2 PR в полёте**: #92 + #93 — закрывают Q-F18 image-stamps end-to-end.
-- **Остаток до Alpha DoD:** A2b (low-pri, можно отложить в Phase 2), A5c (low-pri), D1-corpus, E1
-  (Windows). Из них только E1 truly required для DoD-аттестации.
+- **Остаток до Alpha DoD:** A2b (low-pri, можно отложить в Phase 2), D1-corpus, E1 (Windows). Из
+  них только E1 truly required для DoD-аттестации.
 
 ---
 
@@ -120,3 +124,4 @@
 |---|---|---|
 | 2026-05-31 | Файл создан после merge #70–#76 | claude |
 | 2026-06-01 | Refresh: добавлены 22 закрытых трека, отмечены подтверждённые D1/D2, обновлён список оставшихся работ | claude |
+| 2026-06-01 | A5c → ✅ done: ImagePath round-trip через XFDF/FDF (углы: non-stamp, Unicode, спецсимволы) | claude |

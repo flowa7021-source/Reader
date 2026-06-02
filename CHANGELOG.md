@@ -7,7 +7,15 @@
 
 ## [Unreleased]
 
-_Пока нет изменений после 0.1.0._
+### Added
+- **A5c — image-stamp `ImagePath` round-trip через XFDF/FDF (закрытие угловых случаев)**. XFDF
+  пишет custom `foliant:imagepath` атрибут в собственном namespace, FDF — custom `/FoliantImagePath`
+  ключ в annotation-словаре (PR #95). Этот follow-up добивает acceptance-чеклист: (a) Stamp с
+  ImagePath сериализуется и парсится буква-в-букву (уже было); (b) текстовый Stamp → ImagePath
+  == null (уже было); (c) ни один не-Stamp тип не несёт ImagePath после round-trip; (d) Unicode
+  (кириллица + non-BMP code points) и XML/PDF-метасимволы (`&`, `<`, `>`, кавычки, `(`/`)`/`\`)
+  в пути проходят без потерь. Ещё **8 тестов** в `XfdfImagePathRoundTripTests` /
+  `FdfImagePathRoundTripTests` (Application total: 372).
 
 ## [0.1.0] - 2026-05-26
 
