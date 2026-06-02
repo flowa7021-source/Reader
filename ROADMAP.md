@@ -16,9 +16,20 @@
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus).
 - **Q-F фичи:** 23 ✅, 1 ✅ (Q-F18 image-stamps закрыт в #92–96), 9 заморожены Phase 2+.
-- **Тесты:** Domain 218 / Application 362 / ViewModels 583, gates D90/A80/I70/V60.
+- **Тесты:** Domain 218 / Application 372 / ViewModels 583, gates D90/A80/I70/V60.
 - **LOC:** ~25 000 в src/, ~1 100+ юнит-тестов в tests/.
 - **Скрытых заглушек нет** — все ограничения Phase 1 явно документированы в коде.
+
+> **⚠️ Дрейф документов (выявлено 2026-06-02).** Планировочные файлы
+> (`PHASE1_REMAINING.md` → производный `ROADMAP.md`) систематически отставали
+> от кода. По факту **уже в main**, хотя числились как «todo»: perf-regression
+> gate (`perf.yml` + `tools/perf-compare`, baseline + threshold 15 + auto-issue),
+> E2E update-check (`GitHubUpdateCheckService`/`GitHubReleaseSource` + тесты),
+> OCR CER test-runner (`OcrCerIntegrationTests` — нужны лишь бинарные ассеты).
+> **Правило на будущее:** перед планированием любой задачи — `grep`/чтение
+> кода, не доверять статусу из планов. Реальный остаток Phase 1 DoD —
+> **только D1 (бинарные OCR-сканы) + E1 (Windows smoke/ISCC)**, оба не
+> sandboxable; всё остальное из «Trek 0» — закрыто.
 
 ---
 
@@ -98,44 +109,65 @@
 | # | Что | Где | Параллель |
 |---|---|---|---|
 | 1 | Расширенный perf-baseline (cold-start, OCR p95, search-10docs p95) | `tests/Foliant.Performance/baseline.json` | ⛔ требует Windows |
-| 2 | Cumulative perf-regression gate (15% p95) в CI | `.github/workflows/perf.yml`, `tools/perf-compare/` | ✅ pure CI/tooling |
+| 2 | ~~Cumulative perf-regression gate (15% p95) в CI~~ — **✅ уже в main** (`perf.yml` сравнивает с baseline, порог 15, auto-issue) | `.github/workflows/perf.yml`, `tools/perf-compare/` | ✅ done |
 | 3 | Backwards-compat миграции `AppSettings`/`license.key`/`trial.dat` | `Foliant.Infrastructure/Settings/SettingsMigrator.cs` | ✅ pure Infrastructure |
 | 4 | Crash reporter opt-in UI-toggle + upload-канал | `Foliant.Infrastructure/Diagnostics/`, `SettingsWindow.xaml` | ⛔ MainWindow/Strings |
 | 5 | F1-справка in-app | новый `HelpService` + WebView2 over docs/ | ⛔ MainWindow/Strings |
-| 6 | CI-gate на `CS0535` (interface drift) | `.github/workflows/ci.yml` | ✅ pure CI |
+| 6 | ~~CI-gate на `CS0535` (interface drift)~~ — **✅ merged #99** | `.github/workflows/verify.yml` | ✅ done |
 | 7 | Pre-push checklist из DEV_RETROSPECTIVE §3 как Husky.Net hook | `tools/`, `.husky/` | ✅ pure tooling |
 
 ---
 
-## Пул задач для параллельного выполнения сейчас
+## Пул задач для параллельного выполнения
 
-Изолированные по файлам треки, готовые к **немедленному** запуску
-параллельных PR'ов (каждый ≤ 300 LOC, draft → merge → next):
+### Волна 1 — ✅ merged (2026-06-01)
 
-| # | Track | Файлы | Зависимости | Сложность | Шт-агентов |
-|---|---|---|---|---|---|
-| **P1** | A5c — `Annotation.ImagePath` round-trip в XFDF + FDF через `foliant:imagePath` custom-атрибут | `src/Foliant.Application/Services/{Xfdf,Fdf}Annotation{Exporter,Importer}.cs` + tests | нет | Низкая | 1 |
-| **P2** | Honesty disclaimer EPUB/FB2/MOBI «text-only view» | `README.md`, `docs/user-guide/ui-tour.md` | нет | Тривиальная | 1 |
-| **P3** | CI-gate на `CS0535` (interface drift) | `.github/workflows/ci.yml` | нет | Низкая | 1 |
-| **P4** | Test-skeleton для D1 OCR golden corpus (test runner, asset-format docs, без PNG) | `tests/Foliant.Engines.Ocr.Tests/`, `tests/assets/README-OCR.md` | нет | Средняя | 1 |
-| **P5** | Backwards-compat миграция `AppSettings` v1→v2 (заготовка под schema-version bump) | `Foliant.Infrastructure/Settings/SettingsMigrator.cs` + tests | нет | Низкая | 1 |
+| # | Track | PR | Статус |
+|---|---|---|---|
+| **P1** | A5c — `Annotation.ImagePath` round-trip в XFDF + FDF | #100 | ✅ (impl был в #95; #100 добавил edge-case тесты) |
+| **P2** | Honesty disclaimer EPUB/FB2/MOBI «text-only» | #98 | ✅ |
+| **P3** | CI-gate на `CS0535` (interface drift) | #99 | ✅ |
 
-P1+P2+P3 запускаются прямо сейчас в **3 параллельных worktree-агентах**:
-у них **нулевое пересечение по файлам**, нет общих зависимостей, каждый PR ≤ 200 LOC.
+> P4 (OCR test-skeleton) и P5 (SettingsMigrator) сняты: проверка кода показала,
+> что `OcrCerIntegrationTests` уже полнофункционален (нужны лишь бинарные
+> ассеты — D1, Windows-gated), а спекулятивная v1→v2 миграция нарушает YAGNI.
+
+### Волна 2 — 🚧 in-flight (2026-06-02)
+
+Крупные Phase-2 фичи, изолированные по файлам, верифицируемые на Linux
+(PDFium + BouncyCastle 2.5.0 работают в sandbox; `Engines.Pdf.Tests` ∈ CrossPlatform slnf):
+
+| # | Track | Файлы | Сложность | Статус |
+|---|---|---|---|---|
+| **F26** | PAdES-B валидация подписи (CMS verify + ByteRange integrity + cert chain) | `Engines.Pdf/PadesValidator.cs` (new) + `PdfSignatureController.cs` (delegate) + tests | Высокая | 🚧 агент |
+| **F32** | Physical redaction MVP (strip intersecting text + opaque box) | `Application/Services/IRedactionService.cs` (new) + `Engines.Pdf/PdfiumRedactionService.cs` (new) + tests | Высокая | 🚧 агент |
+
+Обе — pure Engine/Application, **не трогают** `MainWindow.xaml(.cs)`/`Strings`/
+`AppHostBuilder`. DI+UI wiring каждой — отдельный серийный follow-up PR (трогает
+shared-файлы, не параллелится). Конфликт возможен только на `CHANGELOG.md`
+`[Unreleased]` — тривиальный rebase при серийном merge.
+
+### Волна 3 — кандидаты (после merge волны 2)
+
+- **F26-wiring / F32-wiring** — DI + UI (Tools-меню, redaction-toolbar). Серийно (MainWindow/Strings).
+- **F8 OCG** — read + toggle слоёв (`PdfOcgService`, pure Engine). Параллелизуемо.
+- **A2b** — native /Annots line/arrow/polygon (cos-level write, риск rabbit-hole). Изолировать, осторожно.
+- **D6b/D8b** — визуальный рендер EPUB/FB2/MOBI (layout-движок, очень высокая сложность). Не для параллельного спрея — отдельный фокус-спринт.
 
 P4, P5 — следующая волна после merge первой.
 
 ---
 
-## Acceptance для S14 (после merge всех P1–P5)
+## Acceptance для S14 (Alpha lock)
 
-- [ ] `Annotation.ImagePath` сохраняется/читается через XFDF и FDF (Foliant ↔ Foliant).
-- [ ] README + ui-tour указывают: EPUB/FB2/MOBI открываются для поиска и навигации,
-      но визуальный рендер — Phase 2 (D6b/D8b).
-- [ ] CI ломается при попытке смержить интерфейс без всех реализаций.
-- [ ] `OcrCerIntegrationTests` готовы запуститься на Windows-стенде, как только
-      будут добавлены `tests/assets/ocr-scan-{ru,en}.png` + `.gt.txt`.
-- [ ] `SettingsMigrator` готов поднять v1 → v2 при первой необходимости.
+- [x] `Annotation.ImagePath` сохраняется/читается через XFDF и FDF (Foliant ↔ Foliant) — #95 + #100.
+- [x] README + ui-tour указывают: EPUB/FB2/MOBI открываются для поиска и навигации,
+      но визуальный рендер — Phase 2 (D6b/D8b) — #98.
+- [x] CI ломается при попытке смержить интерфейс без всех реализаций — #99.
+- [x] `OcrCerIntegrationTests` готовы запуститься на Windows-стенде, как только
+      будут добавлены `tests/assets/ocr-scan-{ru,en}.png` + `.gt.txt` — уже в main.
+- [ ] **D1** — бинарные OCR-сканы + ground-truth (Windows-gated, единственный
+      content-остаток S14).
 - [ ] Тег `v0.1.0` — только после S15 (Windows smoke + sign + ISCC).
 
 ---
@@ -145,3 +177,4 @@ P4, P5 — следующая волна после merge первой.
 | Дата | Изменения |
 |---|---|
 | 2026-06-01 | Файл создан. Roadmap фазы 2 разнесён на 3 потока (A/B/C). Определён пул P1–P5 для параллельного выполнения. |
+| 2026-06-02 | Reconcile с реальностью: волна 1 (P1–P3) merged #98/#99/#100; выявлен дрейф документов (perf-gate/Upd/OCR-runner уже в main); запущена волна 2 (F26 PAdES-B, F32 redaction). Реальный остаток Phase 1 = D1 + E1 (Windows-gated). |

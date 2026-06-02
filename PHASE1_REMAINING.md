@@ -1,18 +1,20 @@
 # Foliant — Phase 1 (Alpha) DoD: оставшиеся работы
 
 **Создан:** 2026-05-31, после merge PR'ов #70–#76.
-**Обновлён:** 2026-06-01, после merge PR'ов #77–#91 (А1–A5, B1a–B1d, B2/B3, L1, D3).
+**Обновлён:** 2026-06-02, после merge PR'ов #77–#100 (А1–A5c, B1a–B1e, B2/B3, L1, D3, image-stamps, ROADMAP, CI-gate).
 **Базовый контракт:** один PR → draft → merge → следующий от свежего main. Параллелить только pure-application/engine треки, не трогающие `MainWindow.xaml(.cs)` и `Strings*.resx`.
 
 ---
 
-## Статус-снимок (после #91 на main)
+## Статус-снимок (после #100 на main)
 
-- **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR — инфраструктура готова, golden-scan корпус остаётся за Windows-стендом).
-- **Q-F фичи:** 23 ✅, 1 🟡 (Q-F18 image-stamps — UX в #93 in-flight), 9 заморожены Phase 2+.
-- **Тесты:** Domain 218 / Application 362 / ViewModels 583 (target gates D90/A80/I70/V60 держатся: 99.7 / 85.7 / 80.8 / 88.4).
-- **Перф-баseline:** S1/S3 (`Render_Single_Page_At_100_Percent`, `Open_100_Page_Pdf`) добавлены, гейты ≤500 ms / ≤2 s.
-- **Inflight:** #92 (A5b: image-stamp PDF embed), #93 (B1e: image-stamp UX).
+- **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR — инфраструктура и `OcrCerIntegrationTests` готовы, остаются бинарные golden-сканы за Windows-стендом).
+- **Q-F фичи:** 24 ✅ (Q-F18 image-stamps закрыт #92–96; A5c XFDF/FDF round-trip #95+#100), 9 заморожены Phase 2+.
+- **Тесты:** Domain 218 / Application 372 / ViewModels 583 (target gates D90/A80/I70/V60 держатся).
+- **Перф-baseline:** S1/S3 + `perf.yml` gate (сравнение с baseline, порог 15 %, auto-issue) — **уже в main**.
+- **Подтверждено в main (не «todo»):** perf-regression gate, E2E update-check (`GitHubUpdateCheckService` + тесты), CS0535 CI-gate (#99).
+- **Реальный остаток Phase 1 DoD:** только **D1** (бинарные OCR-сканы + ground-truth) и **E1** (Windows manual smoke + ISCC) — оба требуют Windows-стенда.
+- **Phase 2 in-flight:** F26 (PAdES-B validation), F32 (redaction MVP) — см. `ROADMAP.md` волна 2.
 
 ---
 
