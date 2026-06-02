@@ -198,6 +198,12 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileMergePdfs]}"
                   IsEnabled="{Binding CanMergePdfs, FallbackValue=False}"
                   Click="OnMergePdfsMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileSplitEvery]}"
+                  IsEnabled="{Binding SelectedTab.CanSplitPdf, FallbackValue=False}"
+                  Click="OnSplitEveryMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExtractSelection]}"
+                  IsEnabled="{Binding SelectedTab.CanSplitPdf, FallbackValue=False}"
+                  Click="OnExtractSelectionMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAddWatermark]}"
                   IsEnabled="{Binding SelectedTab.CanAddWatermark, FallbackValue=False}"

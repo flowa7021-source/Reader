@@ -42,6 +42,13 @@ public sealed partial class DocumentTabViewModel
         _batesService is not null
         && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Can the current document be split / page-extracted: service present and source is a
+    /// PDF. Both Split entry points (split-every and extract-selection) gate on this single property
+    /// so menu visibility stays in sync. Same gate shape as crop/bates.</summary>
+    public bool CanSplitPdf =>
+        _splitService is not null
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Apply <paramref name="request"/>'s watermark spec to the source PDF and write the
     /// result to <see cref="ApplyWatermarkRequest.TargetPath"/>. View supplies both pieces; we don't
     /// guess paths or specs. No-op when the service is absent or the source is not a PDF.</summary>
