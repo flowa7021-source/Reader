@@ -44,6 +44,22 @@
   `/LE [/None /OpenArrow]`, Polygon с `/Vertices`, смешанный набор на одной странице (line +
   highlight + note, все 3 видны PDFium'у), много страниц, Unicode metadata, валидность вывода
   для PDFium и PdfPig.
+- **Husky.Net pre-push hook — автоматизация §3 «Пред-пуш чеклист» из `docs/DEV_RETROSPECTIVE.md`**.
+  Локальный dotnet-tool `Husky` (`.config/dotnet-tools.json` + `Directory.Build.targets` с
+  `AfterTargets="Restore"` MSBuild-таргетом → авто-`dotnet husky install` при первом
+  `dotnet build`/`dotnet test` после клона, инкрементально через `.husky/_/install.stamp`;
+  голый `dotnet restore` не триггерит — это известное ограничение SDK, на практике build/test
+  идут сразу после клона). Hook `.husky/pre-push` запускает группу `pre-push` из
+  `.husky/task-runner.json`: (1) `dotnet format whitespace --verify-no-changes`,
+  (2) `dotnet format style --verify-no-changes --severity warn`, (3) `dotnet build
+  Foliant.CrossPlatform.slnf -c Release -f net10.0 -warnaserror -maxcpucount:1`,
+  (4) `dotnet test … --filter "Category!=Slow&Category!=Integration&Category!=E2E"` (~1100
+  cross-platform unit-тестов, ~60s end-to-end). Slow/Integration/E2E и Windows-only PDFium-тесты
+  вынесены за hook (живут в `verify.yml` / `tools/verify-local.sh`). Bypass: `HUSKY=0`,
+  `SKIP_HOOKS=1`, либо `git push --no-verify`. Кросс-платформа (Linux/Windows/Mac) без
+  Node.js — Husky.Net это pure-.NET tool. Все CI-workflows получили `HUSKY=0` в env (auto-install
+  на CI бесполезен). Установка для новых contributor'ов задокументирована в `CONTRIBUTING.md` +
+  `docs/BUILD.md`.
 - **Q-F32 (partial) — физический redaction PDF (координатный MVP)**. Новый порт
   `IRedactionService` + PDFium-реализация `PdfiumRedactionService`: на вход путь к PDF и список
   областей (`RedactionRegion` = страница + `AnnotationRect` в PDF user space). Для каждой области

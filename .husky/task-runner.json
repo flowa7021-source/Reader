@@ -1,0 +1,72 @@
+{
+   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
+   "tasks": [
+      {
+         "name": "format-whitespace",
+         "group": "pre-push",
+         "command": "dotnet",
+         "args": [
+            "format",
+            "whitespace",
+            "Foliant.CrossPlatform.slnf",
+            "--verify-no-changes",
+            "--no-restore",
+            "--verbosity",
+            "quiet"
+         ]
+      },
+      {
+         "name": "format-style",
+         "group": "pre-push",
+         "command": "dotnet",
+         "args": [
+            "format",
+            "style",
+            "Foliant.CrossPlatform.slnf",
+            "--verify-no-changes",
+            "--no-restore",
+            "--severity",
+            "warn",
+            "--verbosity",
+            "quiet"
+         ]
+      },
+      {
+         "name": "build-warnaserror",
+         "group": "pre-push",
+         "command": "dotnet",
+         "args": [
+            "build",
+            "Foliant.CrossPlatform.slnf",
+            "-c",
+            "Release",
+            "-f",
+            "net10.0",
+            "-warnaserror",
+            "-maxcpucount:1",
+            "--nologo",
+            "-v",
+            "quiet"
+         ]
+      },
+      {
+         "name": "test-fast",
+         "group": "pre-push",
+         "command": "dotnet",
+         "args": [
+            "test",
+            "Foliant.CrossPlatform.slnf",
+            "-c",
+            "Release",
+            "-f",
+            "net10.0",
+            "--no-build",
+            "--nologo",
+            "-v",
+            "quiet",
+            "--filter",
+            "Category!=Slow&Category!=Integration&Category!=E2E"
+         ]
+      }
+   ]
+}

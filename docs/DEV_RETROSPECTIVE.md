@@ -42,6 +42,16 @@ Application/plugins → Infra/Engines/VM → хвосты → рантайм-т�
 
 ## 3. Пред-пуш чеклист (само-применять)
 
+> **Автоматизировано.** Пункты «формат / build -warnaserror / быстрые тесты» исполняются
+> **Husky.Net pre-push hook'ом** (`.husky/pre-push` → группа `pre-push` в `.husky/task-runner.json`,
+> [Husky.Net docs](https://alirezanet.github.io/Husky.Net/)). Hook ставится автоматически при
+> первом `dotnet build`/`dotnet test` (MSBuild-таргет в `Directory.Build.targets`, см.
+> `CONTRIBUTING.md` → «Установка pre-push hook»). Push блокируется, если любой из этапов
+> падает. Bypass (только для экстренных случаев): `HUSKY=0`, `SKIP_HOOKS=1`, либо
+> `git push --no-verify`. Остальные пункты (версии NuGet, API, nullable, doc-комментарии,
+> using'и, interface drift, корректность тестов, рантайм-проверки) — по-прежнему ручные:
+> их не ловит ни компилятор, ни форматтер.
+
 - [ ] Версии новых NuGet — сверены по nuspec (существуют + транзитивы без CVE + не framework-provided на net-windows).
 - [ ] Внешние API (сигнатуры) — сверены по доке/исходнику нужной версии.
 - [ ] Nullable: value-типы не `ThrowIfNull`; reference-аргументы public-методов валидированы; null-guard прямыми проверками.

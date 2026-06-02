@@ -28,6 +28,12 @@ dotnet build  Foliant.sln -c Release -warnaserror
 dotnet test   Foliant.sln -c Release --filter "Category!=Slow&Category!=E2E"
 ```
 
+Первый `dotnet build` (или `dotnet test`) автоматически ставит Husky.Net (`dotnet tool restore`
++ `dotnet husky install`) через MSBuild-таргет в `Directory.Build.targets`. После этого
+`git push` запускает hook `.husky/pre-push` (формат + build -warnaserror + быстрые тесты на
+`Foliant.CrossPlatform.slnf`). Чтобы отключить авто-установку (например, в CI): `HUSKY=0
+dotnet build …`. Подробнее — [CONTRIBUTING.md → «Установка pre-push hook»](../CONTRIBUTING.md#установка-pre-push-hook-huskynet).
+
 ## Тиры OCR-моделей
 
 ```powershell
