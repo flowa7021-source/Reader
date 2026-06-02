@@ -682,4 +682,52 @@
   <data name="AnnotationContextDelete" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="MenuFileBatesNumbering" xml:space="preserve">
+    <value>_Bates Numbering…</value>
+  </data>
+  <data name="BatesDialogTitle" xml:space="preserve">
+    <value>Bates Numbering</value>
+  </data>
+  <data name="BatesPrefixLabel" xml:space="preserve">
+    <value>Prefix</value>
+  </data>
+  <data name="BatesSuffixLabel" xml:space="preserve">
+    <value>Suffix</value>
+  </data>
+  <data name="BatesStartNumberLabel" xml:space="preserve">
+    <value>Start number</value>
+  </data>
+  <data name="BatesDigitsLabel" xml:space="preserve">
+    <value>Digits (zero-pad)</value>
+  </data>
+  <data name="BatesFontSizeLabel" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+  <data name="BatesPositionLabel" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="BatesColorLabel" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="BatesPageRangeLabel" xml:space="preserve">
+    <value>Page range</value>
+  </data>
+  <data name="BatesPositionBottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="BatesPositionBottomCenter" xml:space="preserve">
+    <value>Bottom center</value>
+  </data>
+  <data name="BatesPositionBottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="BatesOkButton" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="BatesCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="BatesSaveDialogTitle" xml:space="preserve">
+    <value>Save Bates-Numbered PDF As</value>
+  </data>
 </root>

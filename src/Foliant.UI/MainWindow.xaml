@@ -205,6 +205,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAddHeaderFooter]}"
                   IsEnabled="{Binding SelectedTab.CanAddHeaderFooter, FallbackValue=False}"
                   Click="OnAddHeaderFooterMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileBatesNumbering]}"
+                  IsEnabled="{Binding SelectedTab.CanApplyBates, FallbackValue=False}"
+                  Click="OnApplyBatesMenuItemClick" />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileCropPages]}"
                   IsEnabled="{Binding SelectedTab.CanCropPages, FallbackValue=False}"
                   Click="OnCropPagesMenuItemClick" />
