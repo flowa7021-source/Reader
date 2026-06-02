@@ -25,3 +25,12 @@
 # cannot smudge. Only the large binary types we are not committing now are LFS-tracked here;
 # large sourced scans can opt in explicitly when added.
 tests/assets/**.djvu filter=lfs diff=lfs merge=lfs -text
+
+# Append-only logs use git's built-in `union` merge driver: when two branches each add
+# entries to the same section (typically `[Unreleased]`), the merge/rebase keeps BOTH
+# sides instead of raising a conflict. Parallel feature PRs all append here, so without
+# this every second PR needed a manual rebase just to resolve CHANGELOG. `union` is native
+# to git (no local config / external program required), so it also applies during rebase.
+# Trade-off: ordering within the section is not curated automatically — that's reconciled
+# by hand at release time when `[Unreleased]` is rolled into a version section.
+CHANGELOG.md merge=union
