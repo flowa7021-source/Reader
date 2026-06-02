@@ -53,6 +53,13 @@
   в пути проходят без потерь. Ещё **8 тестов** в `XfdfImagePathRoundTripTests` /
   `FdfImagePathRoundTripTests` (Application total: 372).
 
+### Changed
+- **DI-проводка `IRedactionService` / `IPdfSplitService` / `IBatesNumberingService`** в
+  `AppHostBuilder`: 3 singleton-регистрации (`PdfiumRedactionService` / `PdfPigSplitService` /
+  `PdfiumBatesNumberingService`) рядом с уже существующими PDF-сервисами + проброс в
+  `DocumentTabViewModel`-factory как опциональные параметры (`= null`, через `sp.GetService<…>()`).
+  UI-обвязка (команды VM, пункты меню, диалоги, ресурсные строки) — следующая серия PR (W1/W2/W3).
+
 ## [0.1.0] - 2026-05-26
 
 Первый альфа-релиз Foliant. Функционально покрывает объём Phase 1 (просмотр
