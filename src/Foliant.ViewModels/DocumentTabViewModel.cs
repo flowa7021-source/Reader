@@ -32,6 +32,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IPdfFormFillService? _pdfFormFillService;
     private readonly IFormDataFormatCatalog? _formDataFormatCatalog;
     private readonly IRedactionService? _redactionService;
+    private readonly IFindAndRedactService? _findAndRedactService;
     private readonly IPdfSplitService? _splitService;
     private readonly IBatesNumberingService? _batesService;
     private readonly ILogger<DocumentTabViewModel> _logger;
@@ -122,6 +123,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IPdfFormFillService? pdfFormFillService = null,
         IFormDataFormatCatalog? formDataFormatCatalog = null,
         IRedactionService? redactionService = null,
+        IFindAndRedactService? findAndRedactService = null,
         IPdfSplitService? splitService = null,
         IBatesNumberingService? batesService = null)
     {
@@ -156,6 +158,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _pdfFormFillService = pdfFormFillService;
         _formDataFormatCatalog = formDataFormatCatalog;
         _redactionService = redactionService;
+        _findAndRedactService = findAndRedactService;
         _splitService = splitService;
         _batesService = batesService;
         _logger = logger;

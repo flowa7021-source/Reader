@@ -648,6 +648,47 @@ public partial class MainWindow : Window
         }
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnRedactPagesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanRedactPages: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["RedactionSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-redacted.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var request = RedactionDialog.Prompt(this, save.FileName);
+        if (request is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.FindAndRedactCommand.ExecuteAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error redacting matches of '{Query}' to '{Path}'.",
+                request.Query, save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     // Reports the page viewport size to the active tab so Fit Width / Fit Page can compute zoom.
     private void OnPageAreaSizeChanged(object sender, SizeChangedEventArgs e)
     {

@@ -160,6 +160,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IPdfFormFillService, PdfiumFormFillService>();
         services.AddSingleton<IPdfMergeService, PdfiumMergeService>();
         services.AddSingleton<IRedactionService, PdfiumRedactionService>();
+        services.AddSingleton<IFindAndRedactService, FindAndRedactService>();
         services.AddSingleton<IPdfSplitService, PdfPigSplitService>();
         services.AddSingleton<IBatesNumberingService, PdfiumBatesNumberingService>();
         services.AddSingleton<IBatchJobRunner>(sp => new BatchJobRunner(
@@ -288,6 +289,7 @@ internal static class AppHostBuilder
                 pdfFormFillService: sp.GetService<IPdfFormFillService>(),
                 formDataFormatCatalog: sp.GetService<IFormDataFormatCatalog>(),
                 redactionService: sp.GetService<IRedactionService>(),
+                findAndRedactService: sp.GetService<IFindAndRedactService>(),
                 splitService: sp.GetService<IPdfSplitService>(),
                 batesService: sp.GetService<IBatesNumberingService>()));
 
