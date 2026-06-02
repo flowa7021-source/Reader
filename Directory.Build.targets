@@ -1,0 +1,44 @@
+<Project>
+
+  <!--
+    Husky.Net auto-install — runs `dotnet tool restore` + `dotnet husky install` once after
+    the MSBuild Restore target. In practice this fires on the first `dotnet build` (or
+    `dotnet test`), since those run Restore inline via the `-restore` default. A bare
+    `dotnet restore` from CLI does NOT trigger it — that's a known SDK limitation
+    (dotnet/sdk#7741). Devs always build/test after clone, so the hook lands before any push.
+
+    Incremental: re-runs only when `.config/dotnet-tools.json` changes (or after `clean`),
+    tracked via `.husky/_/install.stamp`.
+
+    Bypass: set HUSKY=0 in the environment (CI sets this in verify.yml/release.yml to skip).
+    See .husky/pre-push for runtime bypass options (SKIP_HOOKS=1, git push no-verify flag).
+
+    HuskyRoot is anchored to this file's directory (repo root); $(MSBuildThisFileDirectory)
+    has a trailing slash, matching the path style Husky.Net expects.
+  -->
+  <PropertyGroup>
+    <HuskyRoot Condition="'$(HuskyRoot)' == ''">$(MSBuildThisFileDirectory)</HuskyRoot>
+  </PropertyGroup>
+
+  <Target Name="HuskyInstall"
+          AfterTargets="Restore"
+          Condition="'$(HUSKY)' != '0' AND '$(HUSKY)' != 'false' AND Exists('$(HuskyRoot).config/dotnet-tools.json')"
+          Inputs="$(HuskyRoot).config/dotnet-tools.json"
+          Outputs="$(HuskyRoot).husky/_/install.stamp">
+    <Exec Command="dotnet tool restore"
+          WorkingDirectory="$(HuskyRoot)"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="High" />
+    <Exec Command="dotnet husky install"
+          WorkingDirectory="$(HuskyRoot)"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="High" />
+    <Touch Files="$(HuskyRoot).husky/_/install.stamp"
+           AlwaysCreate="true"
+           Condition="Exists('$(HuskyRoot).husky/_')" />
+    <ItemGroup>
+      <FileWrites Include="$(HuskyRoot).husky/_/install.stamp" />
+    </ItemGroup>
+  </Target>
+
+</Project>

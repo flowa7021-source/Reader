@@ -8,6 +8,7 @@ on:
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  HUSKY: 0  # Husky.Net auto-install (Directory.Build.targets) — no value in CI; CI has its own gates.
 
 jobs:
   crossplatform:

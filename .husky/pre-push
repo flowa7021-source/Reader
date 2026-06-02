@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Foliant pre-push hook — automates §3 «Пред-пуш чеклист» из docs/DEV_RETROSPECTIVE.md.
+# Runs: dotnet format --verify-no-changes  +  dotnet build -warnaserror  +  fast unit tests
+# on Foliant.CrossPlatform.slnf (net10.0). Total ~60-90s on a warm cache.
+#
+# Bypass mechanisms (use sparingly, for true emergencies):
+#   - `git push --no-verify`            — git skips ALL hooks for this push
+#   - `HUSKY=0 git push`                — Husky.Net global off-switch (built-in)
+#   - `SKIP_HOOKS=1 git push`           — project-local off-switch (this hook only)
+#
+# Slow/Integration/E2E tests and PDFium-heavy paths are intentionally NOT run here —
+# they live in CI (verify.yml) and tools/verify-local.sh.
+
+if [ "${SKIP_HOOKS:-0}" = "1" ] || [ "${SKIP_HOOKS:-}" = "true" ]; then
+   echo "pre-push: SKIP_HOOKS=$SKIP_HOOKS — skipping checks." >&2
+   exit 0
+fi
+
+if ! command -v dotnet >/dev/null 2>&1; then
+   echo "pre-push: 'dotnet' not found on PATH." >&2
+   echo "  Install .NET 10 SDK (tools/install-dotnet.sh on Linux/CI) and ensure PATH contains it." >&2
+   echo "  To bypass this push only: git push --no-verify" >&2
+   exit 1
+fi
+
+# Restore the local tool manifest (idempotent; no-op if already restored).
+dotnet tool restore >/dev/null || {
+   echo "pre-push: 'dotnet tool restore' failed — local Husky.Net install incomplete." >&2
+   exit 1
+}
+
+# Run the pre-push task group defined in .husky/task-runner.json.
+exec dotnet husky run --group pre-push

@@ -44,7 +44,37 @@
 
 Типы: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `chore`, `build`, `ci`.
 
-Pre-commit hook (Husky.Net, опц.) автоматически: `dotnet format` + unit-тесты на затронутых проектах.
+Pre-push hook (Husky.Net) автоматически: `dotnet format whitespace`/`style --verify-no-changes`
++ `dotnet build -warnaserror` + быстрые unit-тесты (`Category!=Slow&Category!=Integration&Category!=E2E`)
+по `Foliant.CrossPlatform.slnf`. Ставится при первом `dotnet restore` (см. ниже «Установка»).
+Bypass (для экстренных случаев): `HUSKY=0`, `SKIP_HOOKS=1` или `git push --no-verify`.
+
+## Установка pre-push hook (Husky.Net)
+
+Ничего отдельно делать не надо. Первый же `dotnet build` (или `dotnet test`) после
+`git clone` триггерит MSBuild-таргет `HuskyInstall` в `Directory.Build.targets`, который
+выполняет `dotnet tool restore` + `dotnet husky install` (инкрементно — повторно не
+запускается, пока `.config/dotnet-tools.json` не изменится). В результате прописывается
+`git config core.hooksPath .husky` и pre-push hook начинает работать.
+
+> **Заметка.** Голый `dotnet restore` НЕ триггерит `AfterTargets="Restore"` — это известное
+> ограничение .NET SDK ([dotnet/sdk#7741](https://github.com/dotnet/sdk/issues/7741)). Поэтому
+> auto-install крепится к first `dotnet build`/`dotnet test`, который и так делает implicit
+> restore. На практике у любого contributor'а первый шаг после клона — это `dotnet build`/`test`,
+> так что hook ставится автоматически до первого `git push`.
+
+Если auto-install не сработал (например, build запускался с `HUSKY=0`), запустить вручную
+из корня репо:
+
+```bash
+dotnet tool restore
+dotnet husky install
+```
+
+Bypass для экстренных push'ей:
+- `HUSKY=0 git push` — глобальный off-switch Husky.Net.
+- `SKIP_HOOKS=1 git push` — локальный off-switch для этого hook'а.
+- `git push --no-verify` — git встроенный обход всех hook'ов.
 
 ## PR
 
