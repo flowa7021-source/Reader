@@ -12,12 +12,14 @@ using Xunit;
 namespace Foliant.Engines.Pdf.Tests;
 
 /// <summary>
-/// Integration-тесты физического redaction'а через настоящий PDFium runtime (нужен libpdfium).
+/// Тесты физического redaction'а через настоящий PDFium runtime (нужен libpdfium).
 /// Источники генерируются PdfPig'ом (Standard-14 Helvetica) с известными словами на известных
 /// строках; результат проверяется через <see cref="PdfDocument"/>.GetTextLayerAsync — слово в
 /// области исчезает из текстового слоя, вне области сохраняется.
+/// Помечены <c>Slow</c> для консистентности с прочими PDFium-mutation-сервисами
+/// (watermark / crop / merge / header-footer / form-fill / signature).
 /// </summary>
-[Trait("Category", "Integration")]
+[Trait("Category", "Slow")]
 public sealed class PdfiumRedactionServiceTests : IDisposable
 {
     private const double PageWidthPt = 595;
