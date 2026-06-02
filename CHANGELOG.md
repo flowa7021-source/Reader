@@ -29,6 +29,13 @@
   офсеты + DER-trim zero-padding). T-level (TSA timestamp) / LT / LTA / revocation (CRL/OCSP) —
   **не** проверяются на этом уровне (Phase 2 follow-up). **7 hermetic-тестов** в
   `PadesValidatorTests` (self-signed cert + подписанный ByteRange генерируются в самом тесте).
+- **PDF split + cherry-pick экспорт (`IPdfSplitService` / `PdfPigSplitService`, PdfPig)**. Дополняет
+  одно-диапазонный `IPageRangeExtractor` двумя частыми операциями: `SplitEveryAsync` режет документ
+  на файлы по N страниц (`{base}-001.pdf`, `{base}-002.pdf`…, последний — остаток; нумерация
+  инвариантна культуре), `ExtractSelectionAsync` собирает один PDF из произвольной не-непрерывной
+  выборки страниц строго в указанном порядке. 0-based индексы, атомарная запись (tmp + Move),
+  невалидные/out-of-range → `ArgumentOutOfRangeException`, пустая выборка → `ArgumentException`.
+  **11 тестов** в `PdfPigSplitServiceTests` (pure-managed, без PDFium). DI-проводка — follow-up.
 - **A5c — image-stamp `ImagePath` round-trip через XFDF/FDF (закрытие угловых случаев)**. XFDF
   пишет custom `foliant:imagepath` атрибут в собственном namespace, FDF — custom `/FoliantImagePath`
   ключ в annotation-словаре (PR #95). Этот follow-up добивает acceptance-чеклист: (a) Stamp с
