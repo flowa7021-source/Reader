@@ -8,6 +8,17 @@
 ## [Unreleased]
 
 ### Added
+- **Q-F32 (partial) — физический redaction PDF (координатный MVP)**. Новый порт
+  `IRedactionService` + PDFium-реализация `PdfiumRedactionService`: на вход путь к PDF и список
+  областей (`RedactionRegion` = страница + `AnnotationRect` в PDF user space). Для каждой области
+  текстовые page-object'ы, чьи bbox пересекают прямоугольник, **физически удаляются** из контента
+  и текстового слоя (`FPDFPageRemoveObject` + `FPDFPageObjDestroy`), затем поверх рисуется
+  непрозрачный чёрный бокс (`FPDFPageObjCreateNewRect` + fill). Результат пишется атомарно в новый
+  файл — оригинал не мутируется (паттерн watermark/header-footer: NativeGate, GCHandle-pinning,
+  temp+Move). Find-and-redact по тексту/regex, удаление изображений, метаданные/OCG и DI/UI-wiring —
+  follow-up. Тесты: `PdfiumRedactionServiceTests` (6 integration-тестов на реальном PDFium —
+  слово под областью исчезает из текстового слоя, текст вне области сохраняется, пустой список →
+  валидный PDF, невалидный индекс страницы → guard, выход переоткрывается как валидный PDF).
 - **A5c — image-stamp `ImagePath` round-trip через XFDF/FDF (закрытие угловых случаев)**. XFDF
   пишет custom `foliant:imagepath` атрибут в собственном namespace, FDF — custom `/FoliantImagePath`
   ключ в annotation-словаре (PR #95). Этот follow-up добивает acceptance-чеклист: (a) Stamp с
