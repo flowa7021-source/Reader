@@ -28,6 +28,22 @@
   (substring/regex/whole-word/case-sensitivity/0-matches/argument-validation/
   cancellation/multi-page). DI-wiring (`AppHostBuilder`) и Find-And-Redact UI —
   follow-up.
+- **Q-F17 (11/11) — native PDF embedding для Line/Arrow/Polygon через cos-level fallback**.
+  PDFium 146.x не экспонирует setter'ы для `/L` / `/Vertices` / `/LE`, поэтому
+  `AnnotatedPdfExportService` после `FPDF_SaveAsCopy` гонит байты через новый
+  `PdfPigAnnotationAppender`: PdfPig читает page-tree, новый `PdfIncrementalWriter` дописывает
+  инкрементальный апдейт (ISO 32000-1 §7.5.6) — новые annotation-объекты (`/Type /Annot
+  /Subtype /Line|/Polygon`) + обновлённые page-словари с расширенным `/Annots` массивом + новая
+  xref/trailer со `/Prev` на старую. Cos-сериализация: `PdfAnnotationCosWriter` (Line/Arrow:
+  `/L [x1 y1 x2 y2]`, Arrow добавляет `/LE [/None /OpenArrow]`; Polygon: `/Vertices [x1 y1 ...]`)
+  + `PdfDictionaryCosWriter` (rewrite page-словаря с union существующих и новых `/Annots`).
+  Unicode `/T`/`/Subj` сериализуется hex-string в UTF-16BE с BOM. Остальные 8 типов
+  (highlight/underline/strikeout/note/ink/square/circle/stamp) продолжают embedд'иться через
+  PDFium как раньше — этот PR закрывает 11/11 типов в native /Annots. **7 тестов** в
+  `AnnotatedPdfExportServiceLineArrowPolygonTests` (Slow): Line с точными координатами, Arrow с
+  `/LE [/None /OpenArrow]`, Polygon с `/Vertices`, смешанный набор на одной странице (line +
+  highlight + note, все 3 видны PDFium'у), много страниц, Unicode metadata, валидность вывода
+  для PDFium и PdfPig.
 - **Q-F32 (partial) — физический redaction PDF (координатный MVP)**. Новый порт
   `IRedactionService` + PDFium-реализация `PdfiumRedactionService`: на вход путь к PDF и список
   областей (`RedactionRegion` = страница + `AnnotationRect` в PDF user space). Для каждой области

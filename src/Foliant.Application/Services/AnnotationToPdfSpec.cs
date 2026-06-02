@@ -27,9 +27,10 @@ public static class AnnotationToPdfSpec
             AnnotationKind.Rectangle when annotation.Bounds is { } b => RectShape(annotation, b, PdfAnnotationSubtype.Square),
             AnnotationKind.Ellipse when annotation.Bounds is { } b => RectShape(annotation, b, PdfAnnotationSubtype.Circle),
             AnnotationKind.Stamp when annotation.Bounds is { } b && !string.IsNullOrWhiteSpace(annotation.Text) => Stamp(annotation, b),
-            // Line/Arrow/Polygon требуют PDFium setters для /L и /Vertices, которых 146.x публично
-            // не экспонирует. Round-trip через FDF/XFDF/JSON работает (см. #75/#76); embedding
-            // в native PDF /Annots — отдельный PR с cos-level fallback'ом.
+            // Line/Arrow/Polygon мапятся в null здесь (PDFium 146.x не умеет /L /Vertices /LE),
+            // но <c>AnnotatedPdfExportService</c> отдельно прокидывает их в
+            // <c>PdfPigAnnotationAppender</c> для cos-level inкрементального апдейта (Q-F17 11/11).
+            // Round-trip через FDF/XFDF/JSON тоже работает (см. #75/#76).
             _ => null,
         };
     }
