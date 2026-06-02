@@ -729,6 +729,80 @@ public partial class MainWindow : Window
         }
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnSplitEveryMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanSplitPdf: true } tab)
+        {
+            return;
+        }
+
+        var (pagesPerChunk, ok) = SplitEveryDialog.Prompt(this);
+        if (!ok)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var folder = new OpenFolderDialog { Title = loc["SplitFolderDialogTitle"] };
+        if (folder.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var baseName = Path.GetFileNameWithoutExtension(tab.FilePath);
+        var request = new Foliant.ViewModels.SplitEveryRequest(pagesPerChunk, folder.FolderName, baseName);
+        try
+        {
+            await tab.SplitEveryCommand.ExecuteAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error splitting '{Path}' into '{Dir}'.", tab.FilePath, folder.FolderName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnExtractSelectionMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanSplitPdf: true } tab)
+        {
+            return;
+        }
+
+        var (pages, ok) = ExtractSelectionDialog.Prompt(this, tab.PageCount);
+        if (!ok || pages is null)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["ExtractSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-pages.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.ExtractSelectionCommand.ExecuteAsync(new Foliant.ViewModels.ExtractSelectionRequest(pages, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error extracting pages from '{Path}' to '{Target}'.", tab.FilePath, save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     // Reports the page viewport size to the active tab so Fit Width / Fit Page can compute zoom.
     private void OnPageAreaSizeChanged(object sender, SizeChangedEventArgs e)
     {

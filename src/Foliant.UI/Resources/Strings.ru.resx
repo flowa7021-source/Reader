@@ -730,4 +730,43 @@
   <data name="BatesSaveDialogTitle" xml:space="preserve">
     <value>Сохранить PDF с Bates-нумерацией как</value>
   </data>
+  <data name="MenuFileSplitEvery" xml:space="preserve">
+    <value>Разбить на файлы…</value>
+  </data>
+  <data name="MenuFileExtractSelection" xml:space="preserve">
+    <value>Извлечь страницы…</value>
+  </data>
+  <data name="SplitEveryDialogTitle" xml:space="preserve">
+    <value>Разбить на файлы</value>
+  </data>
+  <data name="SplitPagesPerFileLabel" xml:space="preserve">
+    <value>Страниц в файле</value>
+  </data>
+  <data name="SplitOkButton" xml:space="preserve">
+    <value>Разбить</value>
+  </data>
+  <data name="SplitCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="SplitFolderDialogTitle" xml:space="preserve">
+    <value>Выберите папку назначения</value>
+  </data>
+  <data name="ExtractSelectionDialogTitle" xml:space="preserve">
+    <value>Извлечь страницы</value>
+  </data>
+  <data name="ExtractPagesLabel" xml:space="preserve">
+    <value>Страницы</value>
+  </data>
+  <data name="ExtractPagesHint" xml:space="preserve">
+    <value>напр. 1-3,7,10-12</value>
+  </data>
+  <data name="ExtractOkButton" xml:space="preserve">
+    <value>Извлечь</value>
+  </data>
+  <data name="ExtractCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="ExtractSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить извлечённые страницы как</value>
+  </data>
 </root>

@@ -8,6 +8,30 @@
 ## [Unreleased]
 
 ### Added
+- **Q-F12 (UI wiring) — Split-into-files + Extract-pages меню + диалоги**.
+  `IPdfSplitService` уже зарегистрирован в `AppHostBuilder` и проброшен в
+  `DocumentTabViewModel` factory (PR #105) — здесь добавлена только UI-обвязка.
+  В `DocumentTabViewModel.SplitEffects.cs`: гейт `CanSplitPdf` (true ↔ PDF +
+  сервис зарегистрирован), `SplitEveryCommand(SplitEveryRequest)` поверх
+  `IPdfSplitService.SplitEveryAsync(source, pagesPerChunk, outputDir, baseName, ct)`
+  и `ExtractSelectionCommand(ExtractSelectionRequest)` поверх
+  `ExtractSelectionAsync(source, pageIndices0Based, target, ct)`; оба
+  suppress-ят исключения как соседние команды. Новые WPF-диалоги (по образцу
+  `CropDialog`): `SplitEveryDialog` (numeric «pages per file» ≥ 1, свойство
+  `SplitChunkSize`) и `ExtractSelectionDialog` (1-based range-строка вида
+  «1-3,7,10-12» → ordered/de-duplicated 0-based индексы, валидация против
+  page count, свойство `SelectionText`). File-меню (после Merge): «Split into
+  Files…» (`MenuFileSplitEvery`) + «Extract Pages…» (`MenuFileExtractSelection`),
+  оба `IsEnabled` на `SelectedTab.CanSplitPdf`, обработчики
+  `OnSplitEveryMenuItemClick` (диалог → OpenFolderDialog → команда) и
+  `OnExtractSelectionMenuItemClick` (диалог → SaveFileDialog → команда). Strings:
+  13 новых ключей в `Strings.resx` / `Strings.ru.resx` (`MenuFileSplitEvery`,
+  `MenuFileExtractSelection`, `SplitEveryDialogTitle`, `SplitPagesPerFileLabel`,
+  `SplitOkButton`, `SplitCancelButton`, `SplitFolderDialogTitle`,
+  `ExtractSelectionDialogTitle`, `ExtractPagesLabel`, `ExtractPagesHint`,
+  `ExtractOkButton`, `ExtractCancelButton`, `ExtractSaveDialogTitle`). +13
+  VM-тестов (forwarding обеих команд, CanExecute-гейты non-PDF / service-null,
+  null-/empty-request no-op, service-throws не пробрасывается).
 - **Q-F (UI wiring) — Bates-нумерация меню + диалог**. `IBatesNumberingService`
   уже зарегистрирован в `AppHostBuilder` и проброшен в `DocumentTabViewModel`
   factory (PR #106) — здесь добавлена только UI-обвязка. Команда VM в

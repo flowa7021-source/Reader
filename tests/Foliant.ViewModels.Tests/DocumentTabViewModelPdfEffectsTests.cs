@@ -16,6 +16,7 @@ public sealed class DocumentTabViewModelPdfEffectsTests
         IPdfCropService? crop = null,
         IRedactionService? redaction = null,
         IFindAndRedactService? findAndRedact = null,
+        IPdfSplitService? split = null,
         IBatesNumberingService? bates = null)
     {
         var document = Substitute.For<IDocument>();
@@ -40,6 +41,7 @@ public sealed class DocumentTabViewModelPdfEffectsTests
             cropService: crop,
             redactionService: redaction,
             findAndRedactService: findAndRedact,
+            splitService: split,
             batesService: bates);
     }
 
@@ -525,6 +527,151 @@ public sealed class DocumentTabViewModelPdfEffectsTests
 
         Func<Task> act = async () =>
             await vm.ApplyBatesCommand.ExecuteAsync(new ApplyBatesRequest(SampleBates(), "/tmp/out.pdf"));
+
+        await act.Should().NotThrowAsync();
+    }
+
+    // ───── CanSplitPdf gate / SplitEveryCommand / ExtractSelectionCommand ─────
+
+    [Fact]
+    public void CanSplitPdf_NoService_False()
+    {
+        var vm = CreateVm(split: null);
+        vm.CanSplitPdf.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanSplitPdf_NonPdfSource_False()
+    {
+        var vm = CreateVm(filePath: "/tmp/foo.djvu", split: Substitute.For<IPdfSplitService>());
+        vm.CanSplitPdf.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanSplitPdf_PdfSourceAndService_True()
+    {
+        var vm = CreateVm(filePath: "/tmp/foo.PDF", split: Substitute.For<IPdfSplitService>());
+        vm.CanSplitPdf.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SplitEveryCommand_ForwardsArgs_ToService()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        await vm.SplitEveryCommand.ExecuteAsync(new SplitEveryRequest(5, "/tmp/out", "in"));
+
+        await svc.Received(1).SplitEveryAsync("/tmp/in.pdf", 5, "/tmp/out", "in", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SplitEveryCommand_NullRequest_NoOp()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        await vm.SplitEveryCommand.ExecuteAsync(null);
+
+        await svc.DidNotReceiveWithAnyArgs().SplitEveryAsync(default!, default, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task SplitEveryCommand_NonPositiveChunk_NoOp()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        await vm.SplitEveryCommand.ExecuteAsync(new SplitEveryRequest(0, "/tmp/out", "in"));
+
+        await svc.DidNotReceiveWithAnyArgs().SplitEveryAsync(default!, default, default!, default!, default);
+    }
+
+    [Fact]
+    public void SplitEveryCommand_OnNonPdf_DoesNotExecute()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.png", split: svc);
+
+        vm.SplitEveryCommand.CanExecute(new SplitEveryRequest(5, "/tmp/out", "in")).Should().BeFalse();
+    }
+
+    [Fact]
+    public void SplitEveryCommand_ServiceNull_DoesNotExecute()
+    {
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: null);
+
+        vm.CanSplitPdf.Should().BeFalse();
+        vm.SplitEveryCommand.CanExecute(new SplitEveryRequest(5, "/tmp/out", "in")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SplitEveryCommand_ServiceThrows_DoesNotPropagate()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        svc.SplitEveryAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromException<IReadOnlyList<string>>(new InvalidOperationException("boom")));
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        Func<Task> act = async () =>
+            await vm.SplitEveryCommand.ExecuteAsync(new SplitEveryRequest(5, "/tmp/out", "in"));
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ExtractSelectionCommand_ForwardsArgs_ToService()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        IReadOnlyList<int> pages = [0, 2, 6];
+        await vm.ExtractSelectionCommand.ExecuteAsync(new ExtractSelectionRequest(pages, "/tmp/out.pdf"));
+
+        await svc.Received(1).ExtractSelectionAsync("/tmp/in.pdf", pages, "/tmp/out.pdf", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExtractSelectionCommand_NullRequest_NoOp()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        await vm.ExtractSelectionCommand.ExecuteAsync(null);
+
+        await svc.DidNotReceiveWithAnyArgs().ExtractSelectionAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public async Task ExtractSelectionCommand_EmptySelection_NoOp()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        await vm.ExtractSelectionCommand.ExecuteAsync(new ExtractSelectionRequest([], "/tmp/out.pdf"));
+
+        await svc.DidNotReceiveWithAnyArgs().ExtractSelectionAsync(default!, default!, default!, default);
+    }
+
+    [Fact]
+    public void ExtractSelectionCommand_OnNonPdf_DoesNotExecute()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        var vm = CreateVm(filePath: "/tmp/in.png", split: svc);
+
+        vm.ExtractSelectionCommand.CanExecute(new ExtractSelectionRequest([0, 1], "/tmp/out.pdf")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExtractSelectionCommand_ServiceThrows_DoesNotPropagate()
+    {
+        var svc = Substitute.For<IPdfSplitService>();
+        svc.ExtractSelectionAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<int>>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+           .Returns(Task.FromException(new InvalidOperationException("boom")));
+        var vm = CreateVm(filePath: "/tmp/in.pdf", split: svc);
+
+        Func<Task> act = async () =>
+            await vm.ExtractSelectionCommand.ExecuteAsync(new ExtractSelectionRequest([0, 1], "/tmp/out.pdf"));
 
         await act.Should().NotThrowAsync();
     }
