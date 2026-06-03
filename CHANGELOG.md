@@ -8,6 +8,36 @@
 ## [Unreleased]
 
 ### Added
+- **Q-F-PdfA (port + honest stub) — PDF/A compliance validation interface
+  (Вариант C)**. Greenfield-задача: до этого PR в Foliant не было ни порта, ни
+  движка PDF/A-валидации. Реализован чистый port + «честная заглушка», чтобы
+  зафиксировать контракт для будущей veraPDF-интеграции, не вводя в заблуждение
+  callers (ничего не «валидируется молча», stub явно сообщает, что runtime не
+  установлен). Артефакты: `Foliant.Domain.PdfAComplianceResult`
+  (`Profile`/`IsCompliant`/`Issues`) и `PdfAValidationIssue`
+  (`RuleId`/`Message`/`PageIndex?`) — value-records; enum
+  `Foliant.Application.Services.PdfAProfile` с 8 профилями (`PdfA1B/1A`,
+  `PdfA2B/2A/2U`, `PdfA3B/3A/3U` — нотация veraPDF, без PDF 2.0 / part 4 до
+  поддержки нижележащим движком); port `IPdfAValidationService.ValidateAsync(
+  sourcePath, profile, ct)`; реализация `StubPdfAValidationService` — проверяет
+  arg-guard'ы (`ArgumentException`/`ArgumentOutOfRangeException`/
+  `OperationCanceledException`) и бросает `NotSupportedException` с публичной
+  константой `NotInstalledMessage`, содержащей подстроку «veraPDF» и ссылку на
+  `https://verapdf.org`. **Почему Вариант C, а не A/B**: (A) единственный
+  managed-биндинг `Codeuctivity.PdfAValidator` лицензирован под AGPL-3.0 —
+  несовместимо с MIT Foliant (вирусно копилефтит всё приложение); (B) сам
+  veraPDF (MPL-2.0/GPL-3.0+) — Java-tool, требует пакетирования JRE + jar и
+  out-of-process-обвязки по образцу `plugins/Foliant.Plugin.DjVu` — отдельный
+  PR. **Follow-up (отдельный PR)**: `plugins/Foliant.Plugin.VeraPdf` с
+  `VeraPdfAValidationService` поверх `verapdf` CLI (`--format json`/`-f`),
+  парсер JSON-репорта → `PdfAComplianceResult`, инсталлер скачивает jar +
+  проверяет SHA256 (по образцу `tools/fetch-natives.ps1`). UI/DI/wiring сюда
+  не входят — следующий PR. 4 теста на доменные records (форма/value-equality
+  /null PageIndex для document-level issues) + 16 тестов на port/stub
+  (наследование интерфейса, `NotSupportedException` со словом «veraPDF»,
+  blank/null path → `ArgumentException`, неизвестный profile →
+  `ArgumentOutOfRangeException`, pre-cancelled token → `OperationCanceledException`,
+  все 8 профилей проходят arg-guard, публичная константа `NotInstalledMessage`).
 - **Q-F12 (UI wiring) — Split-into-files + Extract-pages меню + диалоги**.
   `IPdfSplitService` уже зарегистрирован в `AppHostBuilder` и проброшен в
   `DocumentTabViewModel` factory (PR #105) — здесь добавлена только UI-обвязка.
