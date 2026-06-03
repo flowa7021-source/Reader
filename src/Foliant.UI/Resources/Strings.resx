@@ -490,6 +490,24 @@
   <data name="SignaturesValidate" xml:space="preserve">
     <value>Validate selected</value>
   </data>
+  <data name="SignatureValidResult" xml:space="preserve">
+    <value>Signature is valid</value>
+  </data>
+  <data name="SignatureInvalidResult" xml:space="preserve">
+    <value>Signature is invalid.</value>
+  </data>
+  <data name="SignatureTrustedYes" xml:space="preserve">
+    <value>certificate trusted</value>
+  </data>
+  <data name="SignatureTrustedNo" xml:space="preserve">
+    <value>certificate not trusted</value>
+  </data>
+  <data name="SignatureUntouchedYes" xml:space="preserve">
+    <value>document unmodified</value>
+  </data>
+  <data name="SignatureModified" xml:space="preserve">
+    <value>document modified after signing</value>
+  </data>
   <data name="DialogClose" xml:space="preserve">
     <value>Close</value>
   </data>

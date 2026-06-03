@@ -430,6 +430,24 @@
   <data name="SignaturesValidate" xml:space="preserve">
     <value>Проверить выбранную</value>
   </data>
+  <data name="SignatureValidResult" xml:space="preserve">
+    <value>Подпись действительна</value>
+  </data>
+  <data name="SignatureInvalidResult" xml:space="preserve">
+    <value>Подпись недействительна.</value>
+  </data>
+  <data name="SignatureTrustedYes" xml:space="preserve">
+    <value>сертификат доверенный</value>
+  </data>
+  <data name="SignatureTrustedNo" xml:space="preserve">
+    <value>сертификат не доверенный</value>
+  </data>
+  <data name="SignatureUntouchedYes" xml:space="preserve">
+    <value>документ не изменён</value>
+  </data>
+  <data name="SignatureModified" xml:space="preserve">
+    <value>документ изменён после подписания</value>
+  </data>
   <data name="DialogClose" xml:space="preserve">
     <value>Закрыть</value>
   </data>

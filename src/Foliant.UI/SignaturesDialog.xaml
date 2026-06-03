@@ -55,7 +55,7 @@
     <!-- Validation result banner -->
     <TextBlock Grid.Row="2" Margin="0,8,0,0"
                TextWrapping="Wrap"
-               Foreground="OrangeRed"
+               Foreground="{Binding ValidationBrush}"
                Text="{Binding ValidationMessage}" />
 
     <!-- Buttons -->
