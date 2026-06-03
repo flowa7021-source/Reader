@@ -66,6 +66,32 @@
   10 contract-тестов `StubPdfEncryptionService` (NotSupported с маркером Q-F30/F31,
   blank source/target → ArgumentException, null spec → ArgumentNullException,
   pre-cancelled token → OperationCanceledException, реализация — `IPdfEncryptionService`).
+- **Q-F8 — OCG (Optional Content Groups, «PDF layers») чтение + переключение
+  видимости (Phase 2 MVP)**. Новый domain-record `Foliant.Domain.PdfLayer`
+  (`Index`, `Name`, `IsVisible`), порт
+  `Foliant.Application.Services.IPdfOcgService` с двумя методами
+  (`ReadLayersAsync` — снимок текущих слоёв; `SetLayerVisibilityAsync` —
+  atomic temp+Move запись в новый файл с обновлённой default-visibility,
+  оригинал не мутируется). Реализация `Foliant.Engines.Pdf.PdfiumOcgService` —
+  pure-managed: PDFiumCore 146.x не экспонирует OCG-bindings (проверено через
+  `strings PDFiumCore.dll | grep -i ocg`), поэтому работаем целиком через
+  PdfPig + cos-write. Чтение в `PdfOcgCosReader`: навигация `Catalog →
+  /OCProperties → /OCGs`-массив индирект'ов, парс `/Name` каждого OCG и
+  вычисление default-visibility из `/D → /OFF/ /ON/ /BaseState` по PDF spec
+  §8.11.4.4. Запись в `PdfOcgCosWriter` + `PdfCatalogCosWriter`: перевыписка
+  `/D`-словаря с новыми `/ON`/`/OFF` массивами поверх `PdfIncrementalWriter`
+  (тот же механизм инкрементального апдейта, что в PR #111 для Line/Polygon
+  аннотаций). Невалидные индексы в `visibilityByIndex` игнорируются
+  silently. **НЕ в scope MVP** (отложено на Phase 2+/3): создание/удаление
+  слоёв, перемещение объектов между слоями, иерархия (parent/child через
+  `/Order`), OCMD (Optional Content Membership Dictionary), сложные
+  visibility-правила (`/VE`), `/RBGroups`, `/Locked`, `/AS`-overrides. UI/DI
+  wiring — отдельный follow-up PR (W-серия). 9 unit-тестов
+  (`PdfiumOcgServiceTests`, `[Trait("Category", "Slow")]`): чтение 3 слоёв с
+  именами и default-visibility, пустой результат для PDF без OCG, toggle
+  слоя 0, idempotent empty-dictionary apply, out-of-range index ignored,
+  оригинал не мутируется (sha256-инвариант), re-enable previously hidden,
+  null-/blank-аргумент кейсы.
 - **Q-F12 (UI wiring) — Split-into-files + Extract-pages меню + диалоги**.
   `IPdfSplitService` уже зарегистрирован в `AppHostBuilder` и проброшен в
   `DocumentTabViewModel` factory (PR #105) — здесь добавлена только UI-обвязка.
