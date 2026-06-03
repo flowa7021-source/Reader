@@ -38,6 +38,34 @@
   blank/null path → `ArgumentException`, неизвестный profile →
   `ArgumentOutOfRangeException`, pre-cancelled token → `OperationCanceledException`,
   все 8 профилей проходят arg-guard, публичная константа `NotInstalledMessage`).
+- **Q-F30/F31 — port + домен PDF AES-256 шифрования (Phase 1 stub)**.
+  Greenfield-точка расширения для шифрования PDF (Q-F30) и восьми permission-флагов
+  (Q-F31), стратегически важная для юристов/корпоративного сектора. Новые типы:
+  `PdfPermissions` (`[Flags]` enum в `Foliant.Domain`, биты 1..128 — `Print`, `Modify`,
+  `Copy`, `Annotate`, `FillForms`, `Accessibility`, `Assemble`, `HighQualityPrint`,
+  плюс `None`/`All`; биты НЕ совпадают с PDF P-entry — маппинг будет в реализации),
+  `PdfEncryptionSpec` (immutable record c `Create`-фабрикой и инвариантами:
+  user-password не null, owner-password не null/пуст, allowed permissions — flags),
+  `IPdfEncryptionService` (port в `Foliant.Application/Services`: один метод
+  `EncryptAsync(sourcePath, targetPath, spec, ct)`, контракт ошибок документирован —
+  argument-валидация → атомарная запись через temp+Move). Реализация в этом PR —
+  `StubPdfEncryptionService` в `Foliant.Engines.Pdf`: проверяет аргументы и бросает
+  `NotSupportedException("Q-F30/F31, Phase 3 decision pending")`. Phase 1 — stub,
+  потому что текущий PdfPig 0.1.10 не поддерживает запись encrypted output
+  (`PdfDocumentBuilder` создаёт только открытые документы; чтение через
+  `ParsingOptions.Password` — есть, запись — нет). Phase 3 решит между **QPDF embed**
+  (production-quality, +~5 MB нативного бинаря в инсталлятор, cross-platform упаковка)
+  и **raw cos-write через BouncyCastle** (managed-only, нулевой footprint, но
+  ~600-800 строк encryption-dict + AES stream handler + R=6 password algorithm по
+  ISO 32000-2 §7.6.4 + golden-тесты против Acrobat = 1-2 спринта). UI/DI wiring —
+  отдельный PR (port готов к регистрации в `AppHostBuilder` и пробросу в VM-фабрику
+  без правки domain/Application). **31 новый тест**: 9 параметризованных bit-value
+  тестов `PdfPermissions` (закрепляют 1/2/4/.../128 + `All=0xFF` + `[Flags]`-атрибут),
+  6 record-семантика+валидация `PdfEncryptionSpec` (round-trip, value-equality,
+  `with`-копии, null-user / null-or-empty-owner → `ArgumentException`),
+  10 contract-тестов `StubPdfEncryptionService` (NotSupported с маркером Q-F30/F31,
+  blank source/target → ArgumentException, null spec → ArgumentNullException,
+  pre-cancelled token → OperationCanceledException, реализация — `IPdfEncryptionService`).
 - **Q-F12 (UI wiring) — Split-into-files + Extract-pages меню + диалоги**.
   `IPdfSplitService` уже зарегистрирован в `AppHostBuilder` и проброшен в
   `DocumentTabViewModel` factory (PR #105) — здесь добавлена только UI-обвязка.
