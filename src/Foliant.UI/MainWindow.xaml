@@ -296,6 +296,9 @@
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewThumbnails]}"
                   Command="{Binding SelectedTab.ToggleThumbnailStripCommand}" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuViewLayers]}"
+                  IsEnabled="{Binding SelectedTab.CanShowLayers, FallbackValue=False}"
+                  Click="OnShowLayersMenuItemClick" />
       </MenuItem>
     </Menu>
 

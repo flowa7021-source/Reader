@@ -748,6 +748,24 @@
   <data name="BatesSaveDialogTitle" xml:space="preserve">
     <value>Сохранить PDF с Bates-нумерацией как</value>
   </data>
+  <data name="MenuViewLayers" xml:space="preserve">
+    <value>_Слои…</value>
+  </data>
+  <data name="LayersDialogTitle" xml:space="preserve">
+    <value>Слои</value>
+  </data>
+  <data name="LayersEmpty" xml:space="preserve">
+    <value>В документе нет слоёв.</value>
+  </data>
+  <data name="LayersSaveButton" xml:space="preserve">
+    <value>Сохранить копию…</value>
+  </data>
+  <data name="LayersCancelButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="LayersSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить изменённый PDF</value>
+  </data>
   <data name="MenuFileSplitEvery" xml:space="preserve">
     <value>Разбить на файлы…</value>
   </data>

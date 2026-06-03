@@ -730,6 +730,61 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnShowLayersMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanShowLayers: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+
+        // Load the layer snapshot through the VM first so CurrentLayers is populated before the
+        // dialog is built — the dialog seeds itself from that collection and never re-reads.
+        try
+        {
+            await tab.ShowLayersCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error reading layers from '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["LayersSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-layers.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var (request, ok) = LayersDialog.Prompt(this, tab.CurrentLayers, save.FileName);
+        if (!ok || request is null || request.VisibilityByIndex.Count == 0)
+        {
+            // No layer toggled → nothing to write. Avoid producing an identical copy.
+            return;
+        }
+
+        try
+        {
+            await tab.SaveLayerVisibilityCommand.ExecuteAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error saving layer visibility to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnSplitEveryMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanSplitPdf: true } tab)

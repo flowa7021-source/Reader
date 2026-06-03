@@ -163,6 +163,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IFindAndRedactService, FindAndRedactService>();
         services.AddSingleton<IPdfSplitService, PdfPigSplitService>();
         services.AddSingleton<IBatesNumberingService, PdfiumBatesNumberingService>();
+        services.AddSingleton<IPdfOcgService, PdfiumOcgService>();
         services.AddSingleton<IBatchJobRunner>(sp => new BatchJobRunner(
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<BatchJobRunner>(),
             watermark: sp.GetService<IWatermarkService>(),
@@ -291,7 +292,8 @@ internal static class AppHostBuilder
                 redactionService: sp.GetService<IRedactionService>(),
                 findAndRedactService: sp.GetService<IFindAndRedactService>(),
                 splitService: sp.GetService<IPdfSplitService>(),
-                batesService: sp.GetService<IBatesNumberingService>()));
+                batesService: sp.GetService<IBatesNumberingService>(),
+                ocgService: sp.GetService<IPdfOcgService>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.
