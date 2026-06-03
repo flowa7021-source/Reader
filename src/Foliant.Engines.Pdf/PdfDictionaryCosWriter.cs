@@ -50,6 +50,11 @@ internal static class PdfDictionaryCosWriter
         return sb.ToString();
     }
 
+    /// <summary>Сериализует произвольный PdfPig-токен. Internal — для переиспользования
+    /// другими cos-writer'ами того же проекта (<see cref="PdfOcgCosWriter"/>) без
+    /// дублирования поддержки всех типов токенов.</summary>
+    internal static void WriteAnyToken(StringBuilder sb, IToken token) => WriteToken(sb, token);
+
     private static void WriteToken(StringBuilder sb, IToken token)
     {
         switch (token)
