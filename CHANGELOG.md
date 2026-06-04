@@ -8,6 +8,28 @@
 ## [Unreleased]
 
 ### Added
+- **PDF /Outlines writer — embed bookmarks back into PDF (symmetric to reader)**. Новый порт
+  `IPdfOutlineWriter` (`Foliant.Application/Services`) + реализация `PdfPigOutlineWriter`
+  (`Foliant.Engines.Pdf`): берёт плоский список `DocumentOutlineEntry` (PageIndex 0-based, Title,
+  Depth 0-based) и встраивает его в PDF `/Outlines`, чтобы закладки стали видны в Acrobat / любом
+  стороннем viewer'е — обратная операция к `PdfPigOutlineReader`. **Вариант B (cos
+  incremental write)**: переиспользует инфру #111/#119 (`PdfIncrementalWriter`,
+  `PdfDictionaryCosWriter`), эмитит N item-объектов + 1 root `/Outlines` dict + обновлённый catalog
+  с `/Outlines N 0 R`; навигирует Catalog→/Pages→/Kids для `IndirectReference` каждой страницы
+  (как `PdfPigAnnotationAppender`) и пишет `/Dest [pageRef /Fit]` на каждый узел. **Вложенность
+  по Depth** через depth-stack: корректная linkage (`/First`/`/Last`/`/Next`/`/Prev`/`/Parent`) и
+  `/Count`; Depth-«прыжки» зажимаются на 1 уровень/шаг, чтобы дерево оставалось связным.
+  Оригинал не мутируется (инкрементальный апдейт + атомарная temp+Move запись в `targetPath`,
+  source==target безопасно). Пустой список → валидный PDF без `/Outlines`. PageIndex вне диапазона
+  страниц зажимается в `[0, pageCount-1]`. Unicode-заголовки (кириллица) пишутся UTF-16BE+BOM hex
+  (паттерн `PdfAnnotationCosWriter`). НЕ покрыто намеренно: named destinations, open/closed
+  состояние (`/Count` знак), цвета/стили (`/C`/`/F`), XYZ-zoom — только GoTo-page `/Fit`. cos-логика
+  разнесена по helper'ам (`PdfOutlineCosWriter`, `OutlineLinks`, `PdfTextString`,
+  `PdfCatalogOutlineCosWriter`) для соблюдения лимитов файла/метода. **12 новых тестов**
+  (`PdfOutlineWriterTests`, чистый PdfPig, без Slow): round-trip против `PdfPigOutlineReader` —
+  flat (3 entry) + nested (Depth 0/1/1/0) + Unicode lossless + empty + page-count сохраняется +
+  source sha256 unchanged + PageIndex clamp; argument-контракт (blank source/target →
+  `ArgumentException`, null entries → `ArgumentNullException`). Wiring (DI/UI) — отдельный PR.
 - **PDF document metadata (/Info) editing — Title/Author/Subject/Keywords/Creator/Producer
   (PdfPig)**. До этого PR метаданные документа только **читались** (`IDocument.Metadata`);
   стандартная Acrobat-фича «Document Properties» (правка /Info) отсутствовала. Добавлены чистый
