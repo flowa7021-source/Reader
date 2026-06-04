@@ -8,6 +8,24 @@
 ## [Unreleased]
 
 ### Added
+- **Open password-protected PDFs (read-side decrypt) — prompt for password and retry**.
+  Зашифрованные (password-protected) PDF теперь открываются: PDFium сам расшифровывает (AES/RC4)
+  по переданному паролю — мы только проплываем пароль, ловим «нужен пароль» и спрашиваем у
+  пользователя. **Domain**: новый типизированный `DocumentPasswordRequiredException`
+  (`: InvalidOperationException`, с `Path` + фабрикой `ForPath`) + опциональный интерфейс
+  `IPasswordAwareDocumentLoader` (существующий `IDocumentLoader` не тронут). **Engine**:
+  `PdfDocumentLoader` реализует оба контракта; тело вынесено в core(`string? password`),
+  `FPDF_LoadDocument(path, password)` вместо хардкод-`null`, а `FPDF_ERR_PASSWORD` (код 4)
+  транслируется в типизированное исключение. **Application**: `OpenDocumentUseCase.ExecuteAsync`
+  получил перегрузку `(path, password, ct)` (старая `(path, ct)` сохранена → reopen-вызов не
+  тронут), пароль пробрасывается только в password-aware loader'ы; новый порт `IPasswordPrompt`.
+  **ViewModels**: `MainViewModel` инжектит опциональный `IPasswordPrompt`; retry-loop
+  (`TryLoadWithPasswordAsync`) спрашивает пароль с растущим `attempt`, тихо выходит на отмену,
+  пробрасывает в headless-пути. **UI**: модальный `PasswordPromptDialog` (маскированный
+  `PasswordBox`, Open/Cancel, retry-баннер) + `WpfPasswordPrompt` (маршалинг на UI-поток) + DI.
+  Только read/view-only; шифрование при сохранении (write) остаётся `StubPdfEncryptionService`.
+  Локализация EN/RU (4 ключа, общий `DialogCancel` переиспользован). **3 App + 4 VM + 4 Engine
+  теста** (включая реальный RC4-фикстур, на котором PDFium возвращает «password required»).
 - **Export Bookmarks to PDF — write sidecar bookmarks into the PDF /Outlines (wiring for #123, W7)**.
   Подключает `IPdfOutlineWriter`/`PdfPigOutlineWriter` к приложению: регистрация в DI
   (`AppHostBuilder`) + проброс в `DocumentTabViewModel` (опциональный ctor-параметр `outlineWriter`).

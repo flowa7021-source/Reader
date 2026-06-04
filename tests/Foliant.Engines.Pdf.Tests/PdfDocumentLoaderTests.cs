@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Foliant.Domain;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -79,5 +80,41 @@ public sealed class PdfDocumentLoaderTests : IDisposable
 
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*PDFium*");
+    }
+
+    // ───── Password-aware overload (read-side decrypt) ─────
+
+    [Fact]
+    public void Loader_ImplementsPasswordAwareContract() =>
+        _sut.Should().BeAssignableTo<Domain.IPasswordAwareDocumentLoader>();
+
+    [Fact]
+    [Trait("Category", "Slow")]
+    public async Task LoadAsync_WithNullPassword_LoadsUnencryptedPdf()
+    {
+        // Регрессия: рефакторинг вынес тело в core(password) — незашифрованный PDF должен
+        // по-прежнему открываться через новую перегрузку с password: null.
+        var path = Path.Combine(_tmpDir, "plain.pdf");
+        File.WriteAllBytes(path, MinimalPdfFactory.Create());
+
+        await using var doc = await ((Domain.IPasswordAwareDocumentLoader)_sut)
+            .LoadAsync(path, password: null, default);
+
+        doc.PageCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task LoadAsync_PasswordRequired_ThrowsTypedException_WithPath()
+    {
+        // PDF с /Encrypt-словарём, но без валидного пароля по умолчанию → PDFium вернёт
+        // FPDF_ERR_PASSWORD, который loader транслирует в DocumentPasswordRequiredException.
+        var path = Path.Combine(_tmpDir, "encrypted.pdf");
+        File.WriteAllBytes(path, EncryptedPdfFactory.CreateRc4WithUserPassword());
+
+        var act = async () => await ((Domain.IPasswordAwareDocumentLoader)_sut)
+            .LoadAsync(path, password: null, default);
+
+        var ex = await act.Should().ThrowAsync<DocumentPasswordRequiredException>();
+        ex.Which.Path.Should().Be(path);
     }
 }

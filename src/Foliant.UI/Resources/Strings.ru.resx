@@ -850,4 +850,16 @@
   <data name="ExportBookmarksToPdfSaveDialogTitle" xml:space="preserve">
     <value>Сохранить PDF с закладками как</value>
   </data>
+  <data name="PasswordPromptTitle" xml:space="preserve">
+    <value>Требуется пароль</value>
+  </data>
+  <data name="PasswordPromptMessage" xml:space="preserve">
+    <value>Этот PDF защищён паролем. Введите пароль для открытия.</value>
+  </data>
+  <data name="PasswordPromptRetry" xml:space="preserve">
+    <value>Неверный пароль. Попробуйте ещё раз.</value>
+  </data>
+  <data name="PasswordPromptOk" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
 </root>
