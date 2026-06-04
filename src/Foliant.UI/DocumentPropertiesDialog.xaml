@@ -1,0 +1,103 @@
+<Window x:Class="Foliant.UI.DocumentPropertiesDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Foliant.UI.Localization"
+        Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsDialogTitle]}"
+        SizeToContent="Height"
+        Width="560"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackground}">
+
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="140" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- Title -->
+    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsTitleLabel]}" />
+    <TextBox x:Name="TitleBox" Grid.Row="0" Grid.Column="1" Margin="0,4" Padding="4"
+             Text="{Binding DocTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+    <!-- Author -->
+    <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsAuthorLabel]}" />
+    <TextBox Grid.Row="1" Grid.Column="1" Margin="0,4" Padding="4"
+             Text="{Binding Author, UpdateSourceTrigger=PropertyChanged}" />
+
+    <!-- Subject -->
+    <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsSubjectLabel]}" />
+    <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Padding="4"
+             Text="{Binding Subject, UpdateSourceTrigger=PropertyChanged}" />
+
+    <!-- Keywords -->
+    <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsKeywordsLabel]}" />
+    <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Padding="4"
+             Text="{Binding Keywords, UpdateSourceTrigger=PropertyChanged}" />
+
+    <!-- Creator -->
+    <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsCreatorLabel]}" />
+    <TextBox Grid.Row="4" Grid.Column="1" Margin="0,4" Padding="4"
+             Text="{Binding Creator, UpdateSourceTrigger=PropertyChanged}" />
+
+    <!-- Producer -->
+    <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsProducerLabel]}" />
+    <TextBox Grid.Row="5" Grid.Column="1" Margin="0,4" Padding="4"
+             Text="{Binding Producer, UpdateSourceTrigger=PropertyChanged}" />
+
+    <!-- Created (read-only) -->
+    <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsCreatedLabel]}" />
+    <TextBlock Grid.Row="6" Grid.Column="1" Margin="0,8" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding CreatedDisplay, Mode=OneWay}" />
+
+    <!-- Modified (read-only) -->
+    <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsModifiedLabel]}" />
+    <TextBlock Grid.Row="7" Grid.Column="1" Margin="0,8" VerticalAlignment="Center"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding ModifiedDisplay, Mode=OneWay}" />
+
+    <!-- Save As / Cancel -->
+    <StackPanel Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="0,16,0,0">
+      <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsSaveButton]}"
+              Width="100" Margin="0,0,8,0"
+              IsDefault="True"
+              Click="OnSaveClick" />
+      <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DocPropsCancelButton]}"
+              Width="80"
+              IsCancel="True"
+              Click="OnCancelClick" />
+    </StackPanel>
+  </Grid>
+</Window>

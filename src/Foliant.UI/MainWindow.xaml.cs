@@ -730,6 +730,46 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnDocumentPropertiesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanEditMetadata: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["DocPropsSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-properties.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var (request, ok) = DocumentPropertiesDialog.Prompt(this, tab.CurrentMetadata, save.FileName);
+        if (!ok || request is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.SaveMetadataCommand.ExecuteAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error saving document properties to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnShowLayersMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanShowLayers: true } tab)
