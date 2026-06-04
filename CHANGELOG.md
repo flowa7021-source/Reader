@@ -8,6 +8,19 @@
 ## [Unreleased]
 
 ### Added
+- **Export Bookmarks to PDF — write sidecar bookmarks into the PDF /Outlines (wiring for #123, W7)**.
+  Подключает `IPdfOutlineWriter`/`PdfPigOutlineWriter` к приложению: регистрация в DI
+  (`AppHostBuilder`) + проброс в `DocumentTabViewModel` (опциональный ctor-параметр `outlineWriter`).
+  Новый VM-partial `DocumentTabViewModel.OutlineExport.cs`: gate `CanExportBookmarksToPdf`
+  (PDF-источник + writer подключён + непустой список закладок) и команда `ExportBookmarksToPdfCommand`,
+  которая конвертирует `Bookmarks` → `IReadOnlyList<DocumentOutlineEntry>` (PageIndex/Label→Title/Depth,
+  порядок сохранён) и делегирует в `WriteOutlineAsync` с подавлением исключений (как соседние
+  PDF-mutate команды). **Nested сохранён** — `Bookmark.Depth` прокидывается, writer строит дерево
+  из глубины, так что вложенные закладки переживают round-trip с «Import PDF Outline». Пункт меню
+  **File → Export Bookmarks to PDF…** (`IsEnabled` ← `CanExportBookmarksToPdf`) с SaveFileDialog
+  (PDF-filter, default-имя `<doc>-outline.pdf`). Локализация EN/RU (2 ключа). **11 новых VM-тестов**
+  (`DocumentTabViewModelOutlineExportTests`): forward converted entries, preserve depth, gate
+  (non-PDF / null-writer / empty-bookmarks), blank-target no-op, writer-throws-swallowed.
 - **Document Properties dialog — edit PDF /Info metadata from the UI (wiring for #122)**.
   Подключает `IPdfMetadataEditService`/`PdfPigMetadataEditService` к приложению: регистрация в DI
   (`AppHostBuilder`) + проброс в `DocumentTabViewModel` (опциональный ctor-параметр

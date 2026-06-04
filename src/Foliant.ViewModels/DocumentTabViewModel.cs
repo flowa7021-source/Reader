@@ -25,6 +25,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IPageRangeExtractor? _pageRangeExtractor;
     private readonly IPageImageExporter? _pageImageExporter;
     private readonly IPdfOutlineReader? _pdfOutlineReader;
+    private readonly IPdfOutlineWriter? _outlineWriter;
     private readonly IWatermarkService? _watermarkService;
     private readonly IHeaderFooterService? _headerFooterService;
     private readonly IPdfCropService? _cropService;
@@ -116,6 +117,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IAnnotatedPdfExportService? annotatedPdfExporter = null,
         IBookmarkFormatCatalog? bookmarkFormats = null,
         IPdfOutlineReader? pdfOutlineReader = null,
+        IPdfOutlineWriter? outlineWriter = null,
         IPageRangeExtractor? pageRangeExtractor = null,
         IPageImageExporter? pageImageExporter = null,
         IWatermarkService? watermarkService = null,
@@ -153,6 +155,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _annotatedPdfExporter = annotatedPdfExporter;
         _bookmarkFormats = bookmarkFormats;
         _pdfOutlineReader = pdfOutlineReader;
+        _outlineWriter = outlineWriter;
         _pageRangeExtractor = pageRangeExtractor;
         _pageImageExporter = pageImageExporter;
         _watermarkService = watermarkService;
@@ -200,6 +203,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
             OnPropertyChanged(nameof(IsCurrentPageBookmarked));
             OnPropertyChanged(nameof(CanExportBookmarks));
             ExportBookmarksCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(CanExportBookmarksToPdf));
+            ExportBookmarksToPdfCommand.NotifyCanExecuteChanged();
         };
         SearchResults.CollectionChanged += (_, _) =>
         {

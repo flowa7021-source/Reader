@@ -172,6 +172,7 @@ internal static class AppHostBuilder
             crop: sp.GetService<IPdfCropService>()));
         services.AddSingleton<IPageImageExporter, WpfPageImageExporter>();
         services.AddSingleton<IPdfOutlineReader, PdfPigOutlineReader>();
+        services.AddSingleton<IPdfOutlineWriter, PdfPigOutlineWriter>();
 
         // Application
         services.AddSingleton<OpenDocumentUseCase>();
@@ -282,6 +283,7 @@ internal static class AppHostBuilder
                 annotatedPdfExporter: sp.GetService<IAnnotatedPdfExportService>(),
                 bookmarkFormats: sp.GetService<IBookmarkFormatCatalog>(),
                 pdfOutlineReader: sp.GetService<IPdfOutlineReader>(),
+                outlineWriter: sp.GetService<IPdfOutlineWriter>(),
                 pageRangeExtractor: sp.GetService<IPageRangeExtractor>(),
                 pageImageExporter: sp.GetService<IPageImageExporter>(),
                 watermarkService: sp.GetService<IWatermarkService>(),

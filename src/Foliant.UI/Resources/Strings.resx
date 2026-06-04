@@ -844,4 +844,10 @@
   <data name="DocPropsSaveDialogTitle" xml:space="preserve">
     <value>Save PDF with Updated Properties As</value>
   </data>
+  <data name="MenuFileExportBookmarksToPdf" xml:space="preserve">
+    <value>Export Bookmarks to _PDF…</value>
+  </data>
+  <data name="ExportBookmarksToPdfSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with bookmarks as</value>
+  </data>
 </root>
