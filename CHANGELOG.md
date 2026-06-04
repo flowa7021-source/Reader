@@ -8,6 +8,28 @@
 ## [Unreleased]
 
 ### Added
+- **PDF document metadata (/Info) editing — Title/Author/Subject/Keywords/Creator/Producer
+  (PdfPig)**. До этого PR метаданные документа только **читались** (`IDocument.Metadata`);
+  стандартная Acrobat-фича «Document Properties» (правка /Info) отсутствовала. Добавлены чистый
+  port + PdfPig-реализация, без UI/DI (wiring — отдельный PR). Артефакты:
+  `Foliant.Domain.PdfMetadataSpec` (record, все 6 полей `string?`, default `null`);
+  `Foliant.Application.Services.IPdfMetadataEditService.EditAsync(sourcePath, targetPath, spec, ct)`;
+  `Foliant.Engines.Pdf.PdfPigMetadataEditService`. Семантика поля: `null` → «не менять»
+  (сохранить текущее значение source), пустая строка → «очистить» (PdfPig пишет пустой
+  /Info-entry), непустая строка → перезаписать as-is (без культур-зависимостей). Реализация
+  сливает source `.Information` со spec (`spec.X ?? source.X`) и ре-сериализует все страницы
+  через `PdfMerger.Merge([source], [allPages], PdfAStandard.None, DocumentInformationBuilder)`;
+  оригинал не мутируется (atomic temp + Move, паттерн split/extract). Контракт ошибок: blank
+  пути → `ArgumentException`, null spec → `ArgumentNullException`, битый PDF/IO →
+  пробрасывается. **Fidelity**: re-serialization сохраняет страницы, контент и аннотации —
+  проверено тестом, Text- и Link-аннотации (вместе с их `/Contents`) переживают round-trip в
+  PdfPig 0.1.10, потерь нет. Ограничение: XMP metadata stream и история incremental-update не
+  сохраняются (заменяются свежим /Info); для documents-of-record с XMP — будущая Phase 3 через
+  incremental `/Info` write. Scope не включает XMP, custom-properties, /CreationDate · /ModDate.
+  **14 новых тестов** (pure-managed PdfPig, зелёные в Linux-CI): set-single-field,
+  null-preserves-existing, empty-clears, all-six-round-trip, page-count-preserved (10→10),
+  source-not-mutated (SHA-256), blank-path/null-spec arg-guards, annotation-fidelity,
+  atomic-write-no-tmp-linger.
 - **Q-F8 UI — OCG (PDF layers) panel + DI wiring**. Подключение F8-сервиса (`IPdfOcgService` /
   `PdfiumOcgService`, ранее зарегистрированного отдельным PR) к DI и UI: новая команда
   `ShowLayers` загружает снимок слоёв в `DocumentTabViewModel.CurrentLayers` через
