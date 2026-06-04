@@ -844,4 +844,10 @@
   <data name="DocPropsSaveDialogTitle" xml:space="preserve">
     <value>Сохранить PDF с обновлёнными свойствами как</value>
   </data>
+  <data name="MenuFileExportBookmarksToPdf" xml:space="preserve">
+    <value>Экспорт закладок в _PDF…</value>
+  </data>
+  <data name="ExportBookmarksToPdfSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с закладками как</value>
+  </data>
 </root>
