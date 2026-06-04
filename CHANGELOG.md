@@ -8,6 +8,19 @@
 ## [Unreleased]
 
 ### Added
+- **Document Properties dialog — edit PDF /Info metadata from the UI (wiring for #122)**.
+  Подключает `IPdfMetadataEditService`/`PdfPigMetadataEditService` к приложению: регистрация в DI
+  (`AppHostBuilder`) + проброс в `DocumentTabViewModel` (опциональный ctor-параметр
+  `metadataEditService`). Новый WPF-диалог `DocumentPropertiesDialog` (по образцу
+  `BatesNumberingDialog`) с editable-полями Title/Author/Subject/Keywords/Creator/Producer и
+  read-only датами Created/Modified; пункт меню **File → Document Properties…**
+  (`IsEnabled` ← `CanEditMetadata`, PDF-only). VM-команда `SaveMetadataCommand` делегирует в
+  `EditAsync` с подавлением исключений (как соседние PDF-mutate команды);
+  `CurrentMetadata`-снимок предзаполняет диалог. **Empty-field семантика**: пустой TextBox → `null`
+  («не менять»), чтобы открытие диалога и Save без правок не стирали присутствующие/отсутствующие
+  значения source. Локализация EN/RU (13 ключей). **10 новых VM-тестов**
+  (`DocumentTabViewModelMetadataTests`): forward spec+path, non-PDF/null-service/null-request no-op,
+  blank-target no-op, service-throws-swallowed, `CurrentMetadata`-snapshot.
 - **PDF /Outlines writer — embed bookmarks back into PDF (symmetric to reader)**. Новый порт
   `IPdfOutlineWriter` (`Foliant.Application/Services`) + реализация `PdfPigOutlineWriter`
   (`Foliant.Engines.Pdf`): берёт плоский список `DocumentOutlineEntry` (PageIndex 0-based, Title,

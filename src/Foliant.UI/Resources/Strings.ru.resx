@@ -805,4 +805,43 @@
   <data name="ExtractSaveDialogTitle" xml:space="preserve">
     <value>Сохранить извлечённые страницы как</value>
   </data>
+  <data name="MenuFileDocumentProperties" xml:space="preserve">
+    <value>_Свойства документа…</value>
+  </data>
+  <data name="DocPropsDialogTitle" xml:space="preserve">
+    <value>Свойства документа</value>
+  </data>
+  <data name="DocPropsTitleLabel" xml:space="preserve">
+    <value>Заголовок</value>
+  </data>
+  <data name="DocPropsAuthorLabel" xml:space="preserve">
+    <value>Автор</value>
+  </data>
+  <data name="DocPropsSubjectLabel" xml:space="preserve">
+    <value>Тема</value>
+  </data>
+  <data name="DocPropsKeywordsLabel" xml:space="preserve">
+    <value>Ключевые слова</value>
+  </data>
+  <data name="DocPropsCreatorLabel" xml:space="preserve">
+    <value>Создатель</value>
+  </data>
+  <data name="DocPropsProducerLabel" xml:space="preserve">
+    <value>Производитель</value>
+  </data>
+  <data name="DocPropsCreatedLabel" xml:space="preserve">
+    <value>Создан</value>
+  </data>
+  <data name="DocPropsModifiedLabel" xml:space="preserve">
+    <value>Изменён</value>
+  </data>
+  <data name="DocPropsSaveButton" xml:space="preserve">
+    <value>Сохранить как…</value>
+  </data>
+  <data name="DocPropsCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="DocPropsSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с обновлёнными свойствами как</value>
+  </data>
 </root>

@@ -805,4 +805,43 @@
   <data name="ExtractSaveDialogTitle" xml:space="preserve">
     <value>Save Extracted Pages As</value>
   </data>
+  <data name="MenuFileDocumentProperties" xml:space="preserve">
+    <value>Document _Properties…</value>
+  </data>
+  <data name="DocPropsDialogTitle" xml:space="preserve">
+    <value>Document Properties</value>
+  </data>
+  <data name="DocPropsTitleLabel" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="DocPropsAuthorLabel" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="DocPropsSubjectLabel" xml:space="preserve">
+    <value>Subject</value>
+  </data>
+  <data name="DocPropsKeywordsLabel" xml:space="preserve">
+    <value>Keywords</value>
+  </data>
+  <data name="DocPropsCreatorLabel" xml:space="preserve">
+    <value>Creator</value>
+  </data>
+  <data name="DocPropsProducerLabel" xml:space="preserve">
+    <value>Producer</value>
+  </data>
+  <data name="DocPropsCreatedLabel" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="DocPropsModifiedLabel" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="DocPropsSaveButton" xml:space="preserve">
+    <value>Save As…</value>
+  </data>
+  <data name="DocPropsCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="DocPropsSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with Updated Properties As</value>
+  </data>
 </root>

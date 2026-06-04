@@ -163,6 +163,7 @@ internal static class AppHostBuilder
         services.AddSingleton<IFindAndRedactService, FindAndRedactService>();
         services.AddSingleton<IPdfSplitService, PdfPigSplitService>();
         services.AddSingleton<IBatesNumberingService, PdfiumBatesNumberingService>();
+        services.AddSingleton<IPdfMetadataEditService, PdfPigMetadataEditService>();
         services.AddSingleton<IPdfOcgService, PdfiumOcgService>();
         services.AddSingleton<IBatchJobRunner>(sp => new BatchJobRunner(
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<BatchJobRunner>(),
@@ -293,6 +294,7 @@ internal static class AppHostBuilder
                 findAndRedactService: sp.GetService<IFindAndRedactService>(),
                 splitService: sp.GetService<IPdfSplitService>(),
                 batesService: sp.GetService<IBatesNumberingService>(),
+                metadataEditService: sp.GetService<IPdfMetadataEditService>(),
                 ocgService: sp.GetService<IPdfOcgService>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the

@@ -35,6 +35,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IFindAndRedactService? _findAndRedactService;
     private readonly IPdfSplitService? _splitService;
     private readonly IBatesNumberingService? _batesService;
+    private readonly IPdfMetadataEditService? _metadataEditService;
     private readonly IPdfOcgService? _ocgService;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
@@ -127,6 +128,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IFindAndRedactService? findAndRedactService = null,
         IPdfSplitService? splitService = null,
         IBatesNumberingService? batesService = null,
+        IPdfMetadataEditService? metadataEditService = null,
         IPdfOcgService? ocgService = null)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -163,6 +165,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _findAndRedactService = findAndRedactService;
         _splitService = splitService;
         _batesService = batesService;
+        _metadataEditService = metadataEditService;
         _ocgService = ocgService;
         _logger = logger;
         // Снимок настройки RTL (Q-F3): runtime-смена через Settings dialog требует пере-открытия
