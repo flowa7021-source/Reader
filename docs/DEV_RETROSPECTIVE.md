@@ -94,7 +94,13 @@ Application/plugins → Infra/Engines/VM → хвосты → рантайм-т�
    вне `Foliant.CrossPlatform.slnf` → ошибки компиляции там всплывают ТОЛЬКО на Windows-CI:
    `AppHostBuilder` использовал `IHttpClientFactory` без `using System.Net.Http;` (CS0246) и прошёл
    все Linux-проверки + `verify-local.sh`. **Правило:** держать логику в кросс-платформенных слоях,
-   а Windows-only проекты — тонкими; для кода там Windows-CI — единственная компиляционная проверка.
+   а Windows-only проекты — тонкими.
+   **ОБНОВЛЕНО (Q-F UI-трек):** «Windows-CI — единственная компиляционная проверка» больше НЕ так.
+   `dotnet build src/Foliant.UI -p:EnableWindowsTargeting=true` компилирует `net10.0-windows` проекты
+   на Linux (C# code-behind + XAML-разметка), ловя CS0246/CS0108/CS1734 и namespace-клэши локально —
+   тот самый `IHttpClientFactory`-CS0246 был бы пойман до пуша. Этот шаг занесён в `BUILD.md`
+   («Проверка перед PR») и должен входить в бриф любого UI-агента. Не ловится по-прежнему: runtime
+   data-binding (`{Binding}` к несуществующему свойству — не compile-ошибка ни на одной ОС) и рендер.
 4. **Тонкости измерения покрытия.** (a) coverlet пишет один исходник под РАЗНЫМИ путями в разных
    тест-проектах (`Annotation.cs` / `Foliant.Domain/Annotation.cs` / `src/...`) → union обязан
    ключеваться по basename, иначе общий слой (Domain, на который ссылаются все) занижается вдвое.

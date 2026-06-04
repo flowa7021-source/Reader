@@ -60,6 +60,14 @@ dotnet build  Foliant.sln -c Release -warnaserror
 dotnet test   Foliant.sln -c Release --filter "Category!=Slow&Category!=E2E"
 ```
 
+Меняли `Foliant.UI` / `Foliant.App` (или иной `net10.0-windows` проект) на Linux/macOS? Прогоните
+их compile-проверку локально — поймает CS0108/CS1734/namespace-клэши и XAML-ошибки до Windows-CI:
+
+```bash
+dotnet build src/Foliant.UI/Foliant.UI.csproj   -c Release -warnaserror -p:EnableWindowsTargeting=true
+dotnet build src/Foliant.App/Foliant.App.csproj  -c Release -warnaserror -p:EnableWindowsTargeting=true
+```
+
 ## Performance
 
 ```powershell
@@ -117,14 +125,14 @@ git submodule update --init --recursive
 ## Кросс-платформенная разработка (Linux / macOS)
 
 - **Тесты** проектов `Foliant.Domain`, `Foliant.Application`, **большинство** `Foliant.Infrastructure` — кросс-платформенные. Можно запускать на Linux / macOS.
-- **WPF / Windows Forms** проекты (`Foliant.UI`, `Foliant.App`) — **только Windows**. Compile-time ошибка на Linux.
+- **WPF / Windows Forms** проекты (`Foliant.UI`, `Foliant.App`) — **запуск** только на Windows, но **компилируются** и на Linux/macOS флагом `-p:EnableWindowsTargeting=true` (подтягивает `Microsoft.WindowsDesktop.App.Ref`-пак). Это даёт compile-проверку C# code-behind **и** XAML-разметки (CS0108/CS1734, namespace-клэши, неверные типы в XAML) ещё до Windows-CI. Не покрывается локально: runtime data-binding (не ловится компиляцией ни на одной ОС) и фактический рендер/нативка.
 - **PDFium / Tesseract integration tests** — формально cross-platform (PDFiumCore поддерживает Win/Linux/Mac), но в Phase 1 оптимизированы под Windows runner.
 
 ## Решение типичных проблем
 
 | Симптом | Причина | Фикс |
 |---|---|---|
-| `WindowsBase.dll not found` | Сборка не на Windows | Сборка только на Windows-runner для UI/App |
+| `WindowsBase.dll not found` / `*.dll not found` для UI/App на Linux | Нет windows-targeting пака | Добавить `-p:EnableWindowsTargeting=true` к `dotnet build` (compile-проверка; запуск — всё равно Windows) |
 | `PDFiumCore native binary not found` | runtimes/ не скопировался | `dotnet build` (не только `restore`) |
 | `Tesseract: tessdata not found` | `fetch-natives.ps1` не запускался | `pwsh tools/fetch-natives.ps1` |
 | `dotnet format` ругается на свежий PR | EditorConfig нарушен | `dotnet format Foliant.sln` |
