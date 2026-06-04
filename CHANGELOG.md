@@ -8,6 +8,21 @@
 ## [Unreleased]
 
 ### Added
+- **Q-F8 UI — OCG (PDF layers) panel + DI wiring**. Подключение F8-сервиса (`IPdfOcgService` /
+  `PdfiumOcgService`, ранее зарегистрированного отдельным PR) к DI и UI: новая команда
+  `ShowLayers` загружает снимок слоёв в `DocumentTabViewModel.CurrentLayers` через
+  `IPdfOcgService.ReadLayersAsync`; команда `SaveLayerVisibility` делегирует в
+  `SetLayerVisibilityAsync` с per-index dict пересечённых пользователем чекбоксов. UI: View →
+  Layers… открывает модальный `LayersDialog` со списком `CheckBox` (two-way `IsVisible`),
+  пустое состояние — текст «no layers»; Save Modified Copy… пишет атомарный новый PDF, оригинал
+  не мутируется (паттерн watermark/redact). Новые типы: `PdfLayerViewModel` (mutable обёртка
+  с `LayerName`/`Index`/`IsVisible` — имя свойства специально не `Name` против CS0108-конфликта
+  с `FrameworkElement.Name`); `SaveLayerVisibilityRequest` record. Локали EN/RU синхронны:
+  `MenuViewLayers`, `LayersDialogTitle`, `LayersEmpty`, `LayersSaveButton`, `LayersCancelButton`,
+  `LayersSaveDialogTitle`. **13 новых VM-тестов**: gate-properties (3) + `ShowLayersCommand` (5,
+  включая reload-replaces-snapshot + suppresses service throw) + `SaveLayerVisibilityCommand` (5,
+  включая blank-target no-op + suppresses service throw) + `PdfLayerViewModel` (2). Self-check
+  reserved-names + paramref пройден на обоих `.xaml.cs`.
 - **Q-F-PdfA (port + honest stub) — PDF/A compliance validation interface
   (Вариант C)**. Greenfield-задача: до этого PR в Foliant не было ни порта, ни
   движка PDF/A-валидации. Реализован чистый port + «честная заглушка», чтобы

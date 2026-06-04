@@ -748,6 +748,24 @@
   <data name="BatesSaveDialogTitle" xml:space="preserve">
     <value>Save Bates-Numbered PDF As</value>
   </data>
+  <data name="MenuViewLayers" xml:space="preserve">
+    <value>_Layers…</value>
+  </data>
+  <data name="LayersDialogTitle" xml:space="preserve">
+    <value>Layers</value>
+  </data>
+  <data name="LayersEmpty" xml:space="preserve">
+    <value>This document has no layers.</value>
+  </data>
+  <data name="LayersSaveButton" xml:space="preserve">
+    <value>Save Modified Copy…</value>
+  </data>
+  <data name="LayersCancelButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="LayersSaveDialogTitle" xml:space="preserve">
+    <value>Save modified PDF</value>
+  </data>
   <data name="MenuFileSplitEvery" xml:space="preserve">
     <value>Split into Files…</value>
   </data>
