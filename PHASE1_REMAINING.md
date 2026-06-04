@@ -6,16 +6,17 @@
 
 ---
 
-## Статус-снимок (после #107 на main, 2026-06-02)
+## Статус-снимок (после #120 на main, 2026-06-03)
 
-- **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR — инфраструктура и `OcrCerIntegrationTests` готовы, остаются бинарные golden-сканы за Windows-стендом).
-- **Q-F фичи:** 24 ✅ (Q-F18 image-stamps закрыт #92–96; A5c XFDF/FDF round-trip #95+#100), 8 заморожены Phase 2+ (на 1 меньше: Q-F26 PAdES-B B-level merged в #103, F32 MVP merged в #102).
-- **Тесты cross-platform layer** (CI-фильтр `!Slow&!Integration&!E2E`, executed cases): Domain 218 / Application 372 / ViewModels 583 / Engines.Pdf 121 / Infrastructure 242. Итого 1685 executed на 2026-06-02.
-- **Перф-baseline:** S1/S3 + `perf.yml` gate (сравнение с baseline, порог 15 %, auto-issue) — **уже в main**.
-- **Подтверждено в main (не «todo»):** perf-regression gate, E2E update-check (`GitHubUpdateCheckService` + тесты), CS0535 CI-gate (#99), `SettingsMigrator v1→v2` (уже реализован — defaults `OcrModelTier.Basic`).
-- **Реальный остаток Phase 1 DoD:** только **D1** (бинарные OCR-сканы + ground-truth) и **E1** (Windows manual smoke + ISCC) — оба требуют Windows-стенда.
-- **Phase 2 wave 1 merged:** F26 PAdES-B (#103), F32 redaction MVP (#102). T-level/revocation для F26 и find-and-redact для F32 — отдельные follow-up (см. `ROADMAP.md` волна 4).
-- **Phase 2 wave 3 merged:** PDF split (#105), Bates numbering (#106), gitattributes union-merge (#107).
+- **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR — `OcrCerIntegrationTests` готов, остаются бинарные golden-сканы за Windows-стендом).
+- **Тесты cross-platform layer** (CI-фильтр, executed cases): Domain 243 / Application 404 / ViewModels 633 / Engines.Pdf 131 / Infrastructure 242. **Итого 1802** на 2026-06-03.
+- **Реальный остаток Phase 1 DoD:** только **D1** (бинарные OCR-сканы) и **E1** (Windows manual smoke + ISCC) — оба требуют Windows-стенда. **Не изменилось** через всю Phase-2 работу.
+- **Phase 2 merged (функциональные):** F26 PAdES-B (#103), F32 redaction + find-and-redact (#102/#110), F8 OCG layers (#119), A2b native /Annots 11/11 (#111). Вся UI-обвязка — #113–#116, #120.
+- **Phase 2 merged (port + honest stub):** F-PdfA (#117, AGPL block), F30 encryption (#118, PdfPig gap). Реальные impl — Phase 3 (verapdf CLI / QPDF), trajectory в PR.
+- **Инфраструктура merged:** `merge=union` для CHANGELOG (#107), Husky pre-push hook (#112), CS0535 CI-gate (#99).
+- **Подтверждено в main (не «todo»):** perf-regression gate, E2E update-check, `SettingsMigrator v1→v2`.
+
+> Полная разбивка волн Phase 2 — в `ROADMAP.md`. Этот файл — только Phase 1 DoD-остаток.
 
 ---
 
@@ -108,16 +109,16 @@
 
 ---
 
-## Out-of-scope (Phase 2+, заморожено)
+## Out-of-scope для Phase 1 (статус в Phase 2 — см. ROADMAP)
 
-- Q-F5/F6/F7/F9 — inline-редактор с reflow, font matching, inpainting сканов
-- Q-F8 — OCG layers editing
-- Q-F22 — XFA с JS-движком (кандидат на veto)
-- Q-F25 — full PAdES B+T validation (TSA timestamp + cert chain)
-- Q-F26 — PAdES с TSA
-- Q-F28 — LibreOffice плагин (out-of-process)
-- Q-F30/F31/F32 — шифрование AES-256, permissions 8 флагов, redaction
-- PDF/A, PDF/UA, PDF/X — спецстандарты
+- Q-F5/F6/F7/F9 — inline-редактор с reflow, font matching, inpainting сканов — **заморожено** (Trek 2: 2-й dev).
+- Q-F8 — OCG layers editing — **✅ read+toggle merged (#119/#120)**; creation/hierarchy — Phase 2+.
+- Q-F22 — XFA с JS-движком — **заморожено** (кандидат на veto, Trek 2).
+- Q-F25/F26 — PAdES: B-level **✅ merged (#103)**; T-level (TSA) + revocation — отложено (нужен TSA-сервер).
+- Q-F28 — LibreOffice плагин (out-of-process) — **заморожено**.
+- Q-F30/F31 — AES-256 + permissions — **port+stub merged (#118)**; real impl Phase 3 (QPDF / raw cos-write).
+- Q-F32 — redaction — **✅ merged (#102 координатный + #110 find-and-redact)**.
+- PDF/A — **port+stub merged (#117)**; real impl Phase 3 (verapdf CLI). PDF/UA, PDF/X — Phase 4.
 
 ---
 
@@ -129,3 +130,4 @@
 | 2026-06-01 | Refresh: добавлены 22 закрытых трека, отмечены подтверждённые D1/D2, обновлён список оставшихся работ | claude |
 | 2026-06-01 | A5c → ✅ done: ImagePath round-trip через XFDF/FDF (углы: non-stamp, Unicode, спецсимволы) | claude |
 | 2026-06-02 | Phase 2 wave 1 merged: Q-F26 PAdES-B (#103), Q-F32 redaction MVP (#102); wave 3 merged: PDF split (#105), Bates (#106), `.gitattributes` union-merge (#107). Phase 1 DoD-остаток (D1+E1) не изменился — оба Windows-gated. | claude |
+| 2026-06-03 | Phase 2 продолжение merged #108–#120: UI-обвязка всех функциональных фич (#113–#116 redaction/bates/split/sig + #120 OCG), A2b native /Annots 11/11 (#111), find-and-redact (#110), F8 OCG real (#119), F-PdfA+F30 port+stub (#117/#118), Husky hook (#112). Тесты 1685→1802. DoD-остаток (D1+E1) по-прежнему не изменился. | claude |

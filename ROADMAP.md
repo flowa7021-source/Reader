@@ -12,28 +12,25 @@
 
 ---
 
-## Статус-снимок (после #107 на main, 2026-06-02)
+## Статус-снимок (после #120 на main, 2026-06-03)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
-- **Q-F фичи:** 24 ✅ (Q-F18 image-stamps #92–96; A5c XFDF/FDF #95+#100), **+ 2 Phase-2 partial merged** (Q-F26 PAdES-B #103, Q-F32 redaction MVP #102), 8 заморожены Phase 2+.
-- **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases на 2026-06-02):
-  - Domain 218 / Application 372 / ViewModels 583 (target gates D90/A80/I70/V60 держатся).
-  - Engines.Pdf 121 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 (1 skip — Windows-only).
+- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction + find-and-redact (#102/#110), Q-F8 OCG layers (#119), Q-F17 11/11 native annots (#111). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 encryption (#118). UI-обвязка всех функциональных фич — #113–#116, #120.
+- **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases на 2026-06-03):
+  - Domain 243 / Application 404 / ViewModels 633 (target gates D90/A80/I70/V60 держатся).
+  - Engines.Pdf 131 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 (1 skip — Windows-only).
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 1685 executed (full Slow/Integration набор — ещё больше; см. `dotnet test` без фильтра).**
-- **LOC:** ~25 000 в src/, 14 тестовых проектов.
-- **Скрытых заглушек нет** — все ограничения явно документированы в коде.
+  - **Итого: 1802 executed (+117 с 2026-06-02; full Slow/Integration набор — ещё больше).**
+- **LOC:** ~28 000 в src/, 14 тестовых проектов.
+- **Скрытых заглушек нет** — F-PdfA/F30 stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
-> **⚠️ Дрейф документов (выявлено 2026-06-02).** Планировочные файлы
-> (`PHASE1_REMAINING.md` → производный `ROADMAP.md`) систематически отставали
-> от кода. По факту **уже в main**, хотя числились как «todo»: perf-regression
-> gate (`perf.yml` + `tools/perf-compare`, baseline + threshold 15 + auto-issue),
-> E2E update-check (`GitHubUpdateCheckService`/`GitHubReleaseSource` + тесты),
-> OCR CER test-runner (`OcrCerIntegrationTests` — нужны лишь бинарные ассеты).
-> **Правило на будущее:** перед планированием любой задачи — `grep`/чтение
-> кода, не доверять статусу из планов. Реальный остаток Phase 1 DoD —
-> **только D1 (бинарные OCR-сканы) + E1 (Windows smoke/ISCC)**, оба не
-> sandboxable; всё остальное из «Trek 0» — закрыто.
+> **⚠️ Дрейф документов — рецидивирующий паттерн.** Планы систематически отстают
+> от кода (выявлено 2026-06-02, повторно 2026-06-03 после #108–#120). **Правило:**
+> перед планированием любой задачи — `grep`/чтение кода + `dotnet test` для цифр,
+> не доверять статусу из планов. `CHANGELOG.md` защищён `merge=union` (#107) —
+> параллельные PR больше не конфликтуют по `[Unreleased]` (проверено 5× авто-rebase).
+> Реальный остаток Phase 1 DoD — **только D1 (бинарные OCR-сканы) + E1 (Windows
+> smoke/ISCC)**, оба не sandboxable.
 
 ---
 
@@ -156,25 +153,54 @@
 | Bates | `IBatesNumberingService` / `PdfiumBatesNumberingService` — юридическая нумерация страниц | #106 | 13 тестов, PDFium. Монотонный счётчик по абсолютному индексу. DI/UI wiring — отдельный PR. |
 | Git | `CHANGELOG.md merge=union` в `.gitattributes` | #107 | Профилактика: параллельные PR больше не конфликтуют по `[Unreleased]`. |
 
-### Волна 4 — кандидаты (in-flight / следующая итерация)
+### Волна 4 — ✅ merged (2026-06-02): пачка 1 (параллельная) + C-треки
 
-- **W0** (DI-only): зарегистрировать 3 merged-сервиса (Redaction/Split/Bates) в `AppHostBuilder` + расширить `DocumentTabViewModel` factory. **Без UI** — отдельная серия W1–W4.
-- **W1/W2/W3/W4** (UI-серия): диалоги + меню для Redaction / Bates / Split + Sig-UX green-OK banner. Серийно (трогают `MainWindow.xaml`+`Strings*.resx`).
-- **C1**: A2b native /Annots embed для Line/Arrow/Polygon через PdfPig cos-write (закрывает Q-F17 = 11/11 native).
-- **C2**: F32 follow-up — `SearchService` отдаёт bbox + новый `IFindAndRedactService` (find-and-redact wrapper).
-- **C3**: Husky.Net pre-push hook — автоматизирует чек-лист из `DEV_RETROSPECTIVE` §3.
+| # | Track | PR |
+|---|---|---|
+| **W0** | DI-only: Redaction/Split/Bates в `AppHostBuilder` + factory | #108 |
+| **C1** | A2b native /Annots embed (Line/Arrow/Polygon, cos-write) — Q-F17 = 11/11 | #111 |
+| **C2** | F32 follow-up — `SearchHit.Bbox` + `IFindAndRedactService` | #110 |
+| **C3** | Husky.Net pre-push hook (format + build + fast tests) | #112 |
+| docs | reconcile #1 + bad-xref fix | #109, #104 |
 
-### Отложить (Волна 5+)
+### Волна 5 — ✅ merged (2026-06-02/03): UI-серия (серийная) + Phase-2 фичи
 
-- **F26 follow-up T-level/revocation** — очень высокая сложность (TSA-сервер для тестов, OCSP/CRL HTTP-клиент), 2–3 спринта.
-- **F30** AES-256 + 8 permissions — требует архитектурного решения (QPDF внешний бинарь vs raw cos-write через PdfPig).
-- **F-PdfA** — нужен veraPDF NuGet; средняя сложность, низкий приоритет.
-- **F8 OCG editing** — нет PDFium-bindings; требует cos-level write.
-- **D6b/D8b** EPUB/FB2/MOBI визуальный рендер — стратегическое решение (Trek 2 п.3).
+UI-серия (серийно — общий `MainWindow.xaml`/`Strings`/`PdfEffects.cs`):
+
+| # | Track | PR | Заметка |
+|---|---|---|---|
+| **W1** | Redaction UI (Find-and-Redact dialog) | #113 | |
+| **W2** | Bates UI | #114 | + CS0108 fix (WPF reserved-name `FontSize`) |
+| **W3** | Split UI | #115 | + CS1734 fix (paramref в class-doc) |
+| **W4** | Sig-UX green-OK banner | #116 | colour-coded validation |
+| **W5** | OCG layers panel + DI | #120 | |
+
+Phase-2 фичи (параллельно, изолированы):
+
+| # | Track | PR | Результат |
+|---|---|---|---|
+| **F8** | OCG layers read + visibility toggle | #119 | real engine (PdfPig cos-write; PDFium 146 без OCG API) |
+| **F-PdfA** | PDF/A validation port | #117 | port + honest stub (managed wrapper AGPL — license block) |
+| **F30** | AES-256 encryption + 8 permissions port | #118 | port + honest stub (PdfPig не пишет encrypted) |
+
+> **Урок WPF blind-spot**: `Foliant.UI` (`net10.0-windows`) не компилируется на Linux →
+> ни cross-platform build, ни pre-push hook не видят C#-диагностику code-behind.
+> CS0108 (#114) и CS1734 (#115) поймал только Windows-CI. **Правило для WPF-PR:**
+> избегать reserved-имён членов `Window`/`Control` (`FontSize`/`Width`/`Content`/…),
+> `<paramref>` только в doc метода с этим параметром; перед коммитом — grep-self-check.
+
+### Волна 6 — кандидаты (следующая итерация)
+
+- **Metadata** (in-flight): `/Info` editing — Title/Author/Subject/Keywords (PdfPig `DocumentInformationBuilder`). Pure-managed, sandbox-testable. UI-wiring — follow-up.
+- **OCG UI follow-up**: панель слоёв сейчас modal-dialog; live-toggle в sidebar — улучшение UX.
+
+### Отложить (требуют стратегического решения / внешних runtime)
+
+- **F-PdfA real impl** — `verapdf` CLI out-of-process plugin (`plugins/Foliant.Plugin.VeraPdf`, паттерн DjVu). Нужен JRE + jar в инсталляторе. Trajectory в #117.
+- **F30 real impl** — QPDF embed (+5 MB nativka) **или** raw cos-write + BouncyCastle (1–2 спринта). Trajectory в #118.
+- **F26 follow-up T-level/revocation** — TSA-сервер для тестов, OCSP/CRL HTTP-клиент.
+- **D6b/D8b** EPUB/FB2/MOBI визуальный рендер — layout-движок; стратегическое решение (Trek 2 п.3).
 - **E1 inline-editor** — стратегическое решение (Trek 2 п.4 — второй разработчик).
-- **D6b/D8b** — визуальный рендер EPUB/FB2/MOBI (layout-движок, очень высокая сложность). Не для параллельного спрея — отдельный фокус-спринт.
-
-P4, P5 — следующая волна после merge первой.
 
 ---
 
@@ -199,3 +225,4 @@ P4, P5 — следующая волна после merge первой.
 | 2026-06-01 | Файл создан. Roadmap фазы 2 разнесён на 3 потока (A/B/C). Определён пул P1–P5 для параллельного выполнения. |
 | 2026-06-02 (день) | Reconcile с реальностью: волна 1 (P1–P3) merged #98/#99/#100; выявлен дрейф документов (perf-gate/Upd/OCR-runner уже в main); запущена волна 2 (F26 PAdES-B, F32 redaction). Реальный остаток Phase 1 = D1 + E1 (Windows-gated). |
 | 2026-06-02 (вечер) | Волна 2 merged (#102 F32, #103 PAdES-B), волна 3 merged (#105 split, #106 Bates, #107 gitattributes union-merge), bad-xref fix (#104). Reconcile #2: повторный дрейф (Trek 3 пункт 2 perf-gate / пункт 6 CS0535 — оба уже в main). Запущена волна 4: W0 DI-only, C1 A2b native /Annots, C2 F32-follow-up find-and-redact, C3 Husky pre-push. |
+| 2026-06-03 | Волна 4 merged (#108 W0, #110 C2, #111 C1, #112 C3). Волна 5 merged: UI-серия #113–#116 (W1 redaction / W2 bates +CS0108 / W3 split +CS1734 / W4 sig-banner), #120 W5 OCG UI; Phase-2 фичи #117 F-PdfA stub / #118 F30 stub / #119 F8 OCG real. Reconcile #3: цифры тестов 1685→1802, добавлен урок WPF blind-spot (CS0108/CS1734 ловит только Windows-CI). Запущена волна 6: metadata /Info editing. |
