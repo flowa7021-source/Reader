@@ -15,8 +15,13 @@ namespace Foliant.Engines.Pdf;
 public sealed class PdfDocumentLoader(
     ILogger<PdfDocumentLoader> log,
     IEventStore? eventStore = null,
-    IFileFingerprint? fingerprint = null) : IDocumentLoader
+    IFileFingerprint? fingerprint = null) : IDocumentLoader, IPasswordAwareDocumentLoader
 {
+    // PDFiumCore не экспонирует именованную константу для кодов FPDF_GetLastError.
+    // 4 = FPDF_ERR_PASSWORD из публичного PDFium API (fpdf_view.h): «требуется/неверный
+    // пароль». Сравниваем с ulong-результатом FPDF_GetLastError() (uint расширяется до ulong).
+    private const uint FpdfErrPassword = 4;
+
     private static readonly byte[] Magic = "%PDF-"u8.ToArray();
 
     public DocumentKind Kind => DocumentKind.Pdf;
@@ -36,7 +41,14 @@ public sealed class PdfDocumentLoader(
         return HasPdfMagic(path);
     }
 
-    public async Task<IDocument> LoadAsync(string path, CancellationToken ct)
+    public Task<IDocument> LoadAsync(string path, CancellationToken ct) =>
+        LoadCoreAsync(path, password: null, ct);
+
+    // Реализация IPasswordAwareDocumentLoader: открытие зашифрованного PDF с паролем.
+    public Task<IDocument> LoadAsync(string path, string? password, CancellationToken ct) =>
+        LoadCoreAsync(path, password, ct);
+
+    private async Task<IDocument> LoadCoreAsync(string path, string? password, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(path);
 
@@ -49,10 +61,20 @@ public sealed class PdfDocumentLoader(
         return await Task.Run<IDocument>(() =>
         {
             PdfLibrary.EnsureInitialized();
-            var doc = fpdfview.FPDF_LoadDocument(path, null);
+
+            // PDFium сам расшифровывает (AES/RC4) по переданному паролю; null/неверный
+            // пароль на зашифрованном файле → FPDF_LoadDocument возвращает null + код
+            // FPDF_ERR_PASSWORD, который мы транслируем в типизированное исключение,
+            // чтобы VM могла спросить пароль и повторить.
+            var doc = fpdfview.FPDF_LoadDocument(path, password);
             if (doc is null)
             {
-                var err = fpdfview.FPDF_GetLastError();
+                ulong err = fpdfview.FPDF_GetLastError();
+                if (err == FpdfErrPassword)
+                {
+                    throw DocumentPasswordRequiredException.ForPath(path);
+                }
+
                 throw new InvalidOperationException($"PDFium failed to load '{path}': error {err}");
             }
 

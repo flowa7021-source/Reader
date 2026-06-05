@@ -81,8 +81,66 @@ public sealed class OpenDocumentUseCaseTests : IDisposable
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
+    [Fact]
+    public async Task ExecuteAsync_PasswordAwareLoader_ReceivesPasswordArgument()
+    {
+        var doc = Substitute.For<IDocument>();
+        var loader = PasswordAwareLoaderThatLoads(doc);
+        var sut = NewSut(loader);
+
+        var result = await sut.ExecuteAsync(_tmpFile, "s3cret", default);
+
+        result.Should().BeSameAs(doc);
+        // Пароль действительно проброшен в password-aware loader.
+        await ((IPasswordAwareDocumentLoader)loader).Received(1)
+            .LoadAsync(_tmpFile, "s3cret", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_PlainLoader_IgnoresPassword_StillLoads()
+    {
+        // Обычный IDocumentLoader (не password-aware) вызывается через старый контракт
+        // даже если пароль передан — он его просто не видит.
+        var doc = Substitute.For<IDocument>();
+        var loader = LoaderThatLoads(doc);
+        var sut = NewSut(loader);
+
+        var result = await sut.ExecuteAsync(_tmpFile, "ignored", default);
+
+        result.Should().BeSameAs(doc);
+        await loader.Received(1).LoadAsync(_tmpFile, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_PasswordRequired_PropagatesException()
+    {
+        // Use-case НЕ ловит DocumentPasswordRequiredException — пробрасывает наверх (VM спросит пароль).
+        var loader = Substitute.For<IDocumentLoader, IPasswordAwareDocumentLoader>();
+        loader.CanLoad(Arg.Any<string>()).Returns(true);
+        ((IPasswordAwareDocumentLoader)loader)
+            .LoadAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns<Task<IDocument>>(_ => throw DocumentPasswordRequiredException.ForPath(_tmpFile));
+        var sut = NewSut(loader);
+
+        var act = () => sut.ExecuteAsync(_tmpFile, null, default);
+
+        var ex = await act.Should().ThrowAsync<DocumentPasswordRequiredException>();
+        ex.Which.Path.Should().Be(_tmpFile);
+    }
+
     private OpenDocumentUseCase NewSut(params IDocumentLoader[] loaders) =>
         new(loaders, NullLogger<OpenDocumentUseCase>.Instance);
+
+    private static IDocumentLoader PasswordAwareLoaderThatLoads(IDocument document)
+    {
+        // NSubstitute умеет создавать мульти-интерфейсный мок, реализующий оба контракта.
+        var loader = Substitute.For<IDocumentLoader, IPasswordAwareDocumentLoader>();
+        loader.CanLoad(Arg.Any<string>()).Returns(true);
+        ((IPasswordAwareDocumentLoader)loader)
+            .LoadAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(document);
+        return loader;
+    }
 
     private static IDocumentLoader LoaderThatCannot()
     {

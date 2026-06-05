@@ -312,9 +312,14 @@ internal static class AppHostBuilder
             sp.GetService<ILicenseManager>(),
             sp.GetService<ITrialService>(),
             sp.GetService<IUpdateCheckService>(),
-            sp.GetService<IPdfMergeService>()));
+            sp.GetService<IPdfMergeService>(),
+            sp.GetService<IPasswordPrompt>()));
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<LicenseImportViewModel>();
+
+        // Password prompt for opening encrypted PDFs (read-side decrypt). MainViewModel resolves
+        // it via GetService so the unit-test composition (which omits it) keeps working.
+        services.AddSingleton<IPasswordPrompt, WpfPasswordPrompt>();
 
         // Views
         services.AddTransient<MainWindow>();

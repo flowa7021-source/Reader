@@ -14,7 +14,12 @@ public sealed class OpenDocumentUseCase(
 {
     private readonly IDocumentLoader[] _loaders = [.. loaders];
 
-    public async Task<IDocument> ExecuteAsync(string path, CancellationToken ct)
+    // Перегрузка без пароля — сохраняет старую сигнатуру для существующих вызовов
+    // (DocumentTabViewModel.Editing.cs reopen после правки структуры): пароль там не нужен.
+    public Task<IDocument> ExecuteAsync(string path, CancellationToken ct) =>
+        ExecuteAsync(path, password: null, ct);
+
+    public async Task<IDocument> ExecuteAsync(string path, string? password, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
@@ -29,6 +34,14 @@ public sealed class OpenDocumentUseCase(
         log.LogInformation(
             "Открываю {Path} через {Loader} ({Kind})",
             path, loader.GetType().Name, loader.Kind);
+
+        // Пароль пробрасываем только в password-aware loader'ы (PDF). Остальные форматы
+        // (EPUB/FB2/MOBI/Image/DjVu) идут по обычному контракту и пароль игнорируют.
+        // DocumentPasswordRequiredException здесь НЕ ловим — это работа VM (промпт + retry).
+        if (loader is IPasswordAwareDocumentLoader passwordAware)
+        {
+            return await passwordAware.LoadAsync(path, password, ct).ConfigureAwait(false);
+        }
 
         return await loader.LoadAsync(path, ct).ConfigureAwait(false);
     }

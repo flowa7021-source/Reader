@@ -21,6 +21,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly ITrialService? _trial;
     private readonly IUpdateCheckService? _updateCheck;
     private readonly IPdfMergeService? _mergeService;
+    private readonly IPasswordPrompt? _passwordPrompt;
     private readonly ILogger<MainViewModel> _logger;
 
     [ObservableProperty]
@@ -94,7 +95,8 @@ public sealed partial class MainViewModel : ObservableObject
         ILicenseManager? licenseManager = null,
         ITrialService? trial = null,
         IUpdateCheckService? updateCheck = null,
-        IPdfMergeService? mergeService = null)
+        IPdfMergeService? mergeService = null,
+        IPasswordPrompt? passwordPrompt = null)
     {
         ArgumentNullException.ThrowIfNull(openUseCase);
         ArgumentNullException.ThrowIfNull(tabFactory);
@@ -114,6 +116,7 @@ public sealed partial class MainViewModel : ObservableObject
         _trial = trial;
         _updateCheck = updateCheck;
         _mergeService = mergeService;
+        _passwordPrompt = passwordPrompt;
         _logger = logger;
 
         // Tabs.Count → PropertyChanged for TabsCount + HasOpenTab.
@@ -239,7 +242,15 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            IDocument document = await _openUseCase.ExecuteAsync(path, ct);
+            // Зашифрованный PDF: loop спрашивает пароль и повторяет. null == пользователь
+            // отменил промпт → тихо выходим (без StatusMessage-ошибки). Если промпт-сервис
+            // не зарегистрирован, исключение всплывёт в catch (InvalidOperationException) ниже.
+            IDocument? document = await TryLoadWithPasswordAsync(path, ct);
+            if (document is null)
+            {
+                return;
+            }
+
             DocumentTabViewModel tab = _tabFactory(document, path);
             Tabs.Add(tab);
             SelectedTab = tab;
@@ -262,6 +273,37 @@ public sealed partial class MainViewModel : ObservableObject
 
             await _recents.RemoveAsync(path, ct);
             await RefreshRecentsAsync(ct);
+        }
+    }
+
+    /// <summary>
+    /// Открыть документ, при необходимости запросив пароль и повторив. Возвращает <c>null</c>,
+    /// если пользователь отменил ввод пароля. <see cref="DocumentPasswordRequiredException"/>
+    /// пробрасывается, только если промпт-сервис не зарегистрирован (headless/тест) — её ловит
+    /// общий <c>catch (InvalidOperationException)</c> вызывающего метода.
+    /// </summary>
+    private async Task<IDocument?> TryLoadWithPasswordAsync(string path, CancellationToken ct)
+    {
+        string? password = null;
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                return await _openUseCase.ExecuteAsync(path, password, ct);
+            }
+            catch (DocumentPasswordRequiredException)
+            {
+                if (_passwordPrompt is null)
+                {
+                    throw; // нет UI-промпта → пусть всплывёт в обработчик ошибок выше
+                }
+
+                password = await _passwordPrompt.RequestPasswordAsync(path, attempt, ct);
+                if (password is null)
+                {
+                    return null; // пользователь отменил
+                }
+            }
         }
     }
 
