@@ -862,4 +862,10 @@
   <data name="PasswordPromptOk" xml:space="preserve">
     <value>Open</value>
   </data>
+  <data name="MenuFilePrint" xml:space="preserve">
+    <value>_Print…</value>
+  </data>
+  <data name="PrintErrorMessage" xml:space="preserve">
+    <value>Failed to print the document.</value>
+  </data>
 </root>

@@ -8,6 +8,25 @@
 ## [Unreleased]
 
 ### Added
+- **Print (File → Print, Ctrl+P) — document-neutral via `IDocument.RenderPageAsync`**.
+  Печать наконец появилась в ридере: пункт меню **File → Print…** и шорткат **Ctrl+P** показывают
+  системный WPF `PrintDialog` (выбор принтера + диапазона), рендерят выбранные страницы через
+  существующий `IDocument.RenderPageAsync` (BGRA32 → `BitmapSource`) и строят `FixedDocument`,
+  который уходит в спулер через `PrintDialog.PrintDocument`. **Application**: новый порт
+  `IPrintService` (DTO-less — диалог сам собирает выбор пользователя). **ViewModels**:
+  `DocumentTabViewModel.Print.cs` partial с `PrintCommand` + `CanPrint` gate (сервис + страницы);
+  опциональный ctor-параметр `printService`. **UI**: `WpfPrintService` (~250 строк) с маршалингом
+  на UI-поток через `System.Windows.Application.Current.Dispatcher` (полная квалификация
+  namespace — как в `WpfPasswordPrompt`); каждый `IPageRender` диспозится сразу после конвертации в
+  `BitmapSource`, чтобы не держать буферы всех страниц одновременно. **DI**: регистрация
+  `WpfPrintService` в `AppHostBuilder`; проброс в фабрику `DocumentTabViewModel`. Документ-neutral:
+  работает для PDF, изображений, EPUB/FB2/MOBI, DjVu — потому что строится на абстракции
+  `IDocument`, а не на PDF-специфике. Локализация EN/RU (2 ключа: `MenuFilePrint`, `PrintErrorMessage`).
+  **11 новых VM-тестов** (`DocumentTabViewModelPrintTests`): gate (сервис/страницы/document-neutral),
+  forwarding (документ + title из имени файла), no-op без сервиса/пустого документа, swallow
+  exceptions (sync/async/OperationCanceled), составное имя файла как job-title. UI-сервис требует
+  WPF runtime для тестов — валидируется compile-проверкой `EnableWindowsTargeting` (cross-platform
+  + UI + App все 0 warnings).
 - **Open password-protected PDFs (read-side decrypt) — prompt for password and retry**.
   Зашифрованные (password-protected) PDF теперь открываются: PDFium сам расшифровывает (AES/RC4)
   по переданному паролю — мы только проплываем пароль, ловим «нужен пароль» и спрашиваем у

@@ -862,4 +862,10 @@
   <data name="PasswordPromptOk" xml:space="preserve">
     <value>Открыть</value>
   </data>
+  <data name="MenuFilePrint" xml:space="preserve">
+    <value>_Печать…</value>
+  </data>
+  <data name="PrintErrorMessage" xml:space="preserve">
+    <value>Не удалось распечатать документ.</value>
+  </data>
 </root>

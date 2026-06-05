@@ -297,7 +297,8 @@ internal static class AppHostBuilder
                 splitService: sp.GetService<IPdfSplitService>(),
                 batesService: sp.GetService<IBatesNumberingService>(),
                 metadataEditService: sp.GetService<IPdfMetadataEditService>(),
-                ocgService: sp.GetService<IPdfOcgService>()));
+                ocgService: sp.GetService<IPdfOcgService>(),
+                printService: sp.GetService<IPrintService>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.
@@ -320,6 +321,11 @@ internal static class AppHostBuilder
         // Password prompt for opening encrypted PDFs (read-side decrypt). MainViewModel resolves
         // it via GetService so the unit-test composition (which omits it) keeps working.
         services.AddSingleton<IPasswordPrompt, WpfPasswordPrompt>();
+
+        // Print service (File → Print, Ctrl+P). UI-impl сам показывает PrintDialog и рендерит
+        // выбранный диапазон через IDocument.RenderPageAsync → document-neutral.
+        // DocumentTabViewModel резолвит сервис через GetService — в headless/тестах не нужен.
+        services.AddSingleton<IPrintService, WpfPrintService>();
 
         // Views
         services.AddTransient<MainWindow>();
