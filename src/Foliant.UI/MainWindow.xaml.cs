@@ -1158,4 +1158,28 @@ public partial class MainWindow : Window
         }
         return sb.ToString();
     }
+
+    /// <summary>File → Print… (Ctrl+P). В отличие от export-хэндлеров, здесь нет
+    /// <c>SaveFileDialog</c>: пользователь выбирает принтер/диапазон в системном <c>PrintDialog</c>,
+    /// который покажет сам сервис из VM-команды. Document-neutral — работает для любого
+    /// открытого формата (PDF/EPUB/изображения и т.д.).</summary>
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnPrintMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanPrint: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        try
+        {
+            await tab.PrintCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error printing '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 }
