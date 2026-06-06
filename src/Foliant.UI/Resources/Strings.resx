@@ -808,6 +808,138 @@
   <data name="MenuFileDocumentProperties" xml:space="preserve">
     <value>Document _Properties…</value>
   </data>
+  <data name="MenuFilePageLabels" xml:space="preserve">
+    <value>_Number Pages…</value>
+  </data>
+  <data name="PageLabelsDialogTitle" xml:space="preserve">
+    <value>Number Pages</value>
+  </data>
+  <data name="PageLabelsExisting" xml:space="preserve">
+    <value>Current numbering ranges:</value>
+  </data>
+  <data name="PageLabelsStartPageLabel" xml:space="preserve">
+    <value>Start page</value>
+  </data>
+  <data name="PageLabelsStyleLabel" xml:space="preserve">
+    <value>Style</value>
+  </data>
+  <data name="PageLabelsPrefixLabel" xml:space="preserve">
+    <value>Prefix</value>
+  </data>
+  <data name="PageLabelsStartNumberLabel" xml:space="preserve">
+    <value>Start number</value>
+  </data>
+  <data name="PageLabelsAddButton" xml:space="preserve">
+    <value>Add / update range</value>
+  </data>
+  <data name="PageLabelsRemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="PageLabelsSaveButton" xml:space="preserve">
+    <value>Save As…</value>
+  </data>
+  <data name="PageLabelsCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="PageLabelsSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with Page Labels As</value>
+  </data>
+  <data name="PageLabelStyleArabic" xml:space="preserve">
+    <value>1, 2, 3 (arabic)</value>
+  </data>
+  <data name="PageLabelStyleUpperRoman" xml:space="preserve">
+    <value>I, II, III (Roman)</value>
+  </data>
+  <data name="PageLabelStyleLowerRoman" xml:space="preserve">
+    <value>i, ii, iii (roman)</value>
+  </data>
+  <data name="PageLabelStyleUpperLetters" xml:space="preserve">
+    <value>A, B, C (letters)</value>
+  </data>
+  <data name="PageLabelStyleLowerLetters" xml:space="preserve">
+    <value>a, b, c (letters)</value>
+  </data>
+  <data name="PageLabelStyleNone" xml:space="preserve">
+    <value>Prefix only (no number)</value>
+  </data>
+  <data name="MenuFileViewerPreferences" xml:space="preserve">
+    <value>_Initial View…</value>
+  </data>
+  <data name="ViewerPrefsDialogTitle" xml:space="preserve">
+    <value>Initial View</value>
+  </data>
+  <data name="ViewerPrefsPageLayoutLabel" xml:space="preserve">
+    <value>Page layout</value>
+  </data>
+  <data name="ViewerPrefsPageModeLabel" xml:space="preserve">
+    <value>Navigation panel</value>
+  </data>
+  <data name="ViewerPrefsHideToolbar" xml:space="preserve">
+    <value>Hide toolbar</value>
+  </data>
+  <data name="ViewerPrefsHideMenubar" xml:space="preserve">
+    <value>Hide menu bar</value>
+  </data>
+  <data name="ViewerPrefsFitWindow" xml:space="preserve">
+    <value>Resize window to first page</value>
+  </data>
+  <data name="ViewerPrefsCenterWindow" xml:space="preserve">
+    <value>Center window on screen</value>
+  </data>
+  <data name="ViewerPrefsDisplayDocTitle" xml:space="preserve">
+    <value>Show document title in the title bar</value>
+  </data>
+  <data name="ViewerPrefsSaveButton" xml:space="preserve">
+    <value>Save As…</value>
+  </data>
+  <data name="ViewerPrefsCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ViewerPrefsSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with Initial View As</value>
+  </data>
+  <data name="ViewerPrefsLayoutDefault" xml:space="preserve">
+    <value>Viewer default</value>
+  </data>
+  <data name="ViewerPrefsLayoutSinglePage" xml:space="preserve">
+    <value>Single page</value>
+  </data>
+  <data name="ViewerPrefsLayoutOneColumn" xml:space="preserve">
+    <value>Continuous (one column)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoColumnLeft" xml:space="preserve">
+    <value>Two columns (cover left)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoColumnRight" xml:space="preserve">
+    <value>Two columns (cover right)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoPageLeft" xml:space="preserve">
+    <value>Two pages (cover left)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoPageRight" xml:space="preserve">
+    <value>Two pages (cover right)</value>
+  </data>
+  <data name="ViewerPrefsModeDefault" xml:space="preserve">
+    <value>Viewer default</value>
+  </data>
+  <data name="ViewerPrefsModeUseNone" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="ViewerPrefsModeUseOutlines" xml:space="preserve">
+    <value>Bookmarks</value>
+  </data>
+  <data name="ViewerPrefsModeUseThumbs" xml:space="preserve">
+    <value>Page thumbnails</value>
+  </data>
+  <data name="ViewerPrefsModeFullScreen" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="ViewerPrefsModeUseOC" xml:space="preserve">
+    <value>Layers</value>
+  </data>
+  <data name="ViewerPrefsModeUseAttachments" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Document Properties</value>
   </data>

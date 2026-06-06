@@ -804,6 +804,90 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnPageLabelsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanEditPageLabels: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        await tab.LoadPageLabelsCommand.ExecuteAsync(null);
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["PageLabelsSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-pagelabels.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var (request, ok) = PageLabelsDialog.Prompt(this, tab.CurrentPageLabels, tab.PageCount, save.FileName);
+        if (!ok || request is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.SavePageLabelsCommand.ExecuteAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error saving page labels to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnViewerPreferencesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanEditViewerPreferences: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        await tab.LoadViewerPreferencesCommand.ExecuteAsync(null);
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["ViewerPrefsSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-initialview.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var (request, ok) = ViewerPreferencesDialog.Prompt(this, tab.CurrentViewerPreferences, save.FileName);
+        if (!ok || request is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.SaveViewerPreferencesCommand.ExecuteAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error saving viewer preferences to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnShowLayersMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanShowLayers: true } tab)

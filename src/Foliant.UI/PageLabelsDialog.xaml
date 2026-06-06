@@ -1,0 +1,115 @@
+<Window x:Class="Foliant.UI.PageLabelsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Foliant.UI.Localization"
+        Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsDialogTitle]}"
+        SizeToContent="Height"
+        Width="560"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackground}">
+
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- Existing ranges -->
+    <TextBlock Grid.Row="0" Margin="0,0,0,4"
+               Foreground="{DynamicResource Foreground}"
+               Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsExisting]}" />
+    <Border Grid.Row="1" Margin="0,0,0,8" Padding="6"
+            BorderBrush="{DynamicResource Foreground}" BorderThickness="1">
+      <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Grid Margin="0,2">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource Foreground}"
+                           Text="{Binding Display}" />
+                <Button Grid.Column="1" Margin="8,0,0,0" Padding="8,2"
+                        Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsRemoveButton]}"
+                        Tag="{Binding}"
+                        Click="OnRemoveRowClick" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+
+    <!-- Add / update a range -->
+    <Grid Grid.Row="2">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="140" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsStartPageLabel]}" />
+      <TextBox x:Name="StartPageBox" Grid.Row="0" Grid.Column="1" Margin="0,4" Padding="4"
+               Text="{Binding StartPageText, UpdateSourceTrigger=PropertyChanged}" />
+
+      <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsStyleLabel]}" />
+      <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,4"
+                SelectedIndex="{Binding StyleIndex, Mode=TwoWay}">
+        <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelStyleArabic]}" />
+        <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelStyleUpperRoman]}" />
+        <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelStyleLowerRoman]}" />
+        <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelStyleUpperLetters]}" />
+        <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelStyleLowerLetters]}" />
+        <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelStyleNone]}" />
+      </ComboBox>
+
+      <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsPrefixLabel]}" />
+      <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Padding="4"
+               Text="{Binding PrefixText, UpdateSourceTrigger=PropertyChanged}" />
+
+      <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"
+                 Foreground="{DynamicResource Foreground}"
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsStartNumberLabel]}" />
+      <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Padding="4"
+               Text="{Binding StartNumberText, UpdateSourceTrigger=PropertyChanged}" />
+
+      <Button Grid.Row="4" Grid.Column="1" HorizontalAlignment="Left" Margin="0,6,0,0" Padding="10,3"
+              Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsAddButton]}"
+              Click="OnAddRowClick" />
+    </Grid>
+
+    <!-- Save As / Cancel -->
+    <StackPanel Grid.Row="3"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Margin="0,16,0,0">
+      <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsSaveButton]}"
+              Width="120" Margin="0,0,8,0"
+              IsDefault="True"
+              Click="OnSaveClick" />
+      <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PageLabelsCancelButton]}"
+              Width="80"
+              IsCancel="True"
+              Click="OnCancelClick" />
+    </StackPanel>
+  </Grid>
+</Window>
