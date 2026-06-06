@@ -49,7 +49,7 @@ internal static class PdfAttachmentCosReader
         }
 
         var sink = new List<PdfAttachmentEntry>();
-        Walk(doc, tree, sink);
+        Walk(doc, tree, sink, depth: 0);
         sink.Sort(static (a, b) => string.CompareOrdinal(a.Name, b.Name));
         return sink;
     }
@@ -124,8 +124,14 @@ internal static class PdfAttachmentCosReader
         return output.ToArray();
     }
 
-    private static void Walk(PdfPigDocument doc, DictionaryToken node, List<PdfAttachmentEntry> sink)
+    private static void Walk(PdfPigDocument doc, DictionaryToken node, List<PdfAttachmentEntry> sink, int depth)
     {
+        // Depth-guard against malformed/cyclic /Kids (StackOverflowException is uncatchable; see PdfCosLimits).
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            return;
+        }
+
         if (node.TryGet(NamesName, out ArrayToken? names) && names is not null)
         {
             ReadNames(doc, names, sink);
@@ -138,7 +144,7 @@ internal static class PdfAttachmentCosReader
                 if (kid is IndirectReferenceToken kref &&
                     doc.Structure.GetObject(kref.Data) is ObjectToken { Data: DictionaryToken child })
                 {
-                    Walk(doc, child, sink);
+                    Walk(doc, child, sink, depth + 1);
                 }
             }
         }

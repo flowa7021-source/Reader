@@ -137,15 +137,21 @@ public static class PdfPigAnnotationAppender
             yield break;
         }
 
-        foreach (var leaf in WalkSubtree(doc, pagesRef.Data))
+        foreach (var leaf in WalkSubtree(doc, pagesRef.Data, depth: 0))
         {
             yield return leaf;
         }
     }
 
     private static IEnumerable<(IndirectReference Reference, DictionaryToken Dict)> WalkSubtree(
-        PdfPigDocument doc, IndirectReference nodeRef)
+        PdfPigDocument doc, IndirectReference nodeRef, int depth)
     {
+        // Depth-guard against malformed/cyclic /Kids (StackOverflowException is uncatchable; see PdfCosLimits).
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            yield break;
+        }
+
         if (doc.Structure.GetObject(nodeRef) is not ObjectToken { Data: DictionaryToken node })
         {
             yield break;
@@ -171,7 +177,7 @@ public static class PdfPigAnnotationAppender
                 continue;
             }
 
-            foreach (var leaf in WalkSubtree(doc, kref.Data))
+            foreach (var leaf in WalkSubtree(doc, kref.Data, depth + 1))
             {
                 yield return leaf;
             }

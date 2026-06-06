@@ -28,7 +28,7 @@ internal static class PdfFontCosReader
         var unique = new HashSet<PdfFontInfo>();
         if (catalog.TryGet(NameToken.Pages, out IndirectReferenceToken? pagesRef) && pagesRef is not null)
         {
-            WalkPages(doc, pagesRef.Data, unique);
+            WalkPages(doc, pagesRef.Data, unique, depth: 0);
         }
 
         var result = new List<PdfFontInfo>(unique);
@@ -36,11 +36,18 @@ internal static class PdfFontCosReader
         return result;
     }
 
-    private static void WalkPages(PdfPigDocument doc, IndirectReference nodeRef, HashSet<PdfFontInfo> sink)
+    private static void WalkPages(
+        PdfPigDocument doc, IndirectReference nodeRef, HashSet<PdfFontInfo> sink, int depth)
     {
         // Идентично PdfOutlineCosWriter.WalkPages: лист (/Type /Page) обрабатываем, узел (/Pages)
         // рекурсивно раскрываем по /Kids. Inheritable /Resources (ISO 32000-1 §7.7.3.4) опускаем:
         // в Acrobat-выводе /Resources почти всегда лежит на самой странице.
+        // Depth-guard against malformed/cyclic /Kids (StackOverflowException is uncatchable; see PdfCosLimits).
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            return;
+        }
+
         if (doc.Structure.GetObject(nodeRef) is not ObjectToken { Data: DictionaryToken node })
         {
             return;
@@ -59,7 +66,7 @@ internal static class PdfFontCosReader
             {
                 if (kid is IndirectReferenceToken kref)
                 {
-                    WalkPages(doc, kref.Data, sink);
+                    WalkPages(doc, kref.Data, sink, depth + 1);
                 }
             }
         }

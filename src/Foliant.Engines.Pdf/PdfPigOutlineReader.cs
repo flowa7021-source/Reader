@@ -69,6 +69,14 @@ public sealed class PdfPigOutlineReader : IPdfOutlineReader
     {
         ct.ThrowIfCancellationRequested();
 
+        // Depth-guard against a pathologically deep / cyclic bookmark tree (StackOverflowException is
+        // uncatchable; see PdfCosLimits). Reuses the existing outline-level depth — only caps recursion,
+        // does not alter level semantics for legitimately shallow trees.
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            return;
+        }
+
         // PdfPig содержит несколько вариантов узла: DocumentBookmarkNode (page-bound),
         // UriBookmarkNode/ExternalBookmarkNode/EmbeddedBookmarkNode (внешние). Для импорта
         // в bookmarks мы берём только page-bound — остальные не вписываются в наш domain.

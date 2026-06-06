@@ -91,15 +91,22 @@ internal static class PdfNamedDestinationCosReader
             return;
         }
 
-        WalkTree(doc, tree, pageIndexByRef, sink);
+        WalkTree(doc, tree, pageIndexByRef, sink, depth: 0);
     }
 
     private static void WalkTree(
         PdfPigDocument doc,
         DictionaryToken node,
         IReadOnlyDictionary<IndirectReference, int> pageIndexByRef,
-        Dictionary<string, int> sink)
+        Dictionary<string, int> sink,
+        int depth)
     {
+        // Depth-guard against malformed/cyclic /Kids (StackOverflowException is uncatchable; see PdfCosLimits).
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            return;
+        }
+
         if (node.TryGet(NamesName, out ArrayToken? names) && names is not null)
         {
             ReadNamePairs(doc, names, pageIndexByRef, sink);
@@ -112,7 +119,7 @@ internal static class PdfNamedDestinationCosReader
                 if (kid is IndirectReferenceToken kref &&
                     doc.Structure.GetObject(kref.Data) is ObjectToken { Data: DictionaryToken child })
                 {
-                    WalkTree(doc, child, pageIndexByRef, sink);
+                    WalkTree(doc, child, pageIndexByRef, sink, depth + 1);
                 }
             }
         }
@@ -208,7 +215,7 @@ internal static class PdfNamedDestinationCosReader
         var pageRefs = new List<IndirectReference>();
         if (catalog.TryGet(NameToken.Pages, out IndirectReferenceToken? pagesRef) && pagesRef is not null)
         {
-            WalkPages(doc, pagesRef.Data, pageRefs);
+            WalkPages(doc, pagesRef.Data, pageRefs, depth: 0);
         }
 
         var map = new Dictionary<IndirectReference, int>(pageRefs.Count);
@@ -221,8 +228,15 @@ internal static class PdfNamedDestinationCosReader
         return map;
     }
 
-    private static void WalkPages(PdfPigDocument doc, IndirectReference nodeRef, List<IndirectReference> sink)
+    private static void WalkPages(
+        PdfPigDocument doc, IndirectReference nodeRef, List<IndirectReference> sink, int depth)
     {
+        // Depth-guard against malformed/cyclic /Kids (StackOverflowException is uncatchable; see PdfCosLimits).
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            return;
+        }
+
         if (doc.Structure.GetObject(nodeRef) is not ObjectToken { Data: DictionaryToken node })
         {
             return;
@@ -241,7 +255,7 @@ internal static class PdfNamedDestinationCosReader
             {
                 if (kid is IndirectReferenceToken kref)
                 {
-                    WalkPages(doc, kref.Data, sink);
+                    WalkPages(doc, kref.Data, sink, depth + 1);
                 }
             }
         }

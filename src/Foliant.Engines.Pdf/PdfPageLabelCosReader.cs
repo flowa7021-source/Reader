@@ -34,13 +34,19 @@ internal static class PdfPageLabelCosReader
         }
 
         var sink = new List<PdfPageLabelRange>();
-        Walk(doc, tree, sink);
+        Walk(doc, tree, sink, depth: 0);
         sink.Sort(static (a, b) => a.StartPageIndex.CompareTo(b.StartPageIndex));
         return sink;
     }
 
-    private static void Walk(PdfPigDocument doc, DictionaryToken node, List<PdfPageLabelRange> sink)
+    private static void Walk(PdfPigDocument doc, DictionaryToken node, List<PdfPageLabelRange> sink, int depth)
     {
+        // Depth-guard against malformed/cyclic /Kids (StackOverflowException is uncatchable; see PdfCosLimits).
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            return;
+        }
+
         if (node.TryGet(NumsName, out ArrayToken? nums) && nums is not null)
         {
             ReadNums(doc, nums, sink);
@@ -53,7 +59,7 @@ internal static class PdfPageLabelCosReader
                 if (kid is IndirectReferenceToken kref &&
                     doc.Structure.GetObject(kref.Data) is ObjectToken { Data: DictionaryToken child })
                 {
-                    Walk(doc, child, sink);
+                    Walk(doc, child, sink, depth + 1);
                 }
             }
         }
