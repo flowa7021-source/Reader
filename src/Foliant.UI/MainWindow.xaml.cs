@@ -1129,6 +1129,27 @@ public partial class MainWindow : Window
         }
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnLinksMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanListLinks: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        try
+        {
+            await tab.LoadLinksCommand.ExecuteAsync(null);
+            LinksDialog.Show(this, tab.CurrentLinks);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error listing links of '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private async Task AddAttachmentFlowAsync(DocumentTabViewModel tab)
     {
         var loc = LocalizationManager.Instance;

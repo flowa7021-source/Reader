@@ -7,7 +7,28 @@
 
 ## [Unreleased]
 
+### Security
+- **Depth-guard cos-tree walkers против malformed/циклических `/Kids`**. Все рекурсивные обходчики
+  cos-деревьев движка (page-tree `/Pages/Kids`, name-trees `/Names → /EmbeddedFiles|/JavaScript|/Dests`,
+  number-tree `/PageLabels`, outline-узлы, `/Annots` page-leaves) получили предел глубины рекурсии —
+  новый общий `PdfCosLimits.MaxTreeDepth = 64`. Раньше специально сконструированный циклический
+  `/Kids` (A→B→A или самоссылка) уводил обход в бесконечную рекурсию → `StackOverflowException`,
+  которое **неперехватываемо** в .NET и роняет процесс (DoS на недоверенном PDF). Теперь ветка
+  обрывается на пределе, а best-effort-сервис возвращает частичный/пустой результат. Тронуты 10
+  обходчиков в 9 файлах (вкл. `PdfPigAnnotationAppender.WalkSubtree`); поведение для валидных
+  (неглубоких) PDF не изменилось. **2 новых теста** на истинно циклических фикстурах (page-tree
+  self-cycle + name-tree A→B→A), которые PdfPig открывает, но цикл — в ветке, по которой идут только
+  наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
+
 ### Added
+- **Link annotations listing (Acrobat «Links») — read-only + UI**. Список гиперссылок документа:
+  страница-источник → URI (внешняя) либо целевая страница (внутренний `/GoTo`). **Domain**: record
+  `PdfLinkAnnotation(PageIndex, Uri, TargetPageIndex)`. **Application**: порт `IPdfLinkService.ListLinksAsync`
+  (best-effort, page-major). **Engine**: `PdfLinkCosReader` обходит страницы (с тем же depth-guard'ом),
+  читает `/Annots` каждой страницы, фильтрует `/Subtype /Link`, резолвит цель из `/A` (`/S /URI` → `/URI`;
+  `/S /GoTo` → `/D`) либо прямого `/Dest`; dest-массив → page-index, name/string-dest → цель `null` (MVP);
+  `PdfPigLinkService` — read-only orchestrator. **UI**: `LinksDialog` (read-only список «p.N → цель») +
+  меню **File → Links…**. L10n EN/RU. **8 engine + 5 VM-тестов** (вкл. URI+GoTo фикстуру).
 - **Named destinations (`/Names/Dests` + legacy `/Dests`) — list / add / remove + UI**. Acrobat-фича
   «Destinations»: именованные точки перехода (имя → страница), на которые ссылаются ссылки/закладки.
   **Domain**: record `PdfNamedDestination(Name, PageIndex)`. **Application**: порт

@@ -1093,6 +1093,24 @@
   <data name="FontsCloseButton" xml:space="preserve">
     <value>Закрыть</value>
   </data>
+  <data name="MenuFileLinks" xml:space="preserve">
+    <value>_Ссылки…</value>
+  </data>
+  <data name="LinksDialogTitle" xml:space="preserve">
+    <value>Ссылки</value>
+  </data>
+  <data name="LinksEmpty" xml:space="preserve">
+    <value>Ссылки не найдены.</value>
+  </data>
+  <data name="LinksToPage" xml:space="preserve">
+    <value>страница</value>
+  </data>
+  <data name="LinksUnresolved" xml:space="preserve">
+    <value>(другая цель)</value>
+  </data>
+  <data name="LinksCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Свойства документа</value>
   </data>

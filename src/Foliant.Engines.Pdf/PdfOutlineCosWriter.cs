@@ -116,7 +116,7 @@ internal static class PdfOutlineCosWriter
         var catalog = doc.Structure.Catalog.CatalogDictionary;
         if (catalog.TryGet(NameToken.Pages, out IndirectReferenceToken? pagesRef) && pagesRef is not null)
         {
-            WalkPages(doc, pagesRef.Data, refs);
+            WalkPages(doc, pagesRef.Data, refs, depth: 0);
         }
 
         if (refs.Count == 0)
@@ -127,8 +127,15 @@ internal static class PdfOutlineCosWriter
         return refs;
     }
 
-    private static void WalkPages(PdfPigDocument doc, IndirectReference nodeRef, List<IndirectReference> sink)
+    private static void WalkPages(
+        PdfPigDocument doc, IndirectReference nodeRef, List<IndirectReference> sink, int depth)
     {
+        // Depth-guard against malformed/cyclic /Kids (StackOverflowException is uncatchable; see PdfCosLimits).
+        if (depth > PdfCosLimits.MaxTreeDepth)
+        {
+            return;
+        }
+
         if (doc.Structure.GetObject(nodeRef) is not ObjectToken { Data: DictionaryToken node })
         {
             return;
@@ -147,7 +154,7 @@ internal static class PdfOutlineCosWriter
             {
                 if (kid is IndirectReferenceToken kref)
                 {
-                    WalkPages(doc, kref.Data, sink);
+                    WalkPages(doc, kref.Data, sink, depth + 1);
                 }
             }
         }

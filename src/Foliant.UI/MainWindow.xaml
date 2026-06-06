@@ -253,6 +253,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileFonts]}"
                   IsEnabled="{Binding SelectedTab.CanListFonts, FallbackValue=False}"
                   Click="OnFontsMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileLinks]}"
+                  IsEnabled="{Binding SelectedTab.CanListLinks, FallbackValue=False}"
+                  Click="OnLinksMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFilePrint]}"
                   IsEnabled="{Binding SelectedTab.CanPrint, FallbackValue=False}"
