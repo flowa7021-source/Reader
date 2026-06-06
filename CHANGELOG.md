@@ -8,6 +8,31 @@
 ## [Unreleased]
 
 ### Added
+- **Embedded file attachments (`/EmbeddedFiles`) — list / extract / add / remove + UI**. Acrobat-фича
+  «Attachments»: файлы, встроенные в PDF (катало­говое name-tree `/Names → /EmbeddedFiles`). **Domain**:
+  record `PdfAttachment(Name, Size, Description)`. **Application**: порт `IPdfAttachmentService`
+  (`ListAsync` best-effort/sorted; `ExtractAsync` — декодированные байты в файл, `KeyNotFoundException`
+  если имени нет; `AddAsync` — встраивает файл, replace-on-collision; `RemoveAsync` — удаляет из
+  name-tree). **Engine**: `PdfPigAttachmentService` + cos-helpers (`PdfAttachmentCosReader` —
+  навигация name-tree с рекурсией по `/Kids`, декод `/EF /F` потока: raw либо FlateDecode через
+  `System.IO.Compression.ZLibStream`; `PdfAttachmentCosWriter` — **первый stream-объект writer**:
+  встраивает несжатый embedded-file поток + filespec + перестроенное name-tree через
+  `PdfIncrementalWriter` (бинарные байты в тело объекта через byte-preserving Latin1);
+  `PdfCatalogNamesCosWriter` — перезапись `/Names`, прочие sub-ключи (`/Dests`/`/JavaScript`)
+  сохраняются). Оригинал не мутируется; бинарная точность (0x00..0xFF) проверена round-trip'ом;
+  Unicode-имена/описания (UTF-16BE). **DI + VM** `DocumentTabViewModel.Attachments.cs` (gate / load /
+  add / extract / remove). **UI**: `AttachmentsDialog` (список + Add/Extract/Remove, возвращает одно
+  действие; View делает файловые диалоги) + меню **File → Attachments…**. L10n EN/RU. **33 engine + 13
+  VM-тестов**.
+- **Insert pages from another PDF (Acrobat «Insert Pages»)**. Вставка всех страниц другого PDF в
+  указанную позицию. **Application**: порт `IPdfInsertPagesService.InsertAsync(source,
+  insertAfterPageIndex, pdfToInsert, target, ct)` (0-based; `-1` = перед первой; out-of-range →
+  `ArgumentOutOfRangeException`). **Engine**: `PdfPigInsertPagesService` через PdfPig `PdfMerger`
+  (files `[source, insert, source]` + bundles `[[1..k+1],[1..ins],[k+2..n]]`; пустые head/tail-сегменты
+  опускаются — empty-bundle копирует 0 страниц). Оригинал не мутируется; атомарная запись.
+  **DI + VM** `DocumentTabViewModel.InsertPages.cs`. **UI**: `InsertPagesDialog` (позиция: «после
+  страницы N», 0 = в начало) + меню **File → Insert Pages from PDF…**. L10n EN/RU. **17 engine + 9
+  VM-тестов**.
 - **Initial View / Viewer Preferences (`/PageLayout` · `/PageMode` · `/ViewerPreferences`) — read +
   write + UI**. Новая Acrobat-фича «Initial View»: как viewer открывает документ — раскладка страниц
   (single / continuous / two-page, нечётные слева/справа), активная навигационная панель (закладки /

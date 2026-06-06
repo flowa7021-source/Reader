@@ -210,6 +210,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileExtractSelection]}"
                   IsEnabled="{Binding SelectedTab.CanSplitPdf, FallbackValue=False}"
                   Click="OnExtractSelectionMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileInsertPages]}"
+                  IsEnabled="{Binding SelectedTab.CanInsertPages, FallbackValue=False}"
+                  Click="OnInsertPagesMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAddWatermark]}"
                   IsEnabled="{Binding SelectedTab.CanAddWatermark, FallbackValue=False}"
@@ -235,6 +238,9 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileViewerPreferences]}"
                   IsEnabled="{Binding SelectedTab.CanEditViewerPreferences, FallbackValue=False}"
                   Click="OnViewerPreferencesMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileAttachments]}"
+                  IsEnabled="{Binding SelectedTab.CanManageAttachments, FallbackValue=False}"
+                  Click="OnAttachmentsMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFilePrint]}"
                   IsEnabled="{Binding SelectedTab.CanPrint, FallbackValue=False}"
