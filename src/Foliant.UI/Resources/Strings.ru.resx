@@ -940,6 +940,63 @@
   <data name="ViewerPrefsModeUseAttachments" xml:space="preserve">
     <value>Вложения</value>
   </data>
+  <data name="MenuFileAttachments" xml:space="preserve">
+    <value>_Вложения…</value>
+  </data>
+  <data name="AttachmentsDialogTitle" xml:space="preserve">
+    <value>Вложения</value>
+  </data>
+  <data name="AttachmentsEmpty" xml:space="preserve">
+    <value>Вложений нет.</value>
+  </data>
+  <data name="AttachmentsAddButton" xml:space="preserve">
+    <value>Добавить…</value>
+  </data>
+  <data name="AttachmentsExtractButton" xml:space="preserve">
+    <value>Извлечь…</value>
+  </data>
+  <data name="AttachmentsRemoveButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="AttachmentsCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="AttachmentsAddPickTitle" xml:space="preserve">
+    <value>Выберите файл для вложения</value>
+  </data>
+  <data name="AttachmentsExtractSaveTitle" xml:space="preserve">
+    <value>Извлечь вложение как</value>
+  </data>
+  <data name="AttachmentsSavePdfTitle" xml:space="preserve">
+    <value>Сохранить PDF с вложениями как</value>
+  </data>
+  <data name="AttachmentsAllFilesFilter" xml:space="preserve">
+    <value>Все файлы (*.*)|*.*</value>
+  </data>
+  <data name="MenuFileInsertPages" xml:space="preserve">
+    <value>_Вставить страницы из PDF…</value>
+  </data>
+  <data name="InsertPagesDialogTitle" xml:space="preserve">
+    <value>Вставка страниц</value>
+  </data>
+  <data name="InsertPagesPositionLabel" xml:space="preserve">
+    <value>Вставить после страницы</value>
+  </data>
+  <data name="InsertPagesPositionHint" xml:space="preserve">
+    <value>0 = перед первой страницей</value>
+  </data>
+  <data name="InsertPagesOkButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="InsertPagesCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="InsertPagesPickTitle" xml:space="preserve">
+    <value>Выберите PDF для вставки</value>
+  </data>
+  <data name="InsertPagesSaveTitle" xml:space="preserve">
+    <value>Сохранить объединённый PDF как</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Свойства документа</value>
   </data>

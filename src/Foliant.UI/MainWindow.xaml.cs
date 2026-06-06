@@ -888,6 +888,163 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnInsertPagesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanInsertPages: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        var pick = new OpenFileDialog
+        {
+            Title = loc["InsertPagesPickTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            CheckFileExists = true,
+        };
+        if (pick.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var (insertAfterPageIndex, ok) = InsertPagesDialog.Prompt(this, tab.PageCount);
+        if (!ok)
+        {
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["InsertPagesSaveTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-combined.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.InsertPagesCommand.ExecuteAsync(new InsertPagesRequest(insertAfterPageIndex, pick.FileName, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error inserting pages into '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnAttachmentsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanManageAttachments: true } tab)
+        {
+            return;
+        }
+
+        await tab.LoadAttachmentsCommand.ExecuteAsync(null);
+
+        var (action, selected, ok) = AttachmentsDialog.Prompt(this, tab.CurrentAttachments);
+        if (!ok)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        try
+        {
+            switch (action)
+            {
+                case AttachmentActionKind.Add:
+                    await AddAttachmentFlowAsync(tab);
+                    break;
+                case AttachmentActionKind.Extract when selected is not null:
+                    await ExtractAttachmentFlowAsync(tab, selected.Name);
+                    break;
+                case AttachmentActionKind.Remove when selected is not null:
+                    await RemoveAttachmentFlowAsync(tab, selected.Name);
+                    break;
+                default:
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error managing attachments of '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async Task AddAttachmentFlowAsync(DocumentTabViewModel tab)
+    {
+        var loc = LocalizationManager.Instance;
+        var pick = new OpenFileDialog
+        {
+            Title = loc["AttachmentsAddPickTitle"],
+            Filter = loc["AttachmentsAllFilesFilter"],
+            CheckFileExists = true,
+        };
+        if (pick.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["AttachmentsSavePdfTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-attachments.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        await tab.AddAttachmentCommand.ExecuteAsync(new AddAttachmentRequest(pick.FileName, save.FileName, null));
+    }
+
+    private async Task ExtractAttachmentFlowAsync(DocumentTabViewModel tab, string attachmentName)
+    {
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["AttachmentsExtractSaveTitle"],
+            Filter = loc["AttachmentsAllFilesFilter"],
+            FileName = attachmentName,
+        };
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        await tab.ExtractAttachmentCommand.ExecuteAsync(new ExtractAttachmentRequest(attachmentName, save.FileName));
+    }
+
+    private async Task RemoveAttachmentFlowAsync(DocumentTabViewModel tab, string attachmentName)
+    {
+        var loc = LocalizationManager.Instance;
+        var save = new SaveFileDialog
+        {
+            Title = loc["AttachmentsSavePdfTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-attachments.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        await tab.RemoveAttachmentCommand.ExecuteAsync(new RemoveAttachmentRequest(attachmentName, save.FileName));
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnShowLayersMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanShowLayers: true } tab)

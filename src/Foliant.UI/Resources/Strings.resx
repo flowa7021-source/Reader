@@ -940,6 +940,63 @@
   <data name="ViewerPrefsModeUseAttachments" xml:space="preserve">
     <value>Attachments</value>
   </data>
+  <data name="MenuFileAttachments" xml:space="preserve">
+    <value>_Attachments…</value>
+  </data>
+  <data name="AttachmentsDialogTitle" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
+  <data name="AttachmentsEmpty" xml:space="preserve">
+    <value>No attachments.</value>
+  </data>
+  <data name="AttachmentsAddButton" xml:space="preserve">
+    <value>Add…</value>
+  </data>
+  <data name="AttachmentsExtractButton" xml:space="preserve">
+    <value>Extract…</value>
+  </data>
+  <data name="AttachmentsRemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="AttachmentsCloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="AttachmentsAddPickTitle" xml:space="preserve">
+    <value>Choose a file to attach</value>
+  </data>
+  <data name="AttachmentsExtractSaveTitle" xml:space="preserve">
+    <value>Extract attachment as</value>
+  </data>
+  <data name="AttachmentsSavePdfTitle" xml:space="preserve">
+    <value>Save PDF with attachments as</value>
+  </data>
+  <data name="AttachmentsAllFilesFilter" xml:space="preserve">
+    <value>All files (*.*)|*.*</value>
+  </data>
+  <data name="MenuFileInsertPages" xml:space="preserve">
+    <value>_Insert Pages from PDF…</value>
+  </data>
+  <data name="InsertPagesDialogTitle" xml:space="preserve">
+    <value>Insert Pages</value>
+  </data>
+  <data name="InsertPagesPositionLabel" xml:space="preserve">
+    <value>Insert after page</value>
+  </data>
+  <data name="InsertPagesPositionHint" xml:space="preserve">
+    <value>0 = before the first page</value>
+  </data>
+  <data name="InsertPagesOkButton" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="InsertPagesCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="InsertPagesPickTitle" xml:space="preserve">
+    <value>Choose a PDF to insert</value>
+  </data>
+  <data name="InsertPagesSaveTitle" xml:space="preserve">
+    <value>Save combined PDF as</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Document Properties</value>
   </data>
