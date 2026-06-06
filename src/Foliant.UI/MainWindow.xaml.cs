@@ -1060,6 +1060,75 @@ public partial class MainWindow : Window
         }
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnNamedDestinationsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanManageNamedDestinations: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        await tab.LoadNamedDestinationsCommand.ExecuteAsync(null);
+
+        var (action, name, pageIndex, ok) = NamedDestinationsDialog.Prompt(this, tab.CurrentNamedDestinations, tab.PageCount);
+        if (!ok || action == NamedDestinationActionKind.None)
+        {
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["NamedDestSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-destinations.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            if (action == NamedDestinationActionKind.Add)
+            {
+                await tab.AddNamedDestinationCommand.ExecuteAsync(new AddNamedDestinationRequest(name, pageIndex, save.FileName));
+            }
+            else
+            {
+                await tab.RemoveNamedDestinationCommand.ExecuteAsync(new RemoveNamedDestinationRequest(name, save.FileName));
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error updating named destinations of '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnFontsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanListFonts: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        try
+        {
+            await tab.LoadFontsCommand.ExecuteAsync(null);
+            FontsDialog.Show(this, tab.CurrentFonts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error listing fonts of '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private async Task AddAttachmentFlowAsync(DocumentTabViewModel tab)
     {
         var loc = LocalizationManager.Instance;

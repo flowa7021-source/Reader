@@ -1048,6 +1048,51 @@
   <data name="SanitizeSaveDialogTitle" xml:space="preserve">
     <value>Сохранить очищенный PDF как</value>
   </data>
+  <data name="MenuFileNamedDestinations" xml:space="preserve">
+    <value>_Именованные назначения…</value>
+  </data>
+  <data name="NamedDestDialogTitle" xml:space="preserve">
+    <value>Именованные назначения</value>
+  </data>
+  <data name="NamedDestEmpty" xml:space="preserve">
+    <value>Именованных назначений нет.</value>
+  </data>
+  <data name="NamedDestNameLabel" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="NamedDestPageLabel" xml:space="preserve">
+    <value>Целевая страница</value>
+  </data>
+  <data name="NamedDestAddButton" xml:space="preserve">
+    <value>Добавить / обновить</value>
+  </data>
+  <data name="NamedDestRemoveButton" xml:space="preserve">
+    <value>Удалить выбранное</value>
+  </data>
+  <data name="NamedDestCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="NamedDestSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с назначениями как</value>
+  </data>
+  <data name="MenuFileFonts" xml:space="preserve">
+    <value>_Шрифты…</value>
+  </data>
+  <data name="FontsDialogTitle" xml:space="preserve">
+    <value>Шрифты</value>
+  </data>
+  <data name="FontsEmpty" xml:space="preserve">
+    <value>Шрифты не найдены.</value>
+  </data>
+  <data name="FontsEmbedded" xml:space="preserve">
+    <value>Встроен</value>
+  </data>
+  <data name="FontsNotEmbedded" xml:space="preserve">
+    <value>Не встроен</value>
+  </data>
+  <data name="FontsCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Свойства документа</value>
   </data>

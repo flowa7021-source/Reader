@@ -8,6 +8,30 @@
 ## [Unreleased]
 
 ### Added
+- **Named destinations (`/Names/Dests` + legacy `/Dests`) — list / add / remove + UI**. Acrobat-фича
+  «Destinations»: именованные точки перехода (имя → страница), на которые ссылаются ссылки/закладки.
+  **Domain**: record `PdfNamedDestination(Name, PageIndex)`. **Application**: порт
+  `IPdfNamedDestinationService` (`ListAsync` best-effort/sorted; `AddAsync` — добавить/заменить
+  `[pageRef /Fit]`, pageIndex зажимается в `[0, pageCount-1]`; `RemoveAsync`). **Engine**:
+  `PdfPigNamedDestinationService` + cos-helpers — `PdfNamedDestinationCosReader` читает **обе** формы
+  (модерн name-tree `/Names/Dests` с рекурсией по `/Kids` + legacy catalog `/Dests`-словарь; резолвит
+  page-ref → 0-based индекс через обход `/Pages`, как outline writer; модерн приоритетнее legacy при
+  совпадении имён); `PdfNamedDestinationCosWriter` пишет в модерн `/Names/Dests` (inline-dest'ы),
+  `PdfCatalogNamedDestinationsCosWriter` сохраняет прочие `/Names` sub-ключи (`/EmbeddedFiles`/`/JavaScript`)
+  через `PdfIncrementalWriter`. MVP-ограничение: запись только в модерн-форму (имя из legacy `/Dests`
+  читается, но `RemoveAsync` его не трогает) — документировано в порте. Оригинал не мутируется; Unicode
+  имена round-trip. **DI + VM** `DocumentTabViewModel.NamedDestinations.cs` (load/add/remove). **UI**:
+  `NamedDestinationsDialog` (список + форма имя/страница + Remove; возвращает одно действие) + меню
+  **File → Named Destinations…**. L10n EN/RU. **29 engine + 11 VM-тестов** (вкл. legacy-`/Dests`-фикстуру).
+- **Document fonts listing (Document Properties → Fonts) — read-only + UI**. Список шрифтов документа
+  со статусом встраивания (важно для печати/PDF-A). **Domain**: record
+  `PdfFontInfo(Name, Subtype, IsEmbedded)`. **Application**: порт `IPdfFontService.ListFontsAsync`
+  (distinct, ordinal-sorted, best-effort). **Engine**: `PdfFontCosReader` обходит страницы
+  (`/Pages` walk), читает `/Resources → /Font` каждой страницы, `/BaseFont` + `/Subtype`; embedded ⇔
+  `/FontDescriptor` содержит `/FontFile|FontFile2|FontFile3` (для `/Type0` — через `/DescendantFonts[0]`);
+  дедуп по (Name, Subtype, IsEmbedded). `PdfPigFontService` — read-only orchestrator. **UI**:
+  `FontsDialog` (read-only список «имя — подтип — встроен/не встроен») + меню **File → Fonts…**.
+  L10n EN/RU. **8 engine + 5 VM-тестов** (вкл. fixture с embedded и non-embedded шрифтом).
 - **XMP metadata (`/Metadata`) — read + write + UI**. Просмотр и правка XMP-пакета документа
   (Acrobat «Additional Metadata»; XMP требуется для PDF/A и documents-of-record). **Application**: порт
   `IPdfXmpService` (`ReadAsync` → пакет как UTF-8 строка или `null` best-effort; `WriteAsync` —

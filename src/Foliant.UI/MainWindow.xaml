@@ -247,6 +247,12 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileSanitize]}"
                   IsEnabled="{Binding SelectedTab.CanSanitize, FallbackValue=False}"
                   Click="OnSanitizeMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileNamedDestinations]}"
+                  IsEnabled="{Binding SelectedTab.CanManageNamedDestinations, FallbackValue=False}"
+                  Click="OnNamedDestinationsMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileFonts]}"
+                  IsEnabled="{Binding SelectedTab.CanListFonts, FallbackValue=False}"
+                  Click="OnFontsMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFilePrint]}"
                   IsEnabled="{Binding SelectedTab.CanPrint, FallbackValue=False}"
