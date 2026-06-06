@@ -8,6 +8,30 @@
 ## [Unreleased]
 
 ### Added
+- **XMP metadata (`/Metadata`) — read + write + UI**. Просмотр и правка XMP-пакета документа
+  (Acrobat «Additional Metadata»; XMP требуется для PDF/A и documents-of-record). **Application**: порт
+  `IPdfXmpService` (`ReadAsync` → пакет как UTF-8 строка или `null` best-effort; `WriteAsync` —
+  атомарная запись копии). **Engine**: `PdfPigXmpService` + cos-helpers (`PdfXmpCosReader` —
+  catalog `/Metadata` поток, raw/FlateDecode; `PdfXmpCosWriter` — эмитит несжатый `/Metadata`-поток
+  (`/Type /Metadata /Subtype /XML`, `/Length` = UTF-8 байты) через `PdfIncrementalWriter`,
+  `PdfCatalogMetadataCosWriter` переписывает catalog). Оригинал не мутируется; Unicode (UTF-8)
+  round-trip; reader снимает stream-level BOM. **DI + VM** `DocumentTabViewModel.Xmp.cs` (load/save).
+  **UI**: `XmpMetadataDialog` (редактор XML-пакета со стартовым шаблоном) + меню **File → XMP
+  Metadata…**. L10n EN/RU. **14 engine + 9 VM-тестов**.
+- **Document JavaScript & actions sanitization (scan + remove) + UI**. Acrobat-фича «Sanitize»:
+  обнаружение и удаление документ-уровневого JavaScript и автодействий — высокая ценность для
+  юридического/нотариального сегмента. **Domain**: record `PdfSanitizationReport`
+  (`DocumentJavaScriptNames`, `HasJavaScriptOpenAction`, `HasDocumentAdditionalActions`,
+  `HasAnyJavaScriptOrActions`). **Application**: порт `IPdfSanitizationService` (`ScanAsync` →
+  отчёт best-effort; `RemoveJavaScriptAndActionsAsync` → чистая копия, возвращает «удалено ли что-то»).
+  **Engine**: `PdfPigSanitizationService` + cos-helpers — `PdfSanitizationCosReader` (catalog
+  `/OpenAction` JS, `/Names → /JavaScript` name-tree, catalog `/AA`); `PdfSanitizationCosWriter` +
+  `PdfCatalogSanitizationCosWriter` (убирают `/OpenAction` **только если это JS-действие** — GoTo
+  сохраняется; дропают `/Names/JavaScript`, сохраняя прочие sub-ключи `/Dests`/`/EmbeddedFiles`;
+  дропают catalog `/AA`) через `PdfIncrementalWriter`. Per-page/field `/AA` — вне scope (документировано).
+  Оригинал не мутируется. **DI + VM** `DocumentTabViewModel.Sanitization.cs` (scan/remove). **UI**:
+  `SanitizationDialog` (показывает находки + «Remove & Save As…») + меню **File → Remove JavaScript &
+  Actions…**. L10n EN/RU. **15 engine + 9 VM-тестов** (фикстура с JS строится hand-rolled в тесте).
 - **Embedded file attachments (`/EmbeddedFiles`) — list / extract / add / remove + UI**. Acrobat-фича
   «Attachments»: файлы, встроенные в PDF (катало­говое name-tree `/Names → /EmbeddedFiles`). **Domain**:
   record `PdfAttachment(Name, Size, Description)`. **Application**: порт `IPdfAttachmentService`

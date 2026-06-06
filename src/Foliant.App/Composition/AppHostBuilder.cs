@@ -169,6 +169,8 @@ internal static class AppHostBuilder
         services.AddSingleton<IPdfViewerPreferencesService, PdfPigViewerPreferencesService>();
         services.AddSingleton<IPdfAttachmentService, PdfPigAttachmentService>();
         services.AddSingleton<IPdfInsertPagesService, PdfPigInsertPagesService>();
+        services.AddSingleton<IPdfXmpService, PdfPigXmpService>();
+        services.AddSingleton<IPdfSanitizationService, PdfPigSanitizationService>();
         services.AddSingleton<IBatchJobRunner>(sp => new BatchJobRunner(
             sp.GetRequiredService<ILoggerFactory>().CreateLogger<BatchJobRunner>(),
             watermark: sp.GetService<IWatermarkService>(),
@@ -306,7 +308,9 @@ internal static class AppHostBuilder
                 pageLabelService: sp.GetService<IPdfPageLabelService>(),
                 viewerPreferencesService: sp.GetService<IPdfViewerPreferencesService>(),
                 attachmentService: sp.GetService<IPdfAttachmentService>(),
-                insertPagesService: sp.GetService<IPdfInsertPagesService>()));
+                insertPagesService: sp.GetService<IPdfInsertPagesService>(),
+                xmpService: sp.GetService<IPdfXmpService>(),
+                sanitizationService: sp.GetService<IPdfSanitizationService>()));
 
         // MainViewModel still resolves ILicenseManager/ITrialService via GetService so the
         // unit-test composition (which omits them) keeps working.
