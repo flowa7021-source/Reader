@@ -808,6 +808,138 @@
   <data name="MenuFileDocumentProperties" xml:space="preserve">
     <value>_Свойства документа…</value>
   </data>
+  <data name="MenuFilePageLabels" xml:space="preserve">
+    <value>_Нумерация страниц…</value>
+  </data>
+  <data name="PageLabelsDialogTitle" xml:space="preserve">
+    <value>Нумерация страниц</value>
+  </data>
+  <data name="PageLabelsExisting" xml:space="preserve">
+    <value>Текущие диапазоны нумерации:</value>
+  </data>
+  <data name="PageLabelsStartPageLabel" xml:space="preserve">
+    <value>Начальная страница</value>
+  </data>
+  <data name="PageLabelsStyleLabel" xml:space="preserve">
+    <value>Стиль</value>
+  </data>
+  <data name="PageLabelsPrefixLabel" xml:space="preserve">
+    <value>Префикс</value>
+  </data>
+  <data name="PageLabelsStartNumberLabel" xml:space="preserve">
+    <value>Начальный номер</value>
+  </data>
+  <data name="PageLabelsAddButton" xml:space="preserve">
+    <value>Добавить / обновить диапазон</value>
+  </data>
+  <data name="PageLabelsRemoveButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="PageLabelsSaveButton" xml:space="preserve">
+    <value>Сохранить как…</value>
+  </data>
+  <data name="PageLabelsCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="PageLabelsSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с нумерацией страниц как</value>
+  </data>
+  <data name="PageLabelStyleArabic" xml:space="preserve">
+    <value>1, 2, 3 (арабские)</value>
+  </data>
+  <data name="PageLabelStyleUpperRoman" xml:space="preserve">
+    <value>I, II, III (римские)</value>
+  </data>
+  <data name="PageLabelStyleLowerRoman" xml:space="preserve">
+    <value>i, ii, iii (римские строчные)</value>
+  </data>
+  <data name="PageLabelStyleUpperLetters" xml:space="preserve">
+    <value>A, B, C (буквы)</value>
+  </data>
+  <data name="PageLabelStyleLowerLetters" xml:space="preserve">
+    <value>a, b, c (буквы строчные)</value>
+  </data>
+  <data name="PageLabelStyleNone" xml:space="preserve">
+    <value>Только префикс (без номера)</value>
+  </data>
+  <data name="MenuFileViewerPreferences" xml:space="preserve">
+    <value>_Начальный вид…</value>
+  </data>
+  <data name="ViewerPrefsDialogTitle" xml:space="preserve">
+    <value>Начальный вид</value>
+  </data>
+  <data name="ViewerPrefsPageLayoutLabel" xml:space="preserve">
+    <value>Раскладка страниц</value>
+  </data>
+  <data name="ViewerPrefsPageModeLabel" xml:space="preserve">
+    <value>Панель навигации</value>
+  </data>
+  <data name="ViewerPrefsHideToolbar" xml:space="preserve">
+    <value>Скрыть панель инструментов</value>
+  </data>
+  <data name="ViewerPrefsHideMenubar" xml:space="preserve">
+    <value>Скрыть строку меню</value>
+  </data>
+  <data name="ViewerPrefsFitWindow" xml:space="preserve">
+    <value>Подогнать окно под первую страницу</value>
+  </data>
+  <data name="ViewerPrefsCenterWindow" xml:space="preserve">
+    <value>Центрировать окно на экране</value>
+  </data>
+  <data name="ViewerPrefsDisplayDocTitle" xml:space="preserve">
+    <value>Показывать заголовок документа в заголовке окна</value>
+  </data>
+  <data name="ViewerPrefsSaveButton" xml:space="preserve">
+    <value>Сохранить как…</value>
+  </data>
+  <data name="ViewerPrefsCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="ViewerPrefsSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с начальным видом как</value>
+  </data>
+  <data name="ViewerPrefsLayoutDefault" xml:space="preserve">
+    <value>По умолчанию</value>
+  </data>
+  <data name="ViewerPrefsLayoutSinglePage" xml:space="preserve">
+    <value>Одна страница</value>
+  </data>
+  <data name="ViewerPrefsLayoutOneColumn" xml:space="preserve">
+    <value>Непрерывно (одна колонка)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoColumnLeft" xml:space="preserve">
+    <value>Две колонки (обложка слева)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoColumnRight" xml:space="preserve">
+    <value>Две колонки (обложка справа)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoPageLeft" xml:space="preserve">
+    <value>Разворот (обложка слева)</value>
+  </data>
+  <data name="ViewerPrefsLayoutTwoPageRight" xml:space="preserve">
+    <value>Разворот (обложка справа)</value>
+  </data>
+  <data name="ViewerPrefsModeDefault" xml:space="preserve">
+    <value>По умолчанию</value>
+  </data>
+  <data name="ViewerPrefsModeUseNone" xml:space="preserve">
+    <value>Без панели</value>
+  </data>
+  <data name="ViewerPrefsModeUseOutlines" xml:space="preserve">
+    <value>Закладки</value>
+  </data>
+  <data name="ViewerPrefsModeUseThumbs" xml:space="preserve">
+    <value>Миниатюры страниц</value>
+  </data>
+  <data name="ViewerPrefsModeFullScreen" xml:space="preserve">
+    <value>Полный экран</value>
+  </data>
+  <data name="ViewerPrefsModeUseOC" xml:space="preserve">
+    <value>Слои</value>
+  </data>
+  <data name="ViewerPrefsModeUseAttachments" xml:space="preserve">
+    <value>Вложения</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Свойства документа</value>
   </data>

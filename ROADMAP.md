@@ -12,15 +12,15 @@
 
 ---
 
-## Статус-снимок (после #128 на main, 2026-06-06)
+## Статус-снимок (после #129 на main, 2026-06-06)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
-- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction + find-and-redact (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122 + UI #124)**, **/Outlines bookmark writer + export (#123 + UI #125)**, **open password-protected PDF — read-side decrypt + prompt/retry (#126)**, **Print (File → Print, Ctrl+P) document-neutral (#128)**. **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118). UI-обвязка всех функциональных фич — #113–#116, #120, #124, #125.
+- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction + find-and-redact (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122 + UI #124)**, **/Outlines bookmark writer + export (#123 + UI #125)**, **open password-protected PDF — read-side decrypt + prompt/retry (#126)**, **Print (File → Print, Ctrl+P) document-neutral (#128)**, **page labels /PageLabels read+write (#129)**. **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118). UI-обвязка всех функциональных фич — #113–#116, #120, #124, #125.
 - **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases, реальный прогон `Foliant.CrossPlatform.slnf` 2026-06-06):
-  - Domain 243 / Application 407 / ViewModels 669 (target gates D90/A80/I70/V60 держатся).
-  - Engines.Pdf 158 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25.
+  - Domain 281 / Application 407 / ViewModels 669 (target gates D90/A80/I70/V60 держатся).
+  - Engines.Pdf 176 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25.
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 1868 executed, 0 failed (+66 с #120; full Slow/Integration набор — ещё больше).**
+  - **Итого: 1924 executed, 0 failed (+56 с #128; full Slow/Integration набор — ещё больше).**
 - **LOC:** ~31 000 в src/, 14 тестовых проектов.
 - **Скрытых заглушек нет** — F-PdfA/F30 (write-side) stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
@@ -204,10 +204,13 @@ Phase-2 фичи (параллельно, изолированы):
 
 ### Волна 7 — in-flight + кандидаты
 
-- **Page labels (`/PageLabels`)** — **in-flight (текущий PR)**: read + write «Number Pages»
-  (i, ii, iii → 1, 2, 3 → A-1 …). Pure Domain + Application + Engine (`IPdfPageLabelService` /
-  `PdfPigPageLabelService`, cos number-tree через `PdfIncrementalWriter`), 56 тестов, Linux-verified.
-  DI/UI wiring — follow-up (по образцу metadata #122 → #124).
+- **Page labels (`/PageLabels`)** — движок ✅ merged (#129); **UI wiring in-flight (текущий PR)**:
+  DI + `DocumentTabViewModel.PageLabels` + `PageLabelsDialog` («Number Pages») + меню + L10n + VM-тесты.
+- **Viewer Preferences / Initial View** (`/PageLayout` · `/PageMode` · `/ViewerPreferences`) —
+  **in-flight (текущий PR)**: полный стек read+write (Domain + port + engine cos через
+  `PdfIncrementalWriter`) + DI + VM + `ViewerPreferencesDialog` + меню **File → Initial View…** +
+  L10n. 35 движковых/домен + 11 VM-тестов, Linux-verified. (WPF-разметка — compile-check
+  `EnableWindowsTargeting` на Linux + Windows-CI.)
 - **OCG UI follow-up**: панель слоёв сейчас modal-dialog; live-toggle в sidebar — улучшение UX.
 - **Sig-UX banner** (Trek 1 Поток A): «требует ручной проверки» при `IsValid=false` — ещё не сделан.
 - **Metadata XMP**: текущий `/Info`-writer заменяет свежим `/Info` и не сохраняет XMP-stream; incremental `/Info` + XMP — Phase 3 для documents-of-record.
@@ -247,3 +250,4 @@ Phase-2 фичи (параллельно, изолированы):
 | 2026-06-02 (вечер) | Волна 2 merged (#102 F32, #103 PAdES-B), волна 3 merged (#105 split, #106 Bates, #107 gitattributes union-merge), bad-xref fix (#104). Reconcile #2: повторный дрейф (Trek 3 пункт 2 perf-gate / пункт 6 CS0535 — оба уже в main). Запущена волна 4: W0 DI-only, C1 A2b native /Annots, C2 F32-follow-up find-and-redact, C3 Husky pre-push. |
 | 2026-06-03 | Волна 4 merged (#108 W0, #110 C2, #111 C1, #112 C3). Волна 5 merged: UI-серия #113–#116 (W1 redaction / W2 bates +CS0108 / W3 split +CS1734 / W4 sig-banner), #120 W5 OCG UI; Phase-2 фичи #117 F-PdfA stub / #118 F30 stub / #119 F8 OCG real. Reconcile #3: цифры тестов 1685→1802, добавлен урок WPF blind-spot (CS0108/CS1734 ловит только Windows-CI). Запущена волна 6: metadata /Info editing. |
 | 2026-06-06 | Волна 6 merged (#121–#128): /Info metadata editing + Document Properties UI (#122/#124), /Outlines writer + Export Bookmarks UI (#123/#125), open password-protected PDF read-side (#126), Print Ctrl+P document-neutral (#128), docs reconcile (#121) + EnableWindowsTargeting compile-check (#127). Reconcile #4: реальный прогон тестов 1802→1868 (0 failed), Волна 6 переведена in-flight→merged, заведена Волна 7 (OCG live-toggle, sig-UX banner, XMP, outline richness, print follow-up). DoD-остаток (D1+E1) не изменился. |
+| 2026-06-06 (поздно) | Волна 6.x merged: page labels /PageLabels read+write движок (#129, 56 тестов). Запущен крупный PR Волны 7 «navigation & initial view»: page-labels UI wiring (DI + PageLabelsDialog + меню) **+** новая фича Viewer Preferences / Initial View полным стеком (Domain + port + cos engine + DI + VM + ViewerPreferencesDialog + меню + L10n). Engine Viewer Preferences собран суб-агентом в изолированном worktree, retrieved по SHA. Реальный прогон тестов 1924→1981 (0 failed). WPF верифицирован compile-check'ом EnableWindowsTargeting на Linux. |

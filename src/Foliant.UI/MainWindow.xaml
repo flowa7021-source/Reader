@@ -229,6 +229,12 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileDocumentProperties]}"
                   IsEnabled="{Binding SelectedTab.CanEditMetadata, FallbackValue=False}"
                   Click="OnDocumentPropertiesMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFilePageLabels]}"
+                  IsEnabled="{Binding SelectedTab.CanEditPageLabels, FallbackValue=False}"
+                  Click="OnPageLabelsMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileViewerPreferences]}"
+                  IsEnabled="{Binding SelectedTab.CanEditViewerPreferences, FallbackValue=False}"
+                  Click="OnViewerPreferencesMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFilePrint]}"
                   IsEnabled="{Binding SelectedTab.CanPrint, FallbackValue=False}"

@@ -8,6 +8,36 @@
 ## [Unreleased]
 
 ### Added
+- **Initial View / Viewer Preferences (`/PageLayout` · `/PageMode` · `/ViewerPreferences`) — read +
+  write + UI**. Новая Acrobat-фича «Initial View»: как viewer открывает документ — раскладка страниц
+  (single / continuous / two-page, нечётные слева/справа), активная навигационная панель (закладки /
+  миниатюры / слои / вложения / full-screen) и пять UI-флагов (`HideToolbar` / `HideMenubar` /
+  `FitWindow` / `CenterWindow` / `DisplayDocTitle`). **Domain**: enum'ы `PdfPageLayout` (7) и
+  `PdfPageMode` (7) + immutable record `PdfViewerPreferences` со статикой `Default`. **Application**:
+  порт `IPdfViewerPreferencesService` (`ReadAsync` best-effort → `Default`; `WriteAsync` атомарно).
+  **Engine**: `PdfPigViewerPreferencesService` + cos-helpers (`PdfViewerPreferencesCosReader`
+  навигирует catalog `/PageLayout`·`/PageMode`·`/ViewerPreferences`; `PdfViewerPreferencesCosWriter`
+  инкрементально переписывает catalog через ту же инфру `PdfIncrementalWriter` /
+  `PdfCatalogViewerPreferencesCosWriter`, что у `/PageLabels` и `/Outlines`). `Default` → ключи
+  опускаются (PDF-default); false-флаги не пишутся; пустой `/ViewerPreferences` не создаётся; оригинал
+  не мутируется. **DI**: регистрация + проброс в `DocumentTabViewModel`. **ViewModels**:
+  `DocumentTabViewModel.ViewerPreferences.cs` — `CanEditViewerPreferences` gate, `CurrentViewerPreferences`
+  снимок (`LoadViewerPreferencesCommand`), `SaveViewerPreferencesCommand`. **UI**: модальный
+  `ViewerPreferencesDialog` (2 combo + 5 чекбоксов) + пункт меню **File → Initial View…**. Локализация
+  EN/RU (26 ключей). **35 движковых + домен-тестов** (round-trip каждого layout/mode/флага, all-default
+  drops keys, page-count preserved, source-not-mutated, arg-guards) **+ 11 VM-тестов** (gate / forward /
+  load / no-op / suppress). Pure-managed PdfPig, зелёные на Linux.
+- **Page labels — UI wiring (DI + «Number Pages» dialog + menu)**. Подключает
+  `IPdfPageLabelService` / `PdfPigPageLabelService` (движок merged ранее) к приложению: регистрация в
+  DI + проброс в `DocumentTabViewModel`. **ViewModels**: `DocumentTabViewModel.PageLabels.cs` —
+  `CanEditPageLabels` gate (PDF + сервис), `CurrentPageLabels` снимок (`LoadPageLabelsCommand`),
+  `SavePageLabelsCommand` с подавлением исключений (как соседние PDF-mutate команды). **UI**: модальный
+  `PageLabelsDialog` (список диапазонов с add/remove + форма: начальная страница, стиль-combo, префикс,
+  начальный номер; человекочитаемый sample через `PdfPageLabelFormatter`) + пункт меню
+  **File → Number Pages…** (`IsEnabled` ← `CanEditPageLabels`) с SaveFileDialog. Локализация EN/RU
+  (18 ключей). **11 VM-тестов** (`DocumentTabViewModelPageLabelsTests`): gate / forward ranges+path /
+  load populates snapshot / load-throws-empty / non-PDF·null-service CanExecute=false / null-request ·
+  blank-target no-op / service-throws-swallowed.
 - **PDF page labels (`/PageLabels`) — read + write «Number Pages» (i, ii, iii → 1, 2, 3 → A-1 …)**.
   До этого PR номер страницы в навигаторе всегда был физическим индексом; стандартная Acrobat-фича
   «Number Pages» (именованные диапазоны нумерации `/PageLabels`, ISO 32000-1 §12.4.2) отсутствовала.
