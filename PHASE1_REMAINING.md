@@ -1,17 +1,18 @@
 # Foliant — Phase 1 (Alpha) DoD: оставшиеся работы
 
 **Создан:** 2026-05-31, после merge PR'ов #70–#76.
-**Обновлён:** 2026-06-06, после merge PR'ов #77–#128 (Phase 1 annotation/page/OCR треки + Phase 2: подписи, redaction, OCG, metadata, outlines, encrypted-open, print).
+**Обновлён:** 2026-06-07, после merge PR'ов #77–#134 (Phase 1 annotation/page/OCR треки + Phase 2: подписи, redaction, OCG, metadata, outlines, encrypted-open, print, page labels, Initial View, attachments, insert-pages, XMP, sanitization, named destinations, fonts, links + cycle-guard hardening).
 **Базовый контракт:** один PR → draft → merge → следующий от свежего main. Параллелить только pure-application/engine треки, не трогающие `MainWindow.xaml(.cs)` и `Strings*.resx`.
 
 ---
 
-## Статус-снимок (после #128 на main, 2026-06-06)
+## Статус-снимок (после #134 на main, 2026-06-07)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR — `OcrCerIntegrationTests` готов, остаются бинарные golden-сканы за Windows-стендом).
-- **Тесты cross-platform layer** (CI-фильтр, executed cases, реальный прогон): Domain 243 / Application 407 / ViewModels 669 / Engines.Pdf 158 / Infrastructure 242 (+ Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 / DjVu 23 / PerfCompare 6 / CheckCoverage 10). **Итого 1868, 0 failed** на 2026-06-06.
-- **Реальный остаток Phase 1 DoD:** только **D1** (бинарные OCR-сканы) и **E1** (Windows manual smoke + ISCC) — оба требуют Windows-стенда. **Не изменилось** через всю Phase-2 работу.
-- **Phase 2 merged (функциональные):** F26 PAdES-B (#103), F32 redaction + find-and-redact (#102/#110), F8 OCG layers (#119/#120), A2b native /Annots 11/11 (#111), /Info metadata editing + UI (#122/#124), /Outlines bookmark writer + Export UI (#123/#125), open password-protected PDF read-side (#126), Print Ctrl+P document-neutral (#128).
+- **Тесты cross-platform layer** (CI-фильтр, executed cases, реальный прогон `Foliant.CrossPlatform.slnf`): Domain 285 / Application 407 / ViewModels 752 / Engines.Pdf 330 / Infrastructure 242 (+ Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 / DjVu 23 / PerfCompare 6 / CheckCoverage 10). **Итого 2165, 0 failed** на 2026-06-07. (src ≈ 38 000 LOC.)
+- **Реальный остаток Phase 1 DoD:** только **D1** (бинарные OCR-сканы) и **E1** (Windows manual smoke + ISCC) — оба требуют Windows-стенда. **Не изменилось** через всю Phase-2 работу (см. ниже — это и есть реальный gate `v0.1.0`).
+- **Phase 2 merged (функциональные):** F26 PAdES-B (#103), F32 redaction + find-and-redact (#102/#110), F8 OCG layers (#119/#120), A2b native /Annots 11/11 (#111), /Info metadata editing + UI (#122/#124), /Outlines bookmark writer + Export UI (#123/#125), open password-protected PDF read-side (#126), Print Ctrl+P document-neutral (#128), page labels /PageLabels read+write + UI (#129/#130), Initial View /ViewerPreferences read+write + UI (#130), embedded file attachments /EmbeddedFiles list/extract/add/remove + UI (#131), insert pages from another PDF (#131), XMP metadata /Metadata read+write + UI (#132), JavaScript & actions sanitization scan+remove + UI (#132), named destinations /Names/Dests list/add/remove + UI (#133), fonts listing + UI (#133), link annotations listing + UI (#134).
+- **Инжиниринг / hardening merged:** cycle-guard depth-limit на всех рекурсивных cos-обходчиках (`PdfCosLimits.MaxTreeDepth`, #134) — malformed/циклический PDF не валит процесс через StackOverflow.
 - **Phase 2 merged (port + honest stub):** F-PdfA (#117, AGPL block), F30/F31 write-side encryption (#118, PdfPig gap). Реальные impl — Phase 3 (verapdf CLI / QPDF), trajectory в PR. (Read-side открытие зашифрованных PDF уже работает — #126.)
 - **Инфраструктура merged:** `merge=union` для CHANGELOG (#107), Husky pre-push hook (#112), CS0535 CI-gate (#99), EnableWindowsTargeting Linux compile-check для WPF (док #127).
 - **Подтверждено в main (не «todo»):** perf-regression gate, E2E update-check, `SettingsMigrator v1→v2`.
@@ -131,3 +132,4 @@
 | 2026-06-02 | Phase 2 wave 1 merged: Q-F26 PAdES-B (#103), Q-F32 redaction MVP (#102); wave 3 merged: PDF split (#105), Bates (#106), `.gitattributes` union-merge (#107). Phase 1 DoD-остаток (D1+E1) не изменился — оба Windows-gated. | claude |
 | 2026-06-03 | Phase 2 продолжение merged #108–#120: UI-обвязка всех функциональных фич (#113–#116 redaction/bates/split/sig + #120 OCG), A2b native /Annots 11/11 (#111), find-and-redact (#110), F8 OCG real (#119), F-PdfA+F30 port+stub (#117/#118), Husky hook (#112). Тесты 1685→1802. DoD-остаток (D1+E1) по-прежнему не изменился. | claude |
 | 2026-06-06 | Phase 2 продолжение merged #121–#128: /Info metadata editing + Document Properties UI (#122/#124), /Outlines writer + Export Bookmarks UI (#123/#125), open password-protected PDF read-side (#126), Print Ctrl+P (#128), docs reconcile (#121) + EnableWindowsTargeting compile-check (#127). Реальный прогон тестов 1802→1868 (0 failed). DoD-остаток (D1+E1) по-прежнему не изменился. | claude |
+| 2026-06-07 | Phase 2 продолжение merged #129–#134: page labels read+write + UI (#129/#130), Initial View /ViewerPreferences (#130), attachments /EmbeddedFiles (#131), insert pages from PDF (#131), XMP /Metadata (#132), JS/actions sanitization (#132), named destinations /Names/Dests (#133), fonts listing (#133), link annotations listing (#134), cycle-guard hardening cos-walkers (#134). Реальный прогон тестов 1868→2165 (0 failed). DoD-остаток (D1+E1) по-прежнему не изменился — это и есть реальный gate `v0.1.0` (Windows smoke + ISCC + EV-cert, вне песочницы). | claude |
