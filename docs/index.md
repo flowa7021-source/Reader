@@ -24,7 +24,8 @@
   redaction (в т.ч. find-and-redact), редактирование метаданных (**Document Properties**),
   метки страниц (**Number Pages**, `/PageLabels`), начальный вид (**Initial View**),
   вложенные файлы (**Attachments**: добавить/извлечь/удалить), XMP-метаданные (**XMP Metadata**),
-  очистка от JavaScript и автодействий (**Remove JavaScript & Actions**),
+  очистка от JavaScript и автодействий (**Remove JavaScript & Actions**), именованные переходы
+  (**Named Destinations**), список шрифтов с встраиванием (**Fonts**),
   экспорт закладок в PDF `/Outlines`, просмотр цифровых подписей (PAdES-B) и слоёв (OCG).
 - **Печать** — системный диалог печати по `Ctrl+P` (работает для всех форматов).
 - **Защищённые PDF** — открытие зашифрованных (password-protected) файлов с запросом пароля.

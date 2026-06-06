@@ -12,16 +12,16 @@
 
 ---
 
-## Статус-снимок (после #131 на main, 2026-06-06)
+## Статус-снимок (после #132 на main, 2026-06-07)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
-- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction + find-and-redact (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122 + UI #124)**, **/Outlines bookmark writer + export (#123 + UI #125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels read+write + UI (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles list/extract/add/remove + UI (#131)**, **insert pages from another PDF (#131)**. **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
-- **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases, реальный прогон `Foliant.CrossPlatform.slnf` 2026-06-06):
-  - Domain 285 / Application 407 / ViewModels 713 (target gates D90/A80/I70/V60 держатся).
-  - Engines.Pdf 254 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25.
+- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction + find-and-redact (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122 + UI #124)**, **/Outlines bookmark writer + export (#123 + UI #125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles (#131)**, **insert pages from another PDF (#131)**, **XMP metadata /Metadata read+write + UI (#132)**, **JavaScript & actions sanitization (#132)**. **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
+- **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases, реальный прогон `Foliant.CrossPlatform.slnf`):
+  - Domain 285 / Application 407 / ViewModels 731 (target gates D90/A80/I70/V60 держатся).
+  - Engines.Pdf 283 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25.
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 2050 executed, 0 failed (на main после #131; full Slow/Integration набор — ещё больше).**
-- **LOC:** ~33 000 в src/, 14 тестовых проектов.
+  - **Итого: 2097 executed, 0 failed (на main после #132; full Slow/Integration набор — ещё больше).**
+- **LOC:** ~37 000 в src/, 14 тестовых проектов.
 - **Скрытых заглушек нет** — F-PdfA/F30 (write-side) stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
 > **⚠️ Дрейф документов — рецидивирующий паттерн.** Планы систематически отстают
@@ -216,14 +216,20 @@ Phase-2 фичи (параллельно, изолированы):
 - **Insert pages from another PDF** (#131) — `IPdfInsertPagesService` (PdfPig `PdfMerger`) +
   `InsertPagesDialog` + меню **File → Insert Pages from PDF…**.
 
-### Волна 9 — in-flight + кандидаты
+### Волна 9 — ✅ merged: XMP metadata + sanitization (#132)
 
-- **XMP metadata (`/Metadata`)** — **in-flight (текущий PR)**: read+write полным стеком (port + engine
-  cos stream + DI + VM + `XmpMetadataDialog`-редактор + меню **File → XMP Metadata…** + L10n).
-  14 движковых + 9 VM-тестов. Движок собран суб-агентом в worktree. (Закрывает Wave-7-кандидат «Metadata XMP».)
-- **Document JavaScript & actions sanitization** — **in-flight (текущий PR)**: scan + remove
-  (`/OpenAction` JS / `/Names/JavaScript` / catalog `/AA`) полным стеком + `SanitizationDialog` + меню
-  **File → Remove JavaScript & Actions…** + L10n. 15 движковых + 9 VM-тестов. Движок суб-агентом в worktree.
+- **XMP metadata (`/Metadata`)** (#132) — read+write полным стеком + `XmpMetadataDialog` + меню
+  **File → XMP Metadata…**. (Закрыт Wave-7-кандидат «Metadata XMP».)
+- **JavaScript & actions sanitization** (#132) — scan + remove (`/OpenAction` JS / `/Names/JavaScript` /
+  catalog `/AA`) + `SanitizationDialog` + меню **File → Remove JavaScript & Actions…**.
+
+### Волна 10 — in-flight + кандидаты
+
+- **Named destinations (`/Names/Dests` + legacy `/Dests`)** — **in-flight (текущий PR)**: list/add/remove
+  полным стеком (читает обе формы, пишет модерн) + `NamedDestinationsDialog` + меню
+  **File → Named Destinations…**. 29 движковых + 11 VM-тестов. Движок суб-агентом в worktree.
+- **Document fonts listing** — **in-flight (текущий PR)**: read-only список шрифтов с embedding-статусом
+  (Document Properties → Fonts) + `FontsDialog` + меню **File → Fonts…**. 8 движковых + 5 VM-тестов.
 - **OCG UI follow-up**: панель слоёв сейчас modal-dialog; live-toggle в sidebar — улучшение UX.
 - **Sig-UX banner** (Trek 1 Поток A): «требует ручной проверки» при `IsValid=false` — ещё не сделан.
 - **Outline richness**: named destinations, open/closed (знак `/Count`), цвета/стили (`/C`/`/F`), XYZ-zoom — writer сейчас пишет только GoTo-page `/Fit`.
@@ -265,3 +271,4 @@ Phase-2 фичи (параллельно, изолированы):
 | 2026-06-06 (поздно) | Волна 6.x merged: page labels /PageLabels read+write движок (#129, 56 тестов). Запущен крупный PR Волны 7 «navigation & initial view»: page-labels UI wiring (DI + PageLabelsDialog + меню) **+** новая фича Viewer Preferences / Initial View полным стеком (Domain + port + cos engine + DI + VM + ViewerPreferencesDialog + меню + L10n). Engine Viewer Preferences собран суб-агентом в изолированном worktree, retrieved по SHA. Реальный прогон тестов 1924→1981 (0 failed). WPF верифицирован compile-check'ом EnableWindowsTargeting на Linux. |
 | 2026-06-06 (ночь) | Волна 7 merged (#130): page-labels UI + Initial View. Запущен крупный PR Волны 8 «attachments & page assembly»: embedded file attachments (list/extract/add/remove, первый stream-объект writer) **+** insert pages from another PDF — обе фичи полным стеком (engine суб-агентами в worktree'ах, retrieved по SHA; DI/VM/dialogs/menu/L10n/тесты — в основном дереве). Реальный прогон тестов 1978→2050 (+72, 0 failed). 2 движковых агента + ревью-агент параллельно; usage без лимитов. Reconcile: #130-снимок завышал Engines.Pdf на 3 (207 vs 204) — исправлено. |
 | 2026-06-07 | Волна 8 merged (#131): attachments + insert pages. Запущен крупный PR Волны 9 «documents of record: XMP & sanitization»: XMP metadata (/Metadata read+write) **+** document JavaScript & actions sanitization (scan + remove) — обе полным стеком (engine суб-агентами в worktree'ах, retrieved по SHA). Реальный прогон тестов 2050→2097 (+47, 0 failed). Закрыт Wave-7-кандидат «Metadata XMP»; sanitization закрывает /Names/Dests-gap из #131 (тест на сохранение sibling-ключей). |
+| 2026-06-07 (поздно) | Волна 9 merged (#132): XMP + sanitization. Запущен крупный PR Волны 10 «navigation & inspection»: named destinations (/Names/Dests + legacy /Dests, list/add/remove) **+** document fonts listing (Document Properties → Fonts, read-only) — обе полным стеком (engine суб-агентами в worktree'ах, retrieved по SHA). Реальный прогон тестов 2097→2150 (+53, 0 failed). |

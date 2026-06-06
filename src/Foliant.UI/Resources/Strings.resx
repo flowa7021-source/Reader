@@ -1048,6 +1048,51 @@
   <data name="SanitizeSaveDialogTitle" xml:space="preserve">
     <value>Save sanitized PDF as</value>
   </data>
+  <data name="MenuFileNamedDestinations" xml:space="preserve">
+    <value>_Named Destinations…</value>
+  </data>
+  <data name="NamedDestDialogTitle" xml:space="preserve">
+    <value>Named Destinations</value>
+  </data>
+  <data name="NamedDestEmpty" xml:space="preserve">
+    <value>No named destinations.</value>
+  </data>
+  <data name="NamedDestNameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="NamedDestPageLabel" xml:space="preserve">
+    <value>Target page</value>
+  </data>
+  <data name="NamedDestAddButton" xml:space="preserve">
+    <value>Add / update</value>
+  </data>
+  <data name="NamedDestRemoveButton" xml:space="preserve">
+    <value>Remove selected</value>
+  </data>
+  <data name="NamedDestCloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="NamedDestSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with destinations as</value>
+  </data>
+  <data name="MenuFileFonts" xml:space="preserve">
+    <value>_Fonts…</value>
+  </data>
+  <data name="FontsDialogTitle" xml:space="preserve">
+    <value>Fonts</value>
+  </data>
+  <data name="FontsEmpty" xml:space="preserve">
+    <value>No fonts found.</value>
+  </data>
+  <data name="FontsEmbedded" xml:space="preserve">
+    <value>Embedded</value>
+  </data>
+  <data name="FontsNotEmbedded" xml:space="preserve">
+    <value>Not embedded</value>
+  </data>
+  <data name="FontsCloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Document Properties</value>
   </data>
