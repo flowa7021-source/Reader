@@ -80,6 +80,14 @@ Path → [PdfDocumentLoader.CanLoad?] → Yes → PdfDocument
                                        └─→ ... → UnsupportedDocumentException
 ```
 
+**Защищённые паролем документы.** Loader может опционально реализовать
+`IPasswordAwareDocumentLoader` (Domain). Если открытие бросает
+`DocumentPasswordRequiredException`, перегрузка `OpenDocumentUseCase.ExecuteAsync(path, password, ct)`
+повторяет попытку с паролем, полученным через порт `IPasswordPrompt` (UI-реализация —
+`WpfPasswordPrompt`, маршалит запрос на UI-поток). Базовый контракт `IDocumentLoader` не тронут;
+расшифровку выполняет движок (PDFium). Это read-side путь — запись зашифрованных PDF остаётся
+`StubPdfEncryptionService` (Phase 3).
+
 ## 5. Кэш
 
 Подробности — в [`CACHE.md`](CACHE.md). Здесь короткая карта:
