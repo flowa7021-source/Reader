@@ -202,8 +202,12 @@ Phase-2 фичи (параллельно, изолированы):
 | **Print** | Print (File → Print, Ctrl+P) document-neutral via `IDocument.RenderPageAsync` | #128 | `IPrintService` + `WpfPrintService` (WPF `PrintDialog` → `FixedDocument`), работает для всех форматов, 11 VM-тестов. |
 | docs | reconcile #3 (#121) + EnableWindowsTargeting Linux compile-check (#127) | #121, #127 | ROADMAP/PHASE1 sync; WPF-compile-check на Linux задокументирован в `docs/BUILD.md`. |
 
-### Волна 7 — кандидаты (следующая итерация)
+### Волна 7 — in-flight + кандидаты
 
+- **Page labels (`/PageLabels`)** — **in-flight (текущий PR)**: read + write «Number Pages»
+  (i, ii, iii → 1, 2, 3 → A-1 …). Pure Domain + Application + Engine (`IPdfPageLabelService` /
+  `PdfPigPageLabelService`, cos number-tree через `PdfIncrementalWriter`), 56 тестов, Linux-verified.
+  DI/UI wiring — follow-up (по образцу metadata #122 → #124).
 - **OCG UI follow-up**: панель слоёв сейчас modal-dialog; live-toggle в sidebar — улучшение UX.
 - **Sig-UX banner** (Trek 1 Поток A): «требует ручной проверки» при `IsValid=false` — ещё не сделан.
 - **Metadata XMP**: текущий `/Info`-writer заменяет свежим `/Info` и не сохраняет XMP-stream; incremental `/Info` + XMP — Phase 3 для documents-of-record.

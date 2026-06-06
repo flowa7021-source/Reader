@@ -8,6 +8,27 @@
 ## [Unreleased]
 
 ### Added
+- **PDF page labels (`/PageLabels`) — read + write «Number Pages» (i, ii, iii → 1, 2, 3 → A-1 …)**.
+  До этого PR номер страницы в навигаторе всегда был физическим индексом; стандартная Acrobat-фича
+  «Number Pages» (именованные диапазоны нумерации `/PageLabels`, ISO 32000-1 §12.4.2) отсутствовала.
+  Добавлены чистый domain + port + PdfPig-реализация, без UI/DI (wiring — отдельный PR, по образцу
+  metadata #122 → #124). **Domain**: enum `PdfPageLabelStyle` (None / Arabic / UpperRoman / LowerRoman /
+  UpperLetters / LowerLetters); record `PdfPageLabelRange` (`StartPageIndex` 0-based, `Style`, `Prefix?`,
+  `Start` ≥ 1) с `Create`-фабрикой (валидация + нормализация: пустой префикс → `null`, `None` →
+  `Start` = 1); `PdfPageLabelFormatter` (pure: набор диапазонов + индекс страницы → видимая метка;
+  конвертеры римских/буквенных/арабских). **Application**: порт `IPdfPageLabelService` (`ReadAsync` —
+  best-effort снимок, отсортированный по `StartPageIndex`; `WriteAsync` — атомарная запись копии).
+  **Engine**: `PdfPigPageLabelService` + cos-helpers — `PdfPageLabelCosReader` навигирует
+  `Catalog → /PageLabels → /Nums` (с рекурсией по `/Kids`), `PdfPageLabelCosWriter` строит number-tree
+  и дописывает инкрементальным апдейтом через ту же инфру `PdfIncrementalWriter` /
+  `PdfCatalogPageLabelCosWriter`, что у `/Outlines` (#123) и OCG (#119). Оригинал не мутируется
+  (temp + Move); пустой список → валидный PDF **без** `/PageLabels`; дубликат стартового индекса →
+  `ArgumentException` (ключи number-tree уникальны); Unicode-префиксы (кириллица) пишутся UTF-16BE+BOM
+  hex и читаются обратно без потерь. **56 новых тестов**: 38 domain (валидация `Create` + formatter —
+  римские I/IV/IX/XL/XC/MMXXIV, буквы A/Z/AA/ZZ/AAA, выбор диапазона слева, префиксы, edge-cases) +
+  18 engine (round-trip arabic/roman/letters/prefix/Unicode/start-offset, unsorted → sorted output,
+  empty drops `/PageLabels`, page-count preserved, source-not-mutated sha256, arg-guards) — pure-managed
+  PdfPig, зелёные в Linux-CI.
 - **Print (File → Print, Ctrl+P) — document-neutral via `IDocument.RenderPageAsync`**.
   Печать наконец появилась в ридере: пункт меню **File → Print…** и шорткат **Ctrl+P** показывают
   системный WPF `PrintDialog` (выбор принтера + диапазона), рендерят выбранные страницы через
