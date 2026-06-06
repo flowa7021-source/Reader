@@ -997,6 +997,57 @@
   <data name="InsertPagesSaveTitle" xml:space="preserve">
     <value>Save combined PDF as</value>
   </data>
+  <data name="MenuFileXmp" xml:space="preserve">
+    <value>_XMP Metadata…</value>
+  </data>
+  <data name="XmpDialogTitle" xml:space="preserve">
+    <value>XMP Metadata</value>
+  </data>
+  <data name="XmpDialogHint" xml:space="preserve">
+    <value>Edit the document's XMP metadata packet (XML):</value>
+  </data>
+  <data name="XmpSaveButton" xml:space="preserve">
+    <value>Save As…</value>
+  </data>
+  <data name="XmpCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="XmpSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with XMP as</value>
+  </data>
+  <data name="MenuFileSanitize" xml:space="preserve">
+    <value>_Remove JavaScript &amp; Actions…</value>
+  </data>
+  <data name="SanitizeDialogTitle" xml:space="preserve">
+    <value>Remove JavaScript &amp; Actions</value>
+  </data>
+  <data name="SanitizeNothingFound" xml:space="preserve">
+    <value>No document-level JavaScript or automatic actions were found.</value>
+  </data>
+  <data name="SanitizeFoundHeader" xml:space="preserve">
+    <value>This document contains:</value>
+  </data>
+  <data name="SanitizeOpenActionJs" xml:space="preserve">
+    <value>• JavaScript that runs when the document opens</value>
+  </data>
+  <data name="SanitizeDocScriptsLabel" xml:space="preserve">
+    <value>• Document-level scripts:</value>
+  </data>
+  <data name="SanitizeDocActions" xml:space="preserve">
+    <value>• Document actions that auto-run on close / save / print</value>
+  </data>
+  <data name="SanitizeRemoveHint" xml:space="preserve">
+    <value>Click Remove to save a cleaned copy without them. The original is not changed.</value>
+  </data>
+  <data name="SanitizeRemoveButton" xml:space="preserve">
+    <value>Remove &amp; Save As…</value>
+  </data>
+  <data name="SanitizeCloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="SanitizeSaveDialogTitle" xml:space="preserve">
+    <value>Save sanitized PDF as</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Document Properties</value>
   </data>

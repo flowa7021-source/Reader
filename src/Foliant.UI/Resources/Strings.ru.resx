@@ -997,6 +997,57 @@
   <data name="InsertPagesSaveTitle" xml:space="preserve">
     <value>Сохранить объединённый PDF как</value>
   </data>
+  <data name="MenuFileXmp" xml:space="preserve">
+    <value>_XMP-метаданные…</value>
+  </data>
+  <data name="XmpDialogTitle" xml:space="preserve">
+    <value>XMP-метаданные</value>
+  </data>
+  <data name="XmpDialogHint" xml:space="preserve">
+    <value>Редактирование XMP-пакета метаданных документа (XML):</value>
+  </data>
+  <data name="XmpSaveButton" xml:space="preserve">
+    <value>Сохранить как…</value>
+  </data>
+  <data name="XmpCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="XmpSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с XMP как</value>
+  </data>
+  <data name="MenuFileSanitize" xml:space="preserve">
+    <value>_Удалить JavaScript и действия…</value>
+  </data>
+  <data name="SanitizeDialogTitle" xml:space="preserve">
+    <value>Удаление JavaScript и действий</value>
+  </data>
+  <data name="SanitizeNothingFound" xml:space="preserve">
+    <value>Документ-уровневый JavaScript и автодействия не найдены.</value>
+  </data>
+  <data name="SanitizeFoundHeader" xml:space="preserve">
+    <value>Документ содержит:</value>
+  </data>
+  <data name="SanitizeOpenActionJs" xml:space="preserve">
+    <value>• JavaScript, выполняемый при открытии документа</value>
+  </data>
+  <data name="SanitizeDocScriptsLabel" xml:space="preserve">
+    <value>• Документ-уровневые скрипты:</value>
+  </data>
+  <data name="SanitizeDocActions" xml:space="preserve">
+    <value>• Действия, автозапускаемые при закрытии / сохранении / печати</value>
+  </data>
+  <data name="SanitizeRemoveHint" xml:space="preserve">
+    <value>Нажмите «Удалить», чтобы сохранить очищенную копию без них. Оригинал не изменяется.</value>
+  </data>
+  <data name="SanitizeRemoveButton" xml:space="preserve">
+    <value>Удалить и сохранить как…</value>
+  </data>
+  <data name="SanitizeCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="SanitizeSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить очищенный PDF как</value>
+  </data>
   <data name="DocPropsDialogTitle" xml:space="preserve">
     <value>Свойства документа</value>
   </data>

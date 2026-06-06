@@ -978,6 +978,88 @@ public partial class MainWindow : Window
         }
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnXmpMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanEditXmp: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        await tab.LoadXmpCommand.ExecuteAsync(null);
+
+        var (packet, ok) = XmpMetadataDialog.Prompt(this, tab.CurrentXmp);
+        if (!ok || packet is null)
+        {
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["XmpSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-xmp.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.SaveXmpCommand.ExecuteAsync(new SaveXmpRequest(packet, save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error saving XMP metadata to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnSanitizeMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanSanitize: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        await tab.ScanForJavaScriptCommand.ExecuteAsync(null);
+
+        var report = tab.CurrentSanitizationReport;
+        if (report is null || !SanitizationDialog.Prompt(this, report))
+        {
+            return;
+        }
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["SanitizeSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-sanitized.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.RemoveJavaScriptCommand.ExecuteAsync(new RemoveJavaScriptRequest(save.FileName));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error sanitizing '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private async Task AddAttachmentFlowAsync(DocumentTabViewModel tab)
     {
         var loc = LocalizationManager.Instance;
