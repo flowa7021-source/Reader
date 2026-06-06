@@ -12,25 +12,26 @@
 
 ---
 
-## Статус-снимок (после #120 на main, 2026-06-03)
+## Статус-снимок (после #128 на main, 2026-06-06)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
-- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction + find-and-redact (#102/#110), Q-F8 OCG layers (#119), Q-F17 11/11 native annots (#111). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 encryption (#118). UI-обвязка всех функциональных фич — #113–#116, #120.
-- **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases на 2026-06-03):
-  - Domain 243 / Application 404 / ViewModels 633 (target gates D90/A80/I70/V60 держатся).
-  - Engines.Pdf 131 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 (1 skip — Windows-only).
+- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction + find-and-redact (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122 + UI #124)**, **/Outlines bookmark writer + export (#123 + UI #125)**, **open password-protected PDF — read-side decrypt + prompt/retry (#126)**, **Print (File → Print, Ctrl+P) document-neutral (#128)**. **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118). UI-обвязка всех функциональных фич — #113–#116, #120, #124, #125.
+- **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases, реальный прогон `Foliant.CrossPlatform.slnf` 2026-06-06):
+  - Domain 243 / Application 407 / ViewModels 669 (target gates D90/A80/I70/V60 держатся).
+  - Engines.Pdf 158 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25.
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 1802 executed (+117 с 2026-06-02; full Slow/Integration набор — ещё больше).**
-- **LOC:** ~28 000 в src/, 14 тестовых проектов.
-- **Скрытых заглушек нет** — F-PdfA/F30 stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
+  - **Итого: 1868 executed, 0 failed (+66 с #120; full Slow/Integration набор — ещё больше).**
+- **LOC:** ~31 000 в src/, 14 тестовых проектов.
+- **Скрытых заглушек нет** — F-PdfA/F30 (write-side) stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
 > **⚠️ Дрейф документов — рецидивирующий паттерн.** Планы систематически отстают
-> от кода (выявлено 2026-06-02, повторно 2026-06-03 после #108–#120). **Правило:**
-> перед планированием любой задачи — `grep`/чтение кода + `dotnet test` для цифр,
-> не доверять статусу из планов. `CHANGELOG.md` защищён `merge=union` (#107) —
-> параллельные PR больше не конфликтуют по `[Unreleased]` (проверено 5× авто-rebase).
-> Реальный остаток Phase 1 DoD — **только D1 (бинарные OCR-сканы) + E1 (Windows
-> smoke/ISCC)**, оба не sandboxable.
+> от кода (выявлено 2026-06-02, повторно 2026-06-03 после #108–#120, и снова
+> 2026-06-06 после #121–#128). **Правило:** перед планированием любой задачи —
+> `grep`/чтение кода + `dotnet test` для цифр, не доверять статусу из планов
+> (цифры выше — из реального прогона, не из памяти). `CHANGELOG.md` защищён
+> `merge=union` (#107) — параллельные PR больше не конфликтуют по `[Unreleased]`
+> (проверено многократным авто-rebase). Реальный остаток Phase 1 DoD — **только
+> D1 (бинарные OCR-сканы) + E1 (Windows smoke/ISCC)**, оба не sandboxable.
 
 ---
 
@@ -189,10 +190,25 @@ Phase-2 фичи (параллельно, изолированы):
 > избегать reserved-имён членов `Window`/`Control` (`FontSize`/`Width`/`Content`/…),
 > `<paramref>` только в doc метода с этим параметром; перед коммитом — grep-self-check.
 
-### Волна 6 — кандидаты (следующая итерация)
+### Волна 6 — ✅ merged (2026-06-03/06): metadata + outlines + encrypted-open + print
 
-- **Metadata** (in-flight): `/Info` editing — Title/Author/Subject/Keywords (PdfPig `DocumentInformationBuilder`). Pure-managed, sandbox-testable. UI-wiring — follow-up.
+| # | Track | PR | Результат |
+|---|---|---|---|
+| **Meta** | `/Info` metadata editing (Title/Author/Subject/Keywords/Creator/Producer) | #122 | PdfPig `PdfMerger` + `DocumentInformationBuilder`; `null`=«не менять», ""=«очистить»; pure-managed, 14 тестов. |
+| **Meta-UI** | Document Properties dialog + DI | #124 | `DocumentPropertiesDialog`, empty-field = «не менять», 10 VM-тестов. |
+| **Outline-W** | `/Outlines` writer — встраивание закладок обратно в PDF (симметрично reader) | #123 | `PdfPigOutlineWriter` (cos incremental write, nested по Depth, Unicode UTF-16BE), 12 тестов. |
+| **Outline-UI** | Export Bookmarks to PDF + DI | #125 | `DocumentTabViewModel.OutlineExport`, nested round-trip с Import PDF Outline, 11 VM-тестов. |
+| **Pwd-Open** | Open password-protected PDF — read-side decrypt + prompt/retry | #126 | `IPasswordAwareDocumentLoader` + `DocumentPasswordRequiredException` + `IPasswordPrompt`; PDFium decrypt (AES/RC4), 3 App + 4 VM + 4 Engine теста. |
+| **Print** | Print (File → Print, Ctrl+P) document-neutral via `IDocument.RenderPageAsync` | #128 | `IPrintService` + `WpfPrintService` (WPF `PrintDialog` → `FixedDocument`), работает для всех форматов, 11 VM-тестов. |
+| docs | reconcile #3 (#121) + EnableWindowsTargeting Linux compile-check (#127) | #121, #127 | ROADMAP/PHASE1 sync; WPF-compile-check на Linux задокументирован в `docs/BUILD.md`. |
+
+### Волна 7 — кандидаты (следующая итерация)
+
 - **OCG UI follow-up**: панель слоёв сейчас modal-dialog; live-toggle в sidebar — улучшение UX.
+- **Sig-UX banner** (Trek 1 Поток A): «требует ручной проверки» при `IsValid=false` — ещё не сделан.
+- **Metadata XMP**: текущий `/Info`-writer заменяет свежим `/Info` и не сохраняет XMP-stream; incremental `/Info` + XMP — Phase 3 для documents-of-record.
+- **Outline richness**: named destinations, open/closed (знак `/Count`), цвета/стили (`/C`/`/F`), XYZ-zoom — writer сейчас пишет только GoTo-page `/Fit`.
+- **Print follow-up**: scale-to-fit / fit-to-margins, N-up, двусторонняя — сейчас 1 страница = 1 лист в натуральном размере.
 
 ### Отложить (требуют стратегического решения / внешних runtime)
 
@@ -226,3 +242,4 @@ Phase-2 фичи (параллельно, изолированы):
 | 2026-06-02 (день) | Reconcile с реальностью: волна 1 (P1–P3) merged #98/#99/#100; выявлен дрейф документов (perf-gate/Upd/OCR-runner уже в main); запущена волна 2 (F26 PAdES-B, F32 redaction). Реальный остаток Phase 1 = D1 + E1 (Windows-gated). |
 | 2026-06-02 (вечер) | Волна 2 merged (#102 F32, #103 PAdES-B), волна 3 merged (#105 split, #106 Bates, #107 gitattributes union-merge), bad-xref fix (#104). Reconcile #2: повторный дрейф (Trek 3 пункт 2 perf-gate / пункт 6 CS0535 — оба уже в main). Запущена волна 4: W0 DI-only, C1 A2b native /Annots, C2 F32-follow-up find-and-redact, C3 Husky pre-push. |
 | 2026-06-03 | Волна 4 merged (#108 W0, #110 C2, #111 C1, #112 C3). Волна 5 merged: UI-серия #113–#116 (W1 redaction / W2 bates +CS0108 / W3 split +CS1734 / W4 sig-banner), #120 W5 OCG UI; Phase-2 фичи #117 F-PdfA stub / #118 F30 stub / #119 F8 OCG real. Reconcile #3: цифры тестов 1685→1802, добавлен урок WPF blind-spot (CS0108/CS1734 ловит только Windows-CI). Запущена волна 6: metadata /Info editing. |
+| 2026-06-06 | Волна 6 merged (#121–#128): /Info metadata editing + Document Properties UI (#122/#124), /Outlines writer + Export Bookmarks UI (#123/#125), open password-protected PDF read-side (#126), Print Ctrl+P document-neutral (#128), docs reconcile (#121) + EnableWindowsTargeting compile-check (#127). Reconcile #4: реальный прогон тестов 1802→1868 (0 failed), Волна 6 переведена in-flight→merged, заведена Волна 7 (OCG live-toggle, sig-UX banner, XMP, outline richness, print follow-up). DoD-остаток (D1+E1) не изменился. |
