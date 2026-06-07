@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Foliant.Domain;
+using Foliant.Rendering.Html;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -7,8 +8,10 @@ namespace Foliant.Engines.Mobi.Tests;
 
 public sealed class MobiDocumentLoaderTests : IDisposable
 {
+    private static readonly IHtmlRenderer Renderer = new HtmlRenderer(new FontStore(), NullLogger<HtmlRenderer>.Instance);
+
     private readonly string _tmpDir = Path.Combine(Path.GetTempPath(), "mobi-loader-" + Guid.NewGuid().ToString("N"));
-    private readonly MobiDocumentLoader _sut = new(NullLogger<MobiDocumentLoader>.Instance);
+    private readonly MobiDocumentLoader _sut = new(NullLogger<MobiDocumentLoader>.Instance, Renderer);
 
     public MobiDocumentLoaderTests() => Directory.CreateDirectory(_tmpDir);
 

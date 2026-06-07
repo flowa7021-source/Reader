@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Foliant.Engines.Fb2</RootNamespace>
-    <Description>FB2 engine. FictionBook 2.0 XML via System.Xml.Linq (pure managed, in-box, кросс-платформенный, без NuGet-зависимостей). Body sections → pages; text-layer carries section text. Visual render — blank canvas в Phase 1 (см. EPUB engine).</Description>
+    <Description>FB2 engine. FictionBook 2.0 XML via System.Xml.Linq (pure managed, in-box, кросс-платформенный). Sections are converted to HTML and laid out/painted to real BGRA32 pages via Foliant.Rendering.Html (AngleSharp + SixLabors), with fixed-reference, scale-invariant pagination so each chapter spans one or more fixed-height page slices. Text layer carries section text for search/FTS.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\Foliant.Rendering.Html\Foliant.Rendering.Html.csproj" />
   </ItemGroup>
 
   <ItemGroup>

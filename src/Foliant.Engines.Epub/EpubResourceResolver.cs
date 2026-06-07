@@ -48,7 +48,8 @@ internal sealed class EpubResourceResolver : IResourceResolver
             return false;
         }
 
-        // Data URIs are decoded by the renderer's loader path, not by container lookup.
+        // Data URIs are unsupported (deferred): there is no inline-data decode path, so they are
+        // skipped here (the renderer drops any <img> whose resolver returns false).
         if (cleaned.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
         {
             return false;

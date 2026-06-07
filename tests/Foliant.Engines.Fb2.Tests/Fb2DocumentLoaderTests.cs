@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Foliant.Domain;
 using Foliant.Engines.Fb2;
+using Foliant.Rendering.Html;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -8,6 +9,8 @@ namespace Foliant.Engines.Fb2.Tests;
 
 public sealed class Fb2DocumentLoaderTests : IDisposable
 {
+    private static readonly IHtmlRenderer Renderer = new HtmlRenderer(new FontStore(), NullLogger<HtmlRenderer>.Instance);
+
     private readonly string _tmpDir;
     private readonly Fb2DocumentLoader _loader;
 
@@ -15,7 +18,7 @@ public sealed class Fb2DocumentLoaderTests : IDisposable
     {
         _tmpDir = Path.Combine(Path.GetTempPath(), "foliant-fb2-loader-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tmpDir);
-        _loader = new Fb2DocumentLoader(NullLogger<Fb2DocumentLoader>.Instance);
+        _loader = new Fb2DocumentLoader(NullLogger<Fb2DocumentLoader>.Instance, Renderer);
     }
 
     public void Dispose()
