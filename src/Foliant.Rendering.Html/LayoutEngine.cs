@@ -389,7 +389,15 @@ internal sealed class LayoutEngine
         float destWidth = decoded.Width * scale;
         float destHeight = decoded.Height * scale;
 
-        if (destWidth >= 1 && destHeight >= 1 && (decoded.Width != (int)destWidth || decoded.Height != (int)destHeight))
+        // A sub-pixel destination (e.g. a 1px source scaled down in a wide column) would emit a
+        // degenerate draw and advance the cursor by a fraction — skip it entirely.
+        if (destWidth < 1 || destHeight < 1)
+        {
+            decoded.Dispose();
+            return;
+        }
+
+        if (decoded.Width != (int)destWidth || decoded.Height != (int)destHeight)
         {
             int w = Math.Max(1, (int)Math.Round(destWidth));
             int h = Math.Max(1, (int)Math.Round(destHeight));

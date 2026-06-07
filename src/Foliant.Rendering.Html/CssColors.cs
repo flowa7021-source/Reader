@@ -116,7 +116,10 @@ internal static class CssColors
         (string unit, double factor)[] units =
         [
             ("px", 1.0),
-            ("pt", 96.0 / 72.0),     // 1pt = 1/72in, 1px = 1/96in.
+            // 1pt = 1/72in, CSS reference px = 1/96in. NB: layout/paint run at 72 DPI internally
+            // (px == pt there), so a pt value becomes 96/72 "px" then rasterizes 1:1 — internally
+            // consistent for the MVP; revisit if PR-2b introduces a real device-DPI scale.
+            ("pt", 96.0 / 72.0),
             ("rem", parentPx),       // Check before "em" so the longer unit wins; no root tracking in MVP.
             ("em", parentPx),
             ("%", parentPx / 100.0),

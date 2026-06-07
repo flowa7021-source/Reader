@@ -84,10 +84,11 @@ public sealed class HtmlRenderer : IHtmlRenderer
         foreach (DrawCommand command in commands)
         {
             float top = command.Y;
-            float bottom = command.Y + command.Height;
 
-            // Draw a command on the page that contains its top edge; skip those fully outside.
-            if (bottom < sliceTop || top >= sliceBottom)
+            // Each command belongs to exactly the page whose slice contains its top edge — cull by
+            // top-edge ownership (not intersection), otherwise a line/image straddling a page seam
+            // would paint on both the page above (bottom sliver) and below (top sliver, clipped).
+            if (top < sliceTop || top >= sliceBottom)
             {
                 continue;
             }
