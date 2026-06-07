@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Foliant.Domain;
 using Foliant.Engines.Epub;
+using Foliant.Rendering.Html;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -8,6 +9,8 @@ namespace Foliant.Engines.Epub.Tests;
 
 public sealed class EpubDocumentLoaderTests : IDisposable
 {
+    private static readonly IHtmlRenderer Renderer = new HtmlRenderer(new FontStore(), NullLogger<HtmlRenderer>.Instance);
+
     private readonly string _tmpDir;
     private readonly EpubDocumentLoader _loader;
 
@@ -15,7 +18,7 @@ public sealed class EpubDocumentLoaderTests : IDisposable
     {
         _tmpDir = Path.Combine(Path.GetTempPath(), "foliant-epub-loader-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tmpDir);
-        _loader = new EpubDocumentLoader(NullLogger<EpubDocumentLoader>.Instance);
+        _loader = new EpubDocumentLoader(NullLogger<EpubDocumentLoader>.Instance, Renderer);
     }
 
     public void Dispose()

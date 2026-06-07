@@ -14,11 +14,13 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="SixLabors.ImageSharp" />
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Foliant.Engines.Epub\Foliant.Engines.Epub.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Rendering.Html\Foliant.Rendering.Html.csproj" />
   </ItemGroup>
 
 </Project>

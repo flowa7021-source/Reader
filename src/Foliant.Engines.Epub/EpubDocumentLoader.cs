@@ -1,4 +1,5 @@
 using Foliant.Domain;
+using Foliant.Rendering.Html;
 using Microsoft.Extensions.Logging;
 
 namespace Foliant.Engines.Epub;
@@ -6,9 +7,12 @@ namespace Foliant.Engines.Epub;
 /// <summary>
 /// Распознаёт EPUB по расширению либо по ZIP-magic + наличию <c>mimetype</c> файла с
 /// контентом <c>application/epub+zip</c> (минимальная sanity-проверка). Загружает через
-/// <see cref="EpubDocument.Open"/> — VersOne.Epub разворачивает контейнер и spine.
+/// <see cref="EpubDocument.Open(string, IHtmlRenderer)"/> — VersOne.Epub разворачивает контейнер
+/// и spine, а <see cref="IHtmlRenderer"/> paginates/paints the chapters.
 /// </summary>
-public sealed class EpubDocumentLoader(ILogger<EpubDocumentLoader> log) : IDocumentLoader
+/// <param name="log">Logger for non-fatal load diagnostics.</param>
+/// <param name="renderer">The shared HTML renderer passed to each opened document.</param>
+public sealed class EpubDocumentLoader(ILogger<EpubDocumentLoader> log, IHtmlRenderer renderer) : IDocumentLoader
 {
     /// <summary>ZIP local-file-header magic (<c>PK\x03\x04</c>).</summary>
     private static readonly byte[] ZipMagic = [0x50, 0x4B, 0x03, 0x04];
@@ -47,7 +51,7 @@ public sealed class EpubDocumentLoader(ILogger<EpubDocumentLoader> log) : IDocum
 
         return await Task.Run<IDocument>(() =>
         {
-            EpubDocument doc = EpubDocument.Open(path);
+            EpubDocument doc = EpubDocument.Open(path, renderer);
             log.LogDebug("Loaded EPUB '{Path}' via VersOne.Epub", path);
             return doc;
         }, ct).ConfigureAwait(false);

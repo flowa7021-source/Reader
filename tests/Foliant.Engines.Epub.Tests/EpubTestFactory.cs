@@ -18,7 +18,20 @@ internal static class EpubTestFactory
 {
     /// <summary>Создаёт EPUB файл с указанными chapter'ами (HTML контент per chapter).
     /// Возвращает путь к новому файлу.</summary>
-    public static string Create(string targetDir, string title, string author, params string[] chapterHtmls)
+    public static string Create(string targetDir, string title, string author, params string[] chapterHtmls) =>
+        Create(targetDir, title, author, images: null, chapterHtmls);
+
+    /// <summary>Создаёт EPUB файл с указанными chapter'ами и (опционально) встроенными raster
+    /// image'ами. Каждый image добавляется как <c>OEBPS/{href}</c> с соответствующим manifest-item;
+    /// chapter'ы могут ссылаться на него через chapter-relative <c>&lt;img src&gt;</c>.</summary>
+    /// <param name="targetDir">Каталог, в котором создаётся файл.</param>
+    /// <param name="title">Title метаданных.</param>
+    /// <param name="author">Author метаданных.</param>
+    /// <param name="images">Встраиваемые ресурсы (href относительно <c>OEBPS/</c>, media-type, bytes),
+    /// либо <see langword="null"/>.</param>
+    /// <param name="chapterHtmls">HTML-контент каждого spine-item.</param>
+    /// <returns>Путь к новому <c>.epub</c>.</returns>
+    public static string Create(string targetDir, string title, string author, IReadOnlyList<EpubImage>? images, params string[] chapterHtmls)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetDir);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
@@ -62,6 +75,16 @@ internal static class EpubTestFactory
                 """);
         }
 
+        if (images is not null)
+        {
+            for (int i = 0; i < images.Count; i++)
+            {
+                EpubImage img = images[i];
+                manifestItems.Append(System.Globalization.CultureInfo.InvariantCulture, $"<item id=\"img{i + 1}\" href=\"{img.Href}\" media-type=\"{img.MediaType}\"/>\n");
+                WriteBytes(zip, $"OEBPS/{img.Href}", img.Bytes);
+            }
+        }
+
         WriteText(zip, "OEBPS/content.opf",
             $"""
             <?xml version="1.0" encoding="utf-8"?>
@@ -101,4 +124,18 @@ internal static class EpubTestFactory
         using var sw = new StreamWriter(entry.Open(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         sw.Write(content);
     }
+
+    private static void WriteBytes(ZipArchive zip, string entryName, byte[] content)
+    {
+        var entry = zip.CreateEntry(entryName);
+        using Stream s = entry.Open();
+        s.Write(content, 0, content.Length);
+    }
 }
+
+/// <summary>An embedded raster resource for <see cref="EpubTestFactory"/>: its <c>href</c> relative
+/// to <c>OEBPS/</c>, its OPF media-type, and the raw encoded bytes.</summary>
+/// <param name="Href">Path relative to <c>OEBPS/</c> (e.g. <c>img/pic.png</c>).</param>
+/// <param name="MediaType">OPF manifest media-type (e.g. <c>image/png</c>).</param>
+/// <param name="Bytes">Encoded image bytes.</param>
+internal sealed record EpubImage(string Href, string MediaType, byte[] Bytes);

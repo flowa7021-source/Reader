@@ -12,15 +12,15 @@
 
 ---
 
-## Статус-снимок (после #137 на main, 2026-06-07)
+## Статус-снимок (после #138 на main, 2026-06-07)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
-- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122/#124)**, **/Outlines writer + export (#123/#125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles (#131)**, **insert pages from another PDF (#131)**, **XMP metadata /Metadata (#132)**, **JavaScript & actions sanitization (#132)**, **named destinations /Names/Dests (#133)**, **fonts listing (#133)**, **link annotations listing (#134)**, **custom /Info properties (#136)**, **OCG layer rename + delete (#136)**, **rich outline round-trip + viewer + rich export (#137)**, **output intents listing (#137)**. **+ Вектор 2 (рендер EPUB/FB2/MOBI):** фундамент `Foliant.Rendering.Html` (pure-managed HTML→BGRA32, #138, spike — движки ещё не подключены). **+ hardening:** cycle-guard depth-limit на всех cos-обходчиках (`PdfCosLimits`, #134). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
+- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122/#124)**, **/Outlines writer + export (#123/#125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles (#131)**, **insert pages from another PDF (#131)**, **XMP metadata /Metadata (#132)**, **JavaScript & actions sanitization (#132)**, **named destinations /Names/Dests (#133)**, **fonts listing (#133)**, **link annotations listing (#134)**, **custom /Info properties (#136)**, **OCG layer rename + delete (#136)**, **rich outline round-trip + viewer + rich export (#137)**, **output intents listing (#137)**. **+ Вектор 2 (рендер EPUB/FB2/MOBI):** фундамент `Foliant.Rendering.Html` (pure-managed HTML→BGRA32, #138) **+ EPUB рендерится визуально (#139)** — пагинация + картинки; FB2/MOBI пока белый холст (PR-2c). **+ hardening:** cycle-guard depth-limit на всех cos-обходчиках (`PdfCosLimits`, #134). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
 - **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases, реальный прогон `Foliant.CrossPlatform.slnf`):
   - Domain 285 / Application 407 / ViewModels 796 (target gates D90/A80/I70/V60 держатся).
-  - Engines.Pdf 428 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 / Rendering.Html 56.
+  - Engines.Pdf 428 / Infrastructure 242 / Engines.Epub 35 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25 / Rendering.Html 56.
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 2363 executed, 0 failed (на main после #137 + PR-2a; full Slow/Integration набор — ещё больше).**
+  - **Итого: 2370 executed, 0 failed (на main после #138 + PR-2b; full Slow/Integration набор — ещё больше).**
 - **LOC:** ~38 000 в src/, 15 тестовых проектов.
 - **Скрытых заглушек нет** — F-PdfA/F30 (write-side) stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
@@ -238,7 +238,20 @@ Phase-2 фичи (параллельно, изолированы):
 - **Link annotations listing** (#134) — read-only список ссылок (страница → URI/страница) + `LinksDialog`
   + меню **File → Links…**.
 
-### Волна 14 — 🚀 in-flight: HTML рендер-фундамент (PR-2a, #138)
+### Волна 15 — 🚀 in-flight: EPUB рендерится визуально (PR-2b, #139)
+
+EPUB подключён к `Foliant.Rendering.Html` — реальный контент вместо белого холста.
+`EpubDocument.Open(path, IHtmlRenderer)`: **eager scale-invariant пагинация** на reference-вьюпорте
+(800×1200) — `PageCount` = Σ страниц-слайсов по главам (prefix-sum + binary-search `GlobalToLocal`),
+корректен для read-once `PageCount`. `RenderPageAsync` берёт scale из `MaxWidthPx` (зум игнорируется —
+для EPUB и так был no-op), зовёт `RenderPage`, оборачивает в `EpubPageRender`; blank fallback при сбое.
+`EpubResourceResolver` достаёт `<img>` из `EpubBook.Content.Images` (нормализация пути; VersOne
+`FilePath`/`Key`). `GetTextLayerAsync` — текст главы на page 0. Один engine-агент в worktree (правил
+существующий `EpubDocument` — solo, без параллельных агентов), retrieved по SHA; App-DI (`FontStore` +
+`IHtmlRenderer`) — мой. Реальный прогон 2363→2370 (+7 EPUB-тестов, 0 failed). Зум-reflow и попиксельный
+текст-слой — отложены. **FB2/MOBI — следующий PR-2c.**
+
+### Волна 14 — ✅ merged: HTML рендер-фундамент (PR-2a, #138)
 
 Старт **Вектора 2** (визуальный рендер EPUB/FB2/MOBI). Architecture spike: новый pure-managed проект
 `Foliant.Rendering.Html` — конвейер AngleSharp → layout (block+inline, word-wrap через `TextMeasurer`) →
@@ -294,7 +307,7 @@ DI/меню/L10n/тесты) пред-собрана против контрак
 Порядок векторов выбран владельцем: **(1) PDF-breadth → (2) EPUB/FB2/MOBI рендер → (3) quality/release-prep → (4) Phase-3 движки.** Методология фиксирована: безлимит, крупные PR, параллельные суб-агенты в worktree'ах (retrieved по SHA), engine→UI, авто-ревью, сверка docs.
 
 - **Вектор 1 — PDF parity breadth** — ✅ **ЗАВЕРШЁН** (#136 + #137): PR-1a custom `/Info`-props + OCG rename/delete (#136); PR-1b/1c rich outline round-trip + viewer + rich export **и** `/OutputIntents` listing (#137). Page-geometry оказался уже закрыт ранее (crop/rotate). Следующий — Вектор 2.
-- **Вектор 2 — EPUB/FB2/MOBI визуальный рендер** (мульти-PR, главная ставка): pure-managed AngleSharp→layout→**SixLabors.ImageSharp.Drawing**→BGRA32 (Linux-verifiable; SkiaSharp отвергнут из-за нативки). ✅ **PR-2a сделан (#138)** — фундамент `Foliant.Rendering.Html` + дизайн-док + 56 тестов (spike, без разводки). Дальше: **PR-2b** EPUB MVP (реальный layout/пагинация/картинки, prefix-sum `PageCount`, `EpubResourceResolver`, bump engine-версии, снять «белый холст»-disclaimer); **PR-2c** FB2 (`Fb2ToHtml`) + MOBI (raw HTML) на той же трубе. Снимает «белый холст»-disclaimer (Trek-2 решение #3 = GO).
+- **Вектор 2 — EPUB/FB2/MOBI визуальный рендер** (мульти-PR, главная ставка): pure-managed AngleSharp→layout→**SixLabors.ImageSharp.Drawing**→BGRA32 (Linux-verifiable; SkiaSharp отвергнут из-за нативки). ✅ **PR-2a (#138)** фундамент `Foliant.Rendering.Html`; ✅ **PR-2b (#139)** EPUB рендерится (пагинация + картинки + `EpubResourceResolver`, «белый холст» снят для EPUB). Дальше: **PR-2c** FB2 (`Fb2ToHtml`) + MOBI (raw HTML) на той же трубе — снять disclaimer и для них. Затем доработки: зум-reflow (refresh `PageCount`), попиксельный текст-слой (точная подсветка поиска), EPUB linked-CSS. Закрывает Trek-2 решение #3 (= GO).
 - **Вектор 3 — quality & release-prep**: fuzz-корпус malformed-PDF по всем readers; preflight/структурный валидатор (`IPdfPreflightService` поверх fonts/sanitization/links); SettingsMigrator, crash-reporter UI, perf-инструменты.
 - **Вектор 4 — Phase-3 движки**: реальная PDF/A-валидация (`plugins/Foliant.Plugin.VeraPdf`, veraPDF CLI) и AES-256 write-side (QPDF / raw cos + BouncyCastle).
 
@@ -348,3 +361,4 @@ DI/меню/L10n/тесты) пред-собрана против контрак
 | 2026-06-07 (reconcile #5 merged, #135) | Старт Вектора 1. PR-1a (#136) «custom /Info props + OCG rename/delete»: после recon выяснилось, что page-geometry (crop/rotate) уже закрыт — pivot на достройку двух частичных фич. Два engine-суб-агента в worktree'ах параллельно (custom-props + OCG-edit), retrieved по SHA; интеграция (VM-partials, `CustomPropertiesDialog`, `LayersDialog` rename/delete, DI, меню, L10n EN/RU, тесты) пред-собрана против контрактов. Реальный прогон 2165→2241 (+76, 0 failed). |
 | 2026-06-07 (#136 merged) | PR-1b/1c (#137) «rich outline + output intents» — завершает Вектор 1. Domain-расширение `DocumentOutlineEntry` + richness в `PdfOutlineCosWriter` закоммичены первыми (общие файлы), затем два engine-агента в worktree'ах (rich `PdfOutlineCosReader`+`IPdfOutlineInspector`; `/OutputIntents` reader+service) параллельно, retrieved по SHA. Интеграция: `OutlineViewDialog`, `OutlineExportOptionsDialog` (rich export), `OutputIntentsDialog`, 2 read-VM-partials, DI, меню, L10n EN/RU, тесты. Один агент стартовал со stale-базы и сам fast-forward'нулся к tip перед добавлением своих файлов (флагнул в отчёте). Реальный прогон 2241→2307 (+66, 0 failed). |
 | 2026-06-07 (#137 merged) | Старт Вектора 2. PR-2a (#138) «HTML рендер-фундамент» — architecture spike. Сначала de-risk: проверена растеризация AngleSharp+SixLabors на headless Linux (1774 не-белых px) → выбор SixLabors вместо SkiaSharp (pure-managed). Plan-агент спроектировал архитектуру (`docs/HTML_RENDERER.md`), engine-агент построил `Foliant.Rendering.Html` (17 src + 12 встроенных Liberation-faces + 5 тест-файлов) в worktree, retrieved по SHA. Встроенный шрифт: Liberation (DejaVu отвергнут — на хосте неполный набор italic). Granular CPM-пакеты добавлены до диспатча. Реальный прогон 2307→2363 (+56, 0 failed). Движки EPUB/FB2/MOBI ещё не подключены (PR-2b/2c). |
+| 2026-06-07 (#138 merged) | PR-2b (#139) «EPUB рендерится визуально». Перед диспатчем выработана развязка пагинации/`PageCount`/зума: фиксированный reference-вьюпорт + scale-invariant eager-пагинация (read-once `PageCount` валиден), зум отложен (для EPUB и так no-op), кэш-инвалидация не нужна (`MemoryPageCache` не в render-path). Один engine-агент правил `EpubDocument` в worktree (solo → можно менять существующие файлы), retrieved по SHA; App-DI (`FontStore`+`IHtmlRenderer`) + ProjectReference — мои (закоммичены до retrieval). `EpubResourceResolver` достаёт картинки из `EpubBook.Content.Images`. Реальный прогон 2363→2370 (+7 EPUB, 0 failed). FB2/MOBI остаются белым холстом до PR-2c. |
