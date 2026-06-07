@@ -1171,4 +1171,52 @@
   <data name="PrintErrorMessage" xml:space="preserve">
     <value>Не удалось распечатать документ.</value>
   </data>
+  <data name="LayersRenameButton" xml:space="preserve">
+    <value>Переименовать…</value>
+  </data>
+  <data name="LayersDeleteButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="LayersRenameDialogTitle" xml:space="preserve">
+    <value>Переименование слоя</value>
+  </data>
+  <data name="LayersRenameLabel" xml:space="preserve">
+    <value>Новое имя слоя:</value>
+  </data>
+  <data name="LayersDeleteConfirmTitle" xml:space="preserve">
+    <value>Удаление слоя</value>
+  </data>
+  <data name="LayersDeleteConfirmMessage" xml:space="preserve">
+    <value>Удалить слой «{0}»? Определение слоя будет удалено; содержимое, уже нарисованное на слое, останется видимым.</value>
+  </data>
+  <data name="MenuFileCustomProperties" xml:space="preserve">
+    <value>Пользовательские _свойства…</value>
+  </data>
+  <data name="CustomPropsDialogTitle" xml:space="preserve">
+    <value>Пользовательские свойства</value>
+  </data>
+  <data name="CustomPropsExisting" xml:space="preserve">
+    <value>Существующие пользовательские свойства</value>
+  </data>
+  <data name="CustomPropsRemoveButton" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="CustomPropsNameLabel" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="CustomPropsValueLabel" xml:space="preserve">
+    <value>Значение</value>
+  </data>
+  <data name="CustomPropsAddButton" xml:space="preserve">
+    <value>Добавить / обновить</value>
+  </data>
+  <data name="CustomPropsSaveButton" xml:space="preserve">
+    <value>Сохранить как…</value>
+  </data>
+  <data name="CustomPropsCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="CustomPropsSaveDialogTitle" xml:space="preserve">
+    <value>Сохранить PDF с пользовательскими свойствами как</value>
+  </data>
 </root>

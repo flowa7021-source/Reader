@@ -21,6 +21,29 @@
   наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
 
 ### Added
+- **Custom document `/Info` properties (Acrobat «Custom») — read + write + UI**. Нестандартные
+  пары ключ/значение в `/Info` dictionary (всё за пределами девяти стандартных полей, которыми ведает
+  `IPdfMetadataEditService`): `/Company`, `/Status` и т. п. **Domain**: record
+  `PdfCustomProperty(Name, Value)`. **Application**: порт `IPdfCustomPropertiesService` (`ListAsync`
+  best-effort/sorted; `SetAsync` заменяет **весь** набор custom-ключей, стандартные поля сохраняет
+  нетронутыми; пустой список → удаляет все custom-ключи). **Engine**: `PdfPigCustomPropertiesService`
+  + cos-helpers — `PdfCustomPropertiesCosReader` читает `/Info` (резолвит trailer `/Info N 0 R` или
+  inline), фильтрует стандартные ключи; `PdfCustomPropertiesCosWriter` пере-эмитит тот же `/Info`-объект
+  инкрементальным апдейтом (стандартные ключи verbatim, custom — `/Name (value)` через `PdfTextString`,
+  имена с UTF-8 `#XX`-эскейпом). Документ без `/Info` → `NotSupportedException` (инкрементальный апдейт
+  не добавляет `/Info` в trailer). **UI**: `CustomPropertiesDialog` (key/value-грид с add/remove) +
+  меню **File → Custom Properties…**. L10n EN/RU. **21 engine + 12 VM-тестов**.
+- **OCG layer rename + delete (расширяет «Layers»)**. Достроены недостающие операции редактирования
+  слоёв поверх существующего read + toggle-видимости (#119): переименование и удаление конкретного
+  слоя. **Application**: порт `IPdfOcgEditService` (`RenameAsync` / `RemoveAsync`, оба mutate-to-copy;
+  `layerIndex` вне диапазона → `ArgumentOutOfRangeException`). **Engine**: `PdfPigOcgEditService` +
+  `PdfOcgEditCosWriter` (managed-only, переиспользует `PdfOcgCosReader`) — rename пере-эмитит `/Name`
+  целевого OCG-объекта; delete убирает ссылку из `/OCProperties → /OCGs` и из default-config `/D`
+  (`/ON`/`/OFF`/`/Order`, рекурсивно по вложенным группам). Контент, помеченный удалённым слоём,
+  становится всегда-видимым (OCG больше не объявлен — как в Acrobat при удалении «слоя без объектов»).
+  **UI**: `LayersDialog` получил per-row Rename…/Delete (rename через `InputDialog`, delete с
+  подтверждением); диалог возвращает дискриминированный `LayersDialogOutcome` (visibility / rename /
+  delete). L10n EN/RU. **29 engine + 14 VM-тестов**.
 - **Link annotations listing (Acrobat «Links») — read-only + UI**. Список гиперссылок документа:
   страница-источник → URI (внешняя) либо целевая страница (внутренний `/GoTo`). **Domain**: record
   `PdfLinkAnnotation(PageIndex, Uri, TargetPageIndex)`. **Application**: порт `IPdfLinkService.ListLinksAsync`
