@@ -804,6 +804,51 @@ public partial class MainWindow : Window
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnCustomPropertiesMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanEditCustomProperties: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+
+        // Load the current custom /Info entries through the VM first so CurrentCustomProperties is
+        // populated before the dialog seeds itself from that snapshot.
+        await tab.LoadCustomPropertiesCommand.ExecuteAsync(null);
+
+        var save = new SaveFileDialog
+        {
+            Title = loc["CustomPropsSaveDialogTitle"],
+            Filter = loc["ExportAnnotatedPdfDialogFilter"],
+            FileName = Path.GetFileNameWithoutExtension(tab.FilePath) + "-customprops.pdf",
+            DefaultExt = "pdf",
+            AddExtension = true,
+        };
+
+        if (save.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var (request, ok) = CustomPropertiesDialog.Prompt(this, tab.CurrentCustomProperties, save.FileName);
+        if (!ok || request is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await tab.SaveCustomPropertiesCommand.ExecuteAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error saving custom properties to '{Path}'.", save.FileName);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
     private async void OnPageLabelsMenuItemClick(object sender, RoutedEventArgs e)
     {
         if (_vm.SelectedTab is not { CanEditPageLabels: true } tab)
@@ -1253,20 +1298,31 @@ public partial class MainWindow : Window
             return;
         }
 
-        var (request, ok) = LayersDialog.Prompt(this, tab.CurrentLayers, save.FileName);
-        if (!ok || request is null || request.VisibilityByIndex.Count == 0)
-        {
-            // No layer toggled → nothing to write. Avoid producing an identical copy.
-            return;
-        }
-
+        // The dialog returns a single chosen action (visibility save / rename / delete), each with a
+        // request envelope already targeting the picked path. Dispatch to the matching VM command.
+        var outcome = LayersDialog.Prompt(this, tab.CurrentLayers, save.FileName);
         try
         {
-            await tab.SaveLayerVisibilityCommand.ExecuteAsync(request);
+            switch (outcome.Action)
+            {
+                case LayersDialogAction.SetVisibility
+                    when outcome.Visibility is { VisibilityByIndex.Count: > 0 } visibility:
+                    // Empty map → no layer toggled → nothing to write (avoid an identical copy).
+                    await tab.SaveLayerVisibilityCommand.ExecuteAsync(visibility);
+                    break;
+                case LayersDialogAction.Rename when outcome.Rename is { } rename:
+                    await tab.RenameLayerCommand.ExecuteAsync(rename);
+                    break;
+                case LayersDialogAction.Delete when outcome.Delete is { } delete:
+                    await tab.DeleteLayerCommand.ExecuteAsync(delete);
+                    break;
+                default:
+                    break; // cancelled, or a visibility save with nothing changed
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled error saving layer visibility to '{Path}'.", save.FileName);
+            _logger.LogError(ex, "Unhandled error editing layers in '{Path}'.", save.FileName);
             MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

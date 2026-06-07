@@ -21,12 +21,13 @@
   переупорядочивание** через полосу миниатюр; merge, split-into-files, extract pages и
   **вставка страниц из другого PDF** (Insert Pages).
 - **Инструменты PDF** — водяные знаки, колонтитулы, Bates-нумерация, обрезка (crop),
-  redaction (в т.ч. find-and-redact), редактирование метаданных (**Document Properties**),
-  метки страниц (**Number Pages**, `/PageLabels`), начальный вид (**Initial View**),
-  вложенные файлы (**Attachments**: добавить/извлечь/удалить), XMP-метаданные (**XMP Metadata**),
-  очистка от JavaScript и автодействий (**Remove JavaScript & Actions**), именованные переходы
-  (**Named Destinations**), список шрифтов с встраиванием (**Fonts**), список ссылок (**Links**),
-  экспорт закладок в PDF `/Outlines`, просмотр цифровых подписей (PAdES-B) и слоёв (OCG).
+  redaction (в т.ч. find-and-redact), редактирование метаданных (**Document Properties** +
+  пользовательские **Custom Properties**), метки страниц (**Number Pages**, `/PageLabels`),
+  начальный вид (**Initial View**), вложенные файлы (**Attachments**: добавить/извлечь/удалить),
+  XMP-метаданные (**XMP Metadata**), очистка от JavaScript и автодействий
+  (**Remove JavaScript & Actions**), именованные переходы (**Named Destinations**),
+  список шрифтов с встраиванием (**Fonts**), список ссылок (**Links**), экспорт закладок в PDF
+  `/Outlines`, просмотр цифровых подписей (PAdES-B) и слоёв OCG (видимость + переименование/удаление).
 - **Печать** — системный диалог печати по `Ctrl+P` (работает для всех форматов).
 - **Защищённые PDF** — открытие зашифрованных (password-protected) файлов с запросом пароля.
 - **OCR** — распознавание текста через PaddleOCR (in-process), языки и параллелизм

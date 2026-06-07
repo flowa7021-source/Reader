@@ -1171,4 +1171,52 @@
   <data name="PrintErrorMessage" xml:space="preserve">
     <value>Failed to print the document.</value>
   </data>
+  <data name="LayersRenameButton" xml:space="preserve">
+    <value>Rename…</value>
+  </data>
+  <data name="LayersDeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="LayersRenameDialogTitle" xml:space="preserve">
+    <value>Rename Layer</value>
+  </data>
+  <data name="LayersRenameLabel" xml:space="preserve">
+    <value>New layer name:</value>
+  </data>
+  <data name="LayersDeleteConfirmTitle" xml:space="preserve">
+    <value>Delete Layer</value>
+  </data>
+  <data name="LayersDeleteConfirmMessage" xml:space="preserve">
+    <value>Delete layer “{0}”? The layer definition is removed; content already drawn on the layer stays visible.</value>
+  </data>
+  <data name="MenuFileCustomProperties" xml:space="preserve">
+    <value>C_ustom Properties…</value>
+  </data>
+  <data name="CustomPropsDialogTitle" xml:space="preserve">
+    <value>Custom Properties</value>
+  </data>
+  <data name="CustomPropsExisting" xml:space="preserve">
+    <value>Existing custom properties</value>
+  </data>
+  <data name="CustomPropsRemoveButton" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="CustomPropsNameLabel" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="CustomPropsValueLabel" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="CustomPropsAddButton" xml:space="preserve">
+    <value>Add / Update</value>
+  </data>
+  <data name="CustomPropsSaveButton" xml:space="preserve">
+    <value>Save As…</value>
+  </data>
+  <data name="CustomPropsCancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CustomPropsSaveDialogTitle" xml:space="preserve">
+    <value>Save PDF with Custom Properties As</value>
+  </data>
 </root>

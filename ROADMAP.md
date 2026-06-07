@@ -12,15 +12,15 @@
 
 ---
 
-## Статус-снимок (после #134 на main, 2026-06-07)
+## Статус-снимок (после #135 на main, 2026-06-07)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
-- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122/#124)**, **/Outlines writer + export (#123/#125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles (#131)**, **insert pages from another PDF (#131)**, **XMP metadata /Metadata (#132)**, **JavaScript & actions sanitization (#132)**, **named destinations /Names/Dests (#133)**, **fonts listing (#133)**, **link annotations listing (#134)**. **+ hardening:** cycle-guard depth-limit на всех cos-обходчиках (`PdfCosLimits`, #134). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
+- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122/#124)**, **/Outlines writer + export (#123/#125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles (#131)**, **insert pages from another PDF (#131)**, **XMP metadata /Metadata (#132)**, **JavaScript & actions sanitization (#132)**, **named destinations /Names/Dests (#133)**, **fonts listing (#133)**, **link annotations listing (#134)**, **custom /Info properties (#136)**, **OCG layer rename + delete (#136)**. **+ hardening:** cycle-guard depth-limit на всех cos-обходчиках (`PdfCosLimits`, #134). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
 - **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases, реальный прогон `Foliant.CrossPlatform.slnf`):
-  - Domain 285 / Application 407 / ViewModels 752 (target gates D90/A80/I70/V60 держатся).
-  - Engines.Pdf 330 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25.
+  - Domain 285 / Application 407 / ViewModels 778 (target gates D90/A80/I70/V60 держатся).
+  - Engines.Pdf 380 / Infrastructure 242 / Engines.Epub 28 / Fb2 24 / Mobi 19 / Image 14 / Ocr 25.
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 2165 executed, 0 failed (на main после #134; full Slow/Integration набор — ещё больше).**
+  - **Итого: 2241 executed, 0 failed (на main после #135 + PR-1a; full Slow/Integration набор — ещё больше).**
 - **LOC:** ~38 000 в src/, 14 тестовых проектов.
 - **Скрытых заглушек нет** — F-PdfA/F30 (write-side) stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
@@ -238,11 +238,30 @@ Phase-2 фичи (параллельно, изолированы):
 - **Link annotations listing** (#134) — read-only список ссылок (страница → URI/страница) + `LinksDialog`
   + меню **File → Links…**.
 
+### Волна 12 — 🚀 in-flight: custom /Info props + OCG rename/delete (PR-1a, #136)
+
+Первый PR Вектора 1. **Pivot по результатам recon**: исходный замысел «page geometry» (`/MediaBox`·
+`/CropBox`·`/Rotate` per-range) уже закрыт — crop/rotate реализованы ранее (`PageGeometry.cs`,
+`IPdfCropService`, page-edit rotate). Поэтому PR-1a переориентирован на **достройку двух частичных
+фич** (лучшая инженерная отдача за тот же объём):
+
+- **Custom `/Info` properties** (#136) — read + write нестандартных пар ключ/значение в `/Info`
+  (дополняет стандартные 9 полей из `IPdfMetadataEditService`). Domain `PdfCustomProperty`, порт
+  `IPdfCustomPropertiesService`, engine `PdfPigCustomPropertiesService` + cos read/write, диалог
+  `CustomPropertiesDialog` (key/value-грид) + меню **File → Custom Properties…**.
+- **OCG layer rename + delete** (#136) — достроены недостающие операции редактирования слоёв поверх
+  read + toggle (#119). Порт `IPdfOcgEditService`, engine `PdfPigOcgEditService` + `PdfOcgEditCosWriter`;
+  `LayersDialog` получил per-row Rename…/Delete.
+
+Обе фичи — двумя engine-суб-агентами в worktree'ах параллельно, retrieved по SHA; интеграция (VM/диалоги/
+DI/меню/L10n/тесты) пред-собрана против контрактов. Реальный прогон тестов 2165→2241 (+76, 0 failed:
++50 engine [21 custom-props + 29 OCG-edit], +26 VM [12 + 14]).
+
 ### Дорожная карта вперёд (утверждена 2026-06-07 — план `happy-churning-marble`)
 
 Порядок векторов выбран владельцем: **(1) PDF-breadth → (2) EPUB/FB2/MOBI рендер → (3) quality/release-prep → (4) Phase-3 движки.** Методология фиксирована: безлимит, крупные PR, параллельные суб-агенты в worktree'ах (retrieved по SHA), engine→UI, авто-ревью, сверка docs.
 
-- **Вектор 1 — PDF parity breadth** (≈3 PR): «page geometry» (`/MediaBox`·`/CropBox`·`/Rotate` per-range + OCG create/rename/delete); «outline richness» (open/closed знак `/Count`, zoom-dest, `/C`/`/F` — нужен новый cos-`PdfOutlineCosReader` для round-trip); «print-shop prep» (`/OutputIntents` + custom `/Info`-props).
+- **Вектор 1 — PDF parity breadth** (≈3 PR): ✅ **PR-1a сделан (#136)** — custom `/Info`-props + OCG rename/delete (page-geometry оказался уже закрыт: crop/rotate реализованы ранее). Осталось: «outline richness» (open/closed знак `/Count`, zoom-dest, `/C`/`/F` — нужен новый cos-`PdfOutlineCosReader` для round-trip); «print-shop prep» (`/OutputIntents` read/list для PDF/X-готовности).
 - **Вектор 2 — EPUB/FB2/MOBI визуальный рендер** (мульти-PR, главная ставка): pure-managed AngleSharp→layout→SkiaSharp→BGRA32 (Linux-verifiable). Старт — spike/архитектура через Plan-агента; затем EPUB MVP → FB2/MOBI на той же трубе. Снимает «белый холст»-disclaimer (Trek-2 решение #3 = GO).
 - **Вектор 3 — quality & release-prep**: fuzz-корпус malformed-PDF по всем readers; preflight/структурный валидатор (`IPdfPreflightService` поверх fonts/sanitization/links); SettingsMigrator, crash-reporter UI, perf-инструменты.
 - **Вектор 4 — Phase-3 движки**: реальная PDF/A-валидация (`plugins/Foliant.Plugin.VeraPdf`, veraPDF CLI) и AES-256 write-side (QPDF / raw cos + BouncyCastle).
@@ -294,3 +313,4 @@ Phase-2 фичи (параллельно, изолированы):
 | 2026-06-07 (поздно) | Волна 9 merged (#132): XMP + sanitization. Запущен крупный PR Волны 10 «navigation & inspection»: named destinations (/Names/Dests + legacy /Dests, list/add/remove) **+** document fonts listing (Document Properties → Fonts, read-only) — обе полным стеком (engine суб-агентами в worktree'ах, retrieved по SHA). Реальный прогон тестов 2097→2150 (+53, 0 failed). |
 | 2026-06-07 (ночь) | Волна 10 merged (#133): named destinations + fonts. Запущен крупный PR Волны 11 «robustness & link inspection»: **cycle-guard hardening** (depth-limit на всех рекурсивных cos-обходчиках — закрывает repo-wide-замечание ревью #133 про незащищённые `/Kids`-walkers, DoS через StackOverflow на malformed PDF) **+** link annotations listing (read-only). Hardening + link engine собраны двумя суб-агентами в worktree'ах параллельно, retrieved по SHA; общий `PdfCosLimits` унифицирован. Реальный прогон тестов 2150→2165 (+15, 0 failed). |
 | 2026-06-07 (поздняя ночь) | Волна 11 merged (#134). Reconcile #5: полная сверка документации (PHASE1_REMAINING #128/1868→#134/2165, ROADMAP-снимок #133→#134, DEV_RETROSPECTIVE §6 уроки мульти-агентных волн, ARCHITECTURE — cos-write инфраструктура). Утверждён forward-план (`happy-churning-marble`): 4 вектора по выбору владельца (PDF-breadth → EPUB/FB2/MOBI рендер → quality/release-prep → Phase-3 движки). Реальный прогон 2165 (0 failed). |
+| 2026-06-07 (reconcile #5 merged, #135) | Старт Вектора 1. PR-1a (#136) «custom /Info props + OCG rename/delete»: после recon выяснилось, что page-geometry (crop/rotate) уже закрыт — pivot на достройку двух частичных фич. Два engine-суб-агента в worktree'ах параллельно (custom-props + OCG-edit), retrieved по SHA; интеграция (VM-partials, `CustomPropertiesDialog`, `LayersDialog` rename/delete, DI, меню, L10n EN/RU, тесты) пред-собрана против контрактов. Реальный прогон 2165→2241 (+76, 0 failed). |

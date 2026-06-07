@@ -89,6 +89,79 @@ public sealed partial class DocumentTabViewModel
             _logger.LogWarning(ex, "Failed to save layer visibility to '{Path}'.", request.TargetPath);
         }
     }
+
+    /// <summary>Can OCG layers be structurally edited (renamed / removed): edit-service present and
+    /// source is a PDF. Distinct from <see cref="CanShowLayers"/> because rename/delete go through the
+    /// separate <see cref="IPdfOcgEditService"/> (cos incremental write of the <c>/OCProperties</c>
+    /// tree) rather than the visibility-only <see cref="IPdfOcgService"/>. In practice both services
+    /// are co-registered, so the two gates move together.</summary>
+    public bool CanEditLayers =>
+        _ocgEditService is not null
+        && Path.GetExtension(_filePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Rename a single OCG layer to a new title and save the result to a new file (the source
+    /// is never mutated, watermark/redact pattern). The layer is identified by its stable
+    /// <see cref="PdfLayerViewModel.Index"/>; an index unknown to the document is silently ignored per
+    /// <see cref="IPdfOcgEditService"/>'s best-effort contract. No-op when the service is absent, the
+    /// source is not a PDF, or the request lacks a target path or new name.</summary>
+    [RelayCommand(CanExecute = nameof(CanEditLayers))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Layer-rename failure must not crash the tab.")]
+    private async Task RenameLayerAsync(RenameLayerRequest? request, CancellationToken ct)
+    {
+        if (_ocgEditService is null
+            || request is null
+            || string.IsNullOrWhiteSpace(request.TargetPath)
+            || string.IsNullOrWhiteSpace(request.NewName)
+            || !CanEditLayers)
+        {
+            return;
+        }
+
+        try
+        {
+            await _ocgEditService.RenameAsync(_filePath, request.TargetPath, request.LayerIndex, request.NewName, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // user-cancelled — ignore
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to rename layer in '{Path}'.", request.TargetPath);
+        }
+    }
+
+    /// <summary>Remove a single OCG layer (its <c>/OCG</c> entry plus references from
+    /// <c>/OCProperties</c>) and save the result to a new file. The layer is identified by its stable
+    /// <see cref="PdfLayerViewModel.Index"/>. Note: removing a layer drops its <c>/OCProperties</c>
+    /// membership but leaves any marked content already drawn on the page — the content simply becomes
+    /// unconditionally visible, matching how Acrobat treats a deleted OCG. No-op when the service is
+    /// absent, the source is not a PDF, or the request lacks a target path.</summary>
+    [RelayCommand(CanExecute = nameof(CanEditLayers))]
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Layer-delete failure must not crash the tab.")]
+    private async Task DeleteLayerAsync(DeleteLayerRequest? request, CancellationToken ct)
+    {
+        if (_ocgEditService is null
+            || request is null
+            || string.IsNullOrWhiteSpace(request.TargetPath)
+            || !CanEditLayers)
+        {
+            return;
+        }
+
+        try
+        {
+            await _ocgEditService.RemoveAsync(_filePath, request.TargetPath, request.LayerIndex, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // user-cancelled — ignore
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete layer in '{Path}'.", request.TargetPath);
+        }
+    }
 }
 
 /// <summary>View-supplied envelope for <c>SaveLayerVisibilityCommand</c>: per-index visibility map
@@ -96,4 +169,18 @@ public sealed partial class DocumentTabViewModel
 /// Domain) because it is a UI-flow concern, mirroring <see cref="ApplyBatesRequest"/>.</summary>
 public sealed record SaveLayerVisibilityRequest(
     IReadOnlyDictionary<int, bool> VisibilityByIndex,
+    string TargetPath);
+
+/// <summary>View-supplied envelope for <c>RenameLayerCommand</c>: the target layer index, its new
+/// title gathered from the Layers dialog's inline prompt, and the Save-As target path. Defined here
+/// (not in Domain) because it is a UI-flow concern, mirroring <see cref="SaveLayerVisibilityRequest"/>.</summary>
+public sealed record RenameLayerRequest(
+    int LayerIndex,
+    string NewName,
+    string TargetPath);
+
+/// <summary>View-supplied envelope for <c>DeleteLayerCommand</c>: the target layer index + the
+/// Save-As target path. Defined here (not in Domain) because it is a UI-flow concern.</summary>
+public sealed record DeleteLayerRequest(
+    int LayerIndex,
     string TargetPath);
