@@ -146,6 +146,10 @@ public sealed class HtmlPaginator
             var request = new HtmlRenderRequest(_chapters[chapter].Html, _chapters[chapter].Resources, viewport, theme);
             return _renderer.RenderPage(request);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception)
         {
             return BlankResult(widthPx, heightPx, theme);

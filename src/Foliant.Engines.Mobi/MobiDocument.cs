@@ -40,10 +40,10 @@ internal sealed partial class MobiDocument : IDocument
     private const int PalmDbHeaderSize = 78;
     private const int RecordEntrySize = 8;
 
-    /// <summary>Page-break marker MOBI emits between chapters, matched case-insensitively as a
-    /// substring so <c>&lt;mbp:pagebreak&gt;</c>, <c>&lt;mbp:pagebreak/&gt;</c> and attribute variants
-    /// all split.</summary>
-    [GeneratedRegex("<mbp:pagebreak", RegexOptions.IgnoreCase)]
+    /// <summary>Page-break marker MOBI emits between chapters, matched case-insensitively as the
+    /// <b>whole</b> tag (<c>&lt;mbp:pagebreak&gt;</c>, <c>&lt;mbp:pagebreak/&gt;</c> and attribute
+    /// variants) so the split leaves no residual <c>/&gt;</c> at a chapter's head.</summary>
+    [GeneratedRegex(@"<mbp:pagebreak\b[^>]*>", RegexOptions.IgnoreCase)]
     private static partial Regex PageBreakMarkerRegex();
 
     private readonly IReadOnlyList<string> _chapterTexts;
