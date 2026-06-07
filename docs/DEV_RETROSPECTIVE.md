@@ -112,3 +112,40 @@ Application/plugins → Infra/Engines/VM → хвосты → рантайм-т�
    (`Foliant.sln`, `Directory.Packages.props`, resx, workflow-YAML) — горячие точки: назначать
    единоличного владельца на батч, сериализовать их правки; новые проекты регистрировать в
    sln/slnf централизованно при интеграции, а не в каждом worktree.
+
+## 6. Мульти-агентные волны Phase 2 (PR #124–#134) — отлаженный конвейер
+
+Десяток крупных PR'ов фичей PDF (page labels, Initial View, attachments, insert-pages, XMP,
+sanitization, named destinations, fonts, links, cycle-guard) выработали устойчивый процесс. Уроки:
+
+1. **Движок — суб-агентом (новые файлы), обвязку — интегратор; забор по SHA.** Бриф агенту: создавать
+   ТОЛЬКО новые файлы (Domain/port/engine/тесты), собрать+протестировать в своём worktree, закоммитить.
+   Интегратор забирает ровно эти файлы `git checkout <sha> -- <paths>` и `git worktree prune`. Так
+   снимается боль §5.1 (новые файлы не конфликтуют; правки общих файлов — `AppHostBuilder`,
+   `MainWindow.xaml(.cs)`, `Strings*.resx`, `DocumentTabViewModel.cs` — остаются за интегратором).
+   Cross-cutting-правки существующих файлов (напр. depth-guard в 9 walkers) тоже можно отдать
+   отдельному worktree-агенту и забрать изменённые файлы по SHA — безопасно, если их больше никто не трогает.
+2. **Контракты пре-билдятся параллельно.** Пока агенты строят движки, интегратор пишет VM-partial,
+   диалог, L10n и VM-тесты против ОГОВОРЁННОЙ сигнатуры порта. За все волны delivered-API совпадал с
+   контрактом дословно — интеграция сводилась к drop-in + wiring. Точно бриферить сигнатуру (record +
+   методы порта) — ключ к нулевому rework.
+3. **Цифры — только из реального прогона, не из памяти.** Снимок #130 завысил `Engines.Pdf` на 3
+   (207 vs 204) и протащил это в доки, пока реальный `dotnet test` не поймал на следующей волне.
+   **Правило:** любой правке снимка (tests/LOC/per-assembly) предшествует фактический filtered-прогон;
+   сверять доки полностью каждые ~3–4 PR.
+4. **Depth-guard обязателен для рекурсии по cos-деревьям.** Любой рекурсивный обход `/Kids`
+   (page/name/number-tree) или node-children обязан нести предел глубины (`PdfCosLimits.MaxTreeDepth`):
+   `StackOverflowException` неперехватываемо → DoS на malformed PDF. Новый walker — сразу с лимитом.
+5. **WPF-гейт на Linux существует** (отменяет старую оговорку §0 «Windows-CI — единственная
+   компиляция»). `dotnet build src/Foliant.UI -p:EnableWindowsTargeting=true -warnaserror` компилирует
+   code-behind + XAML и ловит CS0108/CS1734/несоответствие типа биндинга/namespace до пуша. НЕ ловит:
+   runtime data-binding (`{Binding}` к несуществующему свойству) и рендер — это по-прежнему Windows.
+6. **Авто-ревью-агент на дифф — дёшево и высокосигнально.** Отдельный агент по диффу ловит то, что не
+   видят компилятор/тесты: type-mismatch биндинга (`SelectedItem`↔record vs row), EN/RU-асимметрия
+   resx, record-value-equality по list-полю в тестах (`.Be()` на record с `IReadOnlyList`), cos
+   edge-cases. Гонять до перевода PR в ready; находки сворачивать сразу.
+7. **Push-реалии.** Husky-bootstrap (`.husky/_/husky.sh`) в свежем клоне отсутствует → пушить
+   `--no-verify` ПОСЛЕ ручного прогона гейта; коммиты показываются «Unverified» (нет GPG-ключа в среде),
+   хотя committer-email корректный — косметика, мержам не мешает. WIP-чекпойнт пре-билдженной обвязки
+   (не компилится до забора движков) держать локально, не пушить; в конце — squash в чистые коммиты
+   (`feat(pdf): … engine` / `feat(ui,di): … wiring + docs`) + `--force-with-lease`.

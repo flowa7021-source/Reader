@@ -111,6 +111,29 @@ Path → [PdfDocumentLoader.CanLoad?] → Yes → PdfDocument
 - **Crash recovery** — при старте чекаем `Autosave/*`, предлагаем восстановить.
 - Базу для будущей коллаборации (CRDT/OT) — но это вне scope (см. PROJECT_BOARD раздел 12.4).
 
+## 6a. PDF-мутации: stateless cos-сервисы + инкрементальный write
+
+Помимо event-sourced редактора (выше), бо́льшая часть Phase-2 PDF-функций реализована как **stateless
+mutate-to-copy сервисы**: порт в `Foliant.Application/Services` + PdfPig/PDFium-реализация в
+`Foliant.Engines.Pdf`, которые читают исходные байты и пишут **новый** файл (атомарно temp+Move),
+оригинал не мутируется. Сюда входят watermark, header/footer, Bates, crop, merge/split/insert,
+redaction, `/Info` metadata, `/PageLabels`, `/ViewerPreferences`, `/EmbeddedFiles`, `/Metadata` (XMP),
+sanitization, `/Names/Dests`, плюс read-only-инспекторы (fonts, links, signatures).
+
+Структурные правки (catalog / page-tree / name-trees), которые PDFium не экспонирует, делаются через
+**инкрементальный апдейт cos** (ISO 32000-1 §7.5.6) общей инфраструктурой `Foliant.Engines.Pdf`:
+
+- `PdfIncrementalWriter` — дописывает новые/обновлённые объекты + xref/trailer со `/Prev`, не трогая
+  исходные байты (важно для подписанных PDF); бинарные потоки — byte-preserving через Latin1.
+- `PdfDictionaryCosWriter` / `PdfTextString` — сериализация токенов и text-string'ов (ASCII literal или
+  UTF-16BE hex).
+- `PdfCatalog*CosWriter` — перезапись одного ключа catalog'а (`/Outlines`, `/Names`, `/PageLabels`,
+  `/ViewerPreferences`, …) с сохранением остальных.
+- `PdfCosLimits.MaxTreeDepth` — общий предел глубины для всех рекурсивных обходов `/Kids` (защита от
+  malformed/циклических деревьев; `StackOverflowException` неперехватываем).
+
+Все cos-readers — **best-effort**: на битом PDF возвращают пустой/частичный результат, а не бросают.
+
 ## 7. Плагины
 
 Подробности — в [`PLUGINS.md`](PLUGINS.md). Кратко:
