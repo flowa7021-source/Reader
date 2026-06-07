@@ -1300,4 +1300,64 @@
   <data name="OutputIntentsIccMissing" xml:space="preserve">
     <value>без ICC-профиля</value>
   </data>
+  <data name="MenuFilePreflight" xml:space="preserve">
+    <value>Pre_flight…</value>
+  </data>
+  <data name="PreflightDialogTitle" xml:space="preserve">
+    <value>Preflight</value>
+  </data>
+  <data name="PreflightCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="PreflightUnavailable" xml:space="preserve">
+    <value>Не удалось проанализировать документ.</value>
+  </data>
+  <data name="PreflightPages" xml:space="preserve">
+    <value>Страниц: {0}</value>
+  </data>
+  <data name="PreflightVersion" xml:space="preserve">
+    <value>Версия PDF: {0}</value>
+  </data>
+  <data name="PreflightVersionUnknown" xml:space="preserve">
+    <value>Версия PDF: неизвестна</value>
+  </data>
+  <data name="PreflightEncrypted" xml:space="preserve">
+    <value>Документ зашифрован</value>
+  </data>
+  <data name="PreflightNotEncrypted" xml:space="preserve">
+    <value>Не зашифрован</value>
+  </data>
+  <data name="PreflightFontsNone" xml:space="preserve">
+    <value>Шрифтов нет</value>
+  </data>
+  <data name="PreflightFontsNotEmbedded" xml:space="preserve">
+    <value>{0} из {1} шрифтов не встроены — возможны проблемы отображения/печати</value>
+  </data>
+  <data name="PreflightFontsAllEmbedded" xml:space="preserve">
+    <value>Все {0} шрифтов встроены</value>
+  </data>
+  <data name="PreflightHasJs" xml:space="preserve">
+    <value>Содержит JavaScript или автодействия</value>
+  </data>
+  <data name="PreflightNoJs" xml:space="preserve">
+    <value>Без JavaScript и автодействий</value>
+  </data>
+  <data name="PreflightOutputIntentIcc" xml:space="preserve">
+    <value>Есть ICC output intent (готов к PDF/X)</value>
+  </data>
+  <data name="PreflightOutputIntentNoIcc" xml:space="preserve">
+    <value>output intent'ов: {0}, без встроенного ICC-профиля</value>
+  </data>
+  <data name="PreflightNoOutputIntent" xml:space="preserve">
+    <value>Output intent отсутствует</value>
+  </data>
+  <data name="PreflightLinks" xml:space="preserve">
+    <value>Ссылок: {0}</value>
+  </data>
+  <data name="PreflightHasText" xml:space="preserve">
+    <value>Текст извлекается</value>
+  </data>
+  <data name="PreflightNoText" xml:space="preserve">
+    <value>Текст не извлекается — только изображение (рассмотрите OCR)</value>
+  </data>
 </root>

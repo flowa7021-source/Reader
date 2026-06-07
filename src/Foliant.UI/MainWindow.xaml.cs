@@ -1244,6 +1244,27 @@ public partial class MainWindow : Window
         }
     }
 
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnPreflightMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanPreflight: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        try
+        {
+            await tab.LoadPreflightCommand.ExecuteAsync(null);
+            PreflightDialog.Show(this, tab.CurrentPreflightReport);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error preflighting '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private async Task AddAttachmentFlowAsync(DocumentTabViewModel tab)
     {
         var loc = LocalizationManager.Instance;
