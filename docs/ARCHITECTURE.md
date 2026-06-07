@@ -41,7 +41,8 @@
 | `Foliant.Domain` | Только `Microsoft.Extensions.Logging.Abstractions`. Никаких UI / IO / SQLite. |
 | `Foliant.Application` | `Foliant.Domain` + abstractions из `Microsoft.Extensions.*`. |
 | `Foliant.Infrastructure` | `Foliant.Domain` + сторонние библиотеки (SQLite, Serilog, System.Text.Json, ...). НЕ ссылается на UI, ViewModels, Engines. |
-| `Foliant.Engines.*` | `Foliant.Domain` + `Foliant.Plugins.Contracts` + сторонняя нативка. |
+| `Foliant.Engines.*` | `Foliant.Domain` + `Foliant.Plugins.Contracts` + сторонняя нативка + `Foliant.Rendering.Html` (EPUB/FB2/MOBI). |
+| `Foliant.Rendering.Html` | `Foliant.Domain` + AngleSharp + SixLabors (ImageSharp.Drawing/Fonts). Pure-managed HTML→BGRA32 рендер. **Не** ссылается на движки (граница engine → renderer однонаправленна). См. [`HTML_RENDERER.md`](HTML_RENDERER.md). |
 | `Foliant.Plugins.Contracts` | `Foliant.Domain` + `System.Composition` (MEF). |
 | `Foliant.ViewModels` | `Foliant.Application` + `Foliant.Domain` + `CommunityToolkit.Mvvm`. **Не** ссылается на `PresentationFramework`. |
 | `Foliant.UI` | `Foliant.ViewModels`. WPF (`UseWPF=true`). |
