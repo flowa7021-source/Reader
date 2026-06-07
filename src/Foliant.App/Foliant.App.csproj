@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Foliant.Engines.Fb2\Foliant.Engines.Fb2.csproj" />
     <ProjectReference Include="..\Foliant.Engines.Mobi\Foliant.Engines.Mobi.csproj" />
     <ProjectReference Include="..\Foliant.Engines.Ocr\Foliant.Engines.Ocr.csproj" />
+    <ProjectReference Include="..\Foliant.Rendering.Html\Foliant.Rendering.Html.csproj" />
     <ProjectReference Include="..\Foliant.Infrastructure\Foliant.Infrastructure.csproj" />
     <ProjectReference Include="..\Foliant.Plugins.Contracts\Foliant.Plugins.Contracts.csproj" />
     <ProjectReference Include="..\Foliant.UI\Foliant.UI.csproj" />

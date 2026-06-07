@@ -23,6 +23,7 @@ using Foliant.Infrastructure.Search;
 using Foliant.Infrastructure.Settings;
 using Foliant.Infrastructure.Storage;
 using Foliant.Infrastructure.Updates;
+using Foliant.Rendering.Html;
 using Foliant.UI;
 using Foliant.UI.Imaging;
 using Foliant.UI.Localization;
@@ -136,6 +137,10 @@ internal static class AppHostBuilder
 
         // Document engines (loaders регистрируются как IDocumentLoader; OpenDocumentUseCase
         // получает IEnumerable<IDocumentLoader> и выбирает по факту CanLoad).
+        // HTML рендер-движок (pure-managed AngleSharp→SixLabors→BGRA32) — общий для EPUB/FB2/MOBI;
+        // FontStore грузит встроенные шрифты один раз. EpubDocumentLoader получает IHtmlRenderer через ctor.
+        services.AddSingleton<FontStore>();
+        services.AddSingleton<IHtmlRenderer, HtmlRenderer>();
         services.AddSingleton<IDocumentLoader, PdfDocumentLoader>();
         // In-box image loader (PNG/JPEG/BMP/TIFF/GIF) — ImageSharp, pure managed.
         services.AddSingleton<IDocumentLoader, ImageDocumentLoader>();
