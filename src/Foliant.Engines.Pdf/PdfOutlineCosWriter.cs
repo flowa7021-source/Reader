@@ -94,13 +94,43 @@ internal static class PdfOutlineCosWriter
         AppendOptionalRef(sb, "/Next", link.Next);
         if (link.First is { } f && link.Last is { } l)
         {
-            sb.Append(CultureInfo.InvariantCulture, $"/First {Ref(f)}\n/Last {Ref(l)}\n/Count {link.ChildCount}\n");
+            // /Count sign carries the open/closed state for nodes with children (ISO 32000-1
+            // §12.3.3): ≥0 = expanded, <0 = collapsed. Leaves omit /Count.
+            int count = entry.IsOpen ? link.ChildCount : -link.ChildCount;
+            sb.Append(CultureInfo.InvariantCulture, $"/First {Ref(f)}\n/Last {Ref(l)}\n/Count {count}\n");
+        }
+
+        // /F flag (Table 153): bit 1 (value 1) = italic, bit 2 (value 2) = bold. Omit when plain.
+        int styleFlags = (entry.IsItalic ? 1 : 0) | (entry.IsBold ? 2 : 0);
+        if (styleFlags != 0)
+        {
+            sb.Append(CultureInfo.InvariantCulture, $"/F {styleFlags}\n");
+        }
+
+        // /C [r g b] title colour (components 0..1); omit for the default (black).
+        if (entry.Color is { } c)
+        {
+            sb.Append(CultureInfo.InvariantCulture, $"/C [{Num(c.Red)} {Num(c.Green)} {Num(c.Blue)}]\n");
         }
 
         var pageRef = pageRefs[Math.Clamp(entry.PageIndex, 0, pageRefs.Count - 1)];
-        sb.Append(CultureInfo.InvariantCulture, $"/Dest [{Ref(pageRef)} /Fit]\n>>");
+        sb.Append(CultureInfo.InvariantCulture, $"/Dest [{Ref(pageRef)} {DestTokens(entry.Destination)}]\n>>");
         return sb.ToString();
     }
+
+    /// <summary>Explicit-destination tokens for a zoom mode (ISO 32000-1 §12.3.2.2). <c>null</c>
+    /// operands mean "retain the current value", so e.g. FitWidth keeps the vertical position.</summary>
+    private static string DestTokens(OutlineDestinationMode mode) => mode switch
+    {
+        OutlineDestinationMode.FitWidth => "/FitH null",
+        OutlineDestinationMode.FitHeight => "/FitV null",
+        OutlineDestinationMode.InheritZoom => "/XYZ null null null",
+        _ => "/Fit",
+    };
+
+    /// <summary>Format a colour component clamped to the PDF 0..1 range, invariant culture, trimmed.</summary>
+    private static string Num(double value) =>
+        Math.Clamp(value, 0.0, 1.0).ToString("0.####", CultureInfo.InvariantCulture);
 
     private static void AppendOptionalRef(StringBuilder sb, string key, IndirectReference? reference)
     {
