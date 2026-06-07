@@ -33,6 +33,17 @@
     <PackageVersion Include="VersOne.Epub" Version="3.3.4" />
   </ItemGroup>
 
+  <!-- HTML/CSS визуальный рендер EPUB/FB2/MOBI (Вектор 2): pure-managed конвейер
+       AngleSharp (HTML5+CSS parse) → layout → SixLabors.ImageSharp.Drawing + Fonts (raster) → BGRA32.
+       Без нативных зависимостей → проверяемо на Linux/CI (в отличие от SkiaSharp). ImageSharp.Drawing
+       тянет SixLabors.ImageSharp транзитивно — проект ссылается на него прямо (версия 3.1.12 выше,
+       пропатчена против NU1903/NU1902), поэтому уязвимая 3.1.6 не подтягивается. -->
+  <ItemGroup Label="HtmlRendering">
+    <PackageVersion Include="AngleSharp" Version="1.1.2" />
+    <PackageVersion Include="AngleSharp.Css" Version="1.0.0-beta.144" />
+    <PackageVersion Include="SixLabors.ImageSharp.Drawing" Version="2.1.5" />
+  </ItemGroup>
+
   <!-- OCR: PaddleOCR через Sdcb (in-process), 2.7-линия. Версии выровнены по реальному графу
        зависимостей Sdcb.PaddleOCR 2.7.0.3 (→ OpenCvSharp4 4.10.0.20240616 + Sdcb.PaddleInference
        2.5.0.1). Native-рантаймы совпадают с managed-версиями: PaddleInference.runtime.win64.mkl
