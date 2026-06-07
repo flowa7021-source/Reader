@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Foliant.Engines.Epub</RootNamespace>
-    <Description>EPUB engine. EPUB 2/3 via VersOne.Epub (pure managed, cross-platform). Spine items map to pages; text layer carries chapter content stripped to plain text. Visual render is a blank canvas in Phase 1 — pretty layout (font / wrap / images) is a follow-up.</Description>
+    <Description>EPUB engine. EPUB 2/3 via VersOne.Epub (pure managed, cross-platform). Chapters are laid out and painted to real BGRA32 pages via Foliant.Rendering.Html (AngleSharp + SixLabors), with fixed-reference, scale-invariant pagination so each chapter spans one or more fixed-height page slices. Text layer carries chapter content stripped to plain text for search/FTS.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\Foliant.Rendering.Html\Foliant.Rendering.Html.csproj" />
   </ItemGroup>
 
   <ItemGroup>
