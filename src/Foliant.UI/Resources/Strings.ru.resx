@@ -1219,4 +1219,85 @@
   <data name="CustomPropsSaveDialogTitle" xml:space="preserve">
     <value>Сохранить PDF с пользовательскими свойствами как</value>
   </data>
+  <data name="MenuFileOutline" xml:space="preserve">
+    <value>_Содержание…</value>
+  </data>
+  <data name="MenuFileOutputIntents" xml:space="preserve">
+    <value>Output _Intents…</value>
+  </data>
+  <data name="OutlineExportDialogTitle" xml:space="preserve">
+    <value>Параметры экспорта содержания</value>
+  </data>
+  <data name="OutlineExportDestLabel" xml:space="preserve">
+    <value>Открывать страницу как</value>
+  </data>
+  <data name="OutlineDestFitPage" xml:space="preserve">
+    <value>Вписать страницу</value>
+  </data>
+  <data name="OutlineDestFitWidth" xml:space="preserve">
+    <value>По ширине</value>
+  </data>
+  <data name="OutlineDestFitHeight" xml:space="preserve">
+    <value>По высоте</value>
+  </data>
+  <data name="OutlineDestInheritZoom" xml:space="preserve">
+    <value>Сохранять масштаб</value>
+  </data>
+  <data name="OutlineExportCollapse" xml:space="preserve">
+    <value>Свернуть вложенные узлы</value>
+  </data>
+  <data name="OutlineExportBoldTop" xml:space="preserve">
+    <value>Жирные узлы верхнего уровня</value>
+  </data>
+  <data name="OutlineExportButton" xml:space="preserve">
+    <value>Экспорт</value>
+  </data>
+  <data name="OutlineExportCancelButton" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="OutlineViewDialogTitle" xml:space="preserve">
+    <value>Содержание</value>
+  </data>
+  <data name="OutlineViewEmpty" xml:space="preserve">
+    <value>В документе нет содержания.</value>
+  </data>
+  <data name="OutlineViewCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="OutlineViewPageAbbrev" xml:space="preserve">
+    <value>с.</value>
+  </data>
+  <data name="OutlineViewNoPage" xml:space="preserve">
+    <value>нет страницы</value>
+  </data>
+  <data name="OutlineViewBold" xml:space="preserve">
+    <value>жирный</value>
+  </data>
+  <data name="OutlineViewItalic" xml:space="preserve">
+    <value>курсив</value>
+  </data>
+  <data name="OutlineViewColoured" xml:space="preserve">
+    <value>цветной</value>
+  </data>
+  <data name="OutlineViewOpen" xml:space="preserve">
+    <value>развёрнут</value>
+  </data>
+  <data name="OutlineViewClosed" xml:space="preserve">
+    <value>свёрнут</value>
+  </data>
+  <data name="OutputIntentsDialogTitle" xml:space="preserve">
+    <value>Output Intents</value>
+  </data>
+  <data name="OutputIntentsEmpty" xml:space="preserve">
+    <value>В документе не объявлены output intents.</value>
+  </data>
+  <data name="OutputIntentsCloseButton" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="OutputIntentsIccEmbedded" xml:space="preserve">
+    <value>встроен ICC-профиль</value>
+  </data>
+  <data name="OutputIntentsIccMissing" xml:space="preserve">
+    <value>без ICC-профиля</value>
+  </data>
 </root>

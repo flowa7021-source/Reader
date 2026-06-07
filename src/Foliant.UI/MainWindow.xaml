@@ -259,6 +259,12 @@
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileLinks]}"
                   IsEnabled="{Binding SelectedTab.CanListLinks, FallbackValue=False}"
                   Click="OnLinksMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileOutline]}"
+                  IsEnabled="{Binding SelectedTab.CanViewOutline, FallbackValue=False}"
+                  Click="OnOutlineViewMenuItemClick" />
+        <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFileOutputIntents]}"
+                  IsEnabled="{Binding SelectedTab.CanListOutputIntents, FallbackValue=False}"
+                  Click="OnOutputIntentsMenuItemClick" />
         <Separator />
         <MenuItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MenuFilePrint]}"
                   IsEnabled="{Binding SelectedTab.CanPrint, FallbackValue=False}"

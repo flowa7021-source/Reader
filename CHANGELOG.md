@@ -21,6 +21,27 @@
   наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
 
 ### Added
+- **Rich PDF outline («Содержание») — round-trip + viewer + rich export**. Outline (`/Outlines`)
+  получил полный набор «богатых» атрибутов в read и write. **Domain**: `DocumentOutlineEntry`
+  расширен опциональными (defaulted) полями — `OutlineDestinationMode` (FitPage/FitWidth/FitHeight/
+  InheritZoom), `IsBold`/`IsItalic`, `OutlineColor?` (RGB), `IsOpen`. **Engine (write)**:
+  `PdfOutlineCosWriter` теперь эмитит `/Dest` с режимом зума, `/F` (стиль), `/C` (цвет) и **знаковый**
+  `/Count` (отрицательный = свёрнут). **Engine (read)**: новый cos-level `PdfOutlineCosReader` +
+  публичный `IPdfOutlineInspector`/`PdfPigOutlineInspector` (`ReadRichAsync`) — pre-order обход
+  `/First`/`/Next` с резолвом `/Dest`→page-index, декодом режима/стиля/цвета/`/Count`, depth- и
+  cycle-guard (`PdfCosLimits` + visited-set). **UI**: read-only `OutlineViewDialog` (меню
+  **File → Outline…**, показывает заголовок·страницу·режим·стиль·цвет·open/closed) + опции при
+  «Export Bookmarks to PDF» (`OutlineExportOptionsDialog`: режим перехода, свернуть вложенные,
+  жирные узлы верхнего уровня). L10n EN/RU. **31 + 16 engine + 18 VM-тестов** (вкл. round-trip
+  writer→reader всех атрибутов).
+- **Output intents listing (Acrobat «Output Intents») — read-only + UI**. Печатно-производственная
+  инфо: `/OutputIntents` объявляют целевое цветовоспроизведение (PDF/X, PDF/A ICC-профили).
+  **Domain**: record `PdfOutputIntent(Subtype, OutputConditionIdentifier, OutputCondition,
+  RegistryName, Info, HasIccProfile)`. **Application**: порт `IPdfOutputIntentService.ListAsync`
+  (best-effort). **Engine**: `PdfOutputIntentCosReader` (обходит catalog `/OutputIntents`, резолвит
+  text-string'и, детектит `/DestOutputProfile`) + `PdfPigOutputIntentService` (read-only orchestrator).
+  **UI**: `OutputIntentsDialog` (read-only список «subtype — condition [ICC]») + меню
+  **File → Output Intents…**. L10n EN/RU. **17 engine-тестов**.
 - **Custom document `/Info` properties (Acrobat «Custom») — read + write + UI**. Нестандартные
   пары ключ/значение в `/Info` dictionary (всё за пределами девяти стандартных полей, которыми ведает
   `IPdfMetadataEditService`): `/Company`, `/Status` и т. п. **Domain**: record

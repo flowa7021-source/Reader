@@ -283,9 +283,16 @@ public partial class MainWindow : Window
             return;
         }
 
+        // After picking the target, gather outline richness options (destination zoom, collapse, bold).
+        var (request, ok) = OutlineExportOptionsDialog.Prompt(this, save.FileName);
+        if (!ok || request is null)
+        {
+            return;
+        }
+
         try
         {
-            await tab.ExportBookmarksToPdfCommand.ExecuteAsync(save.FileName);
+            await tab.ExportBookmarksToPdfCommand.ExecuteAsync(request);
         }
         catch (Exception ex)
         {
@@ -1191,6 +1198,48 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled error listing links of '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnOutlineViewMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanViewOutline: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        try
+        {
+            await tab.LoadOutlineCommand.ExecuteAsync(null);
+            OutlineViewDialog.Show(this, tab.CurrentOutline);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error reading outline of '{Path}'.", tab.FilePath);
+            MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "UI event handler must not propagate exceptions.")]
+    private async void OnOutputIntentsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.SelectedTab is not { CanListOutputIntents: true } tab)
+        {
+            return;
+        }
+
+        var loc = LocalizationManager.Instance;
+        try
+        {
+            await tab.LoadOutputIntentsCommand.ExecuteAsync(null);
+            OutputIntentsDialog.Show(this, tab.CurrentOutputIntents);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error listing output intents of '{Path}'.", tab.FilePath);
             MessageBox.Show(this, ex.Message, loc["ErrorDialogTitle"], MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
