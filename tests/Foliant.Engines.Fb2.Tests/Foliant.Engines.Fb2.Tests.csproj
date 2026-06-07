@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Foliant.Engines.Fb2\Foliant.Engines.Fb2.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Rendering.Html\Foliant.Rendering.Html.csproj" />
   </ItemGroup>
 
 </Project>

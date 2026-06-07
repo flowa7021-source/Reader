@@ -42,8 +42,27 @@ internal static class Fb2TestFactory
         return path;
     }
 
+    /// <summary>FB2 с пустым <c>&lt;body&gt;&lt;/body&gt;</c> — нет renderable content. Используется
+    /// для тестирования empty-chapter guard (PageCount ≥ 1 → blank white page).</summary>
+    public static string CreateEmptyBody(string targetDir, string title)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetDir);
+        Directory.CreateDirectory(targetDir);
+        string path = Path.Combine(targetDir, $"empty-body-{Guid.NewGuid():N}.fb2");
+
+        string xml = $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+              <description><title-info><book-title>{System.Net.WebUtility.HtmlEncode(title)}</book-title><lang>en</lang></title-info></description>
+              <body></body>
+            </FictionBook>
+            """;
+        File.WriteAllText(path, xml, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        return path;
+    }
+
     /// <summary>FB2 без секций — только <c>&lt;body&gt;&lt;p&gt;...</c>. Используется для тестирования
-    /// fallback-пути <c>Fb2Document.CollectPagesFromBody</c>.</summary>
+    /// fallback-пути <c>Fb2Document.CollectChaptersFromBody</c>.</summary>
     public static string CreateBodyOnly(string targetDir, string title, string content)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetDir);

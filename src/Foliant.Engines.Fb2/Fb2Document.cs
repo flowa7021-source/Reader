@@ -1,45 +1,78 @@
+using System.Text;
 using System.Xml.Linq;
 using Foliant.Domain;
+using Foliant.Rendering.Html;
 
 namespace Foliant.Engines.Fb2;
 
 /// <summary>
-/// FB2 (FictionBook 2.0) document. Каждая <c>&lt;section&gt;</c> внутри
-/// <c>&lt;FictionBook&gt;/&lt;body&gt;</c> становится одной «страницей». Сложенные секции
-/// (nested) flatten'ятся в плоский список для page-индекса. Если body содержит только
-/// абзацы без секций — один paragraph-блок = одна страница (типичный fallback для коротких
-/// книг).
+/// FB2 (FictionBook 2.0) document, rendered to real visual pages through the pure-managed
+/// <see cref="IHtmlRenderer"/> (<c>Foliant.Rendering.Html</c>): each flattened
+/// <c>&lt;section&gt;</c> is converted to an HTML fragment by <see cref="Fb2HtmlConverter"/>, then
+/// laid out and painted to BGRA32 — no native dependencies (cross-platform; tested on Linux).
 ///
-/// Phase 1 — simplifications те же, что у EPUB:
-/// <list type="bullet">
-/// <item><see cref="RenderPageAsync"/> — blank white bitmap. Real text rendering — D8b.</item>
-/// <item><see cref="GetTextLayerAsync"/> — конкатенация <c>&lt;p&gt;</c>/<c>&lt;title&gt;</c>/
-///   <c>&lt;subtitle&gt;</c> текста секции в один <see cref="TextRun"/> для поиска и FTS5.</item>
-/// </list>
+/// <para><b>Chapter model.</b> Sections are flattened in pre-order: a chapter is produced for each
+/// <c>&lt;section&gt;</c> with non-empty direct content, descending into nested sections. A
+/// <c>&lt;body&gt;</c> without sections becomes one chapter from its text; a document with no
+/// renderable content becomes one empty chapter (so <see cref="PageCount"/> &#8805; 1). Each chapter
+/// carries both its HTML (for the renderer) and its plain text (for the text layer).</para>
+///
+/// <para><b>Pagination</b> is delegated to the shared <see cref="HtmlPaginator"/> (fixed reference
+/// viewport, scale-invariant, eager page counts) — the same engine EPUB/MOBI use; a long section
+/// therefore paginates into several pages and the global page index maps deterministically to a
+/// (chapter, local-page) pair.</para>
+///
+/// <para><see cref="GetTextLayerAsync"/> returns the chapter's plain text as one large
+/// <see cref="TextRun"/> on the chapter's first page (approximate bounding box) — enough for search
+/// (<c>SearchService</c>) and the FTS5 index. Subsequent pages of a chapter return an empty layer.</para>
 /// </summary>
 internal sealed class Fb2Document : IDocument
 {
-    public const int DefaultPagePxWidth = 800;
-    public const int DefaultPagePxHeight = 1200;
+    /// <summary>Reference «page» width in pixels for text-layer bounding boxes and page size
+    /// (matches <see cref="HtmlPaginator.ReferenceWidthPx"/>).</summary>
+    public const int DefaultPagePxWidth = HtmlPaginator.ReferenceWidthPx;
+
+    /// <summary>Reference «page» height in pixels (matches <see cref="HtmlPaginator.ReferenceHeightPx"/>).</summary>
+    public const int DefaultPagePxHeight = HtmlPaginator.ReferenceHeightPx;
 
     /// <summary>FB2 namespace URI. Все элементы FB2-документа в этом namespace'е.</summary>
     private static readonly XNamespace Fb2Ns = "http://www.gribuser.ru/xml/fictionbook/2.0";
 
-    private readonly IReadOnlyList<string> _pageTexts;
+    private readonly HtmlPaginator _paginator;
+
+    /// <summary>Per-chapter plain text (the text-layer source); parallel to the paginator's chapters.</summary>
+    private readonly string[] _chapterTexts;
 
     public DocumentKind Kind => DocumentKind.Fb2;
-    public int PageCount => _pageTexts.Count;
+
+    /// <summary>Total page count across all chapters (Σ of per-chapter slice counts), not the chapter
+    /// count.</summary>
+    public int PageCount => _paginator.PageCount;
+
     public DocumentMetadata Metadata { get; }
 
-    private Fb2Document(IReadOnlyList<string> pageTexts, DocumentMetadata metadata)
+    private Fb2Document(IReadOnlyList<Fb2Chapter> chapters, DocumentMetadata metadata, IHtmlRenderer renderer)
     {
-        _pageTexts = pageTexts;
         Metadata = metadata;
+        _chapterTexts = [.. chapters.Select(c => c.Text)];
+        _paginator = new HtmlPaginator(
+            renderer,
+            [.. chapters.Select(c => new HtmlChapter(c.Html, NullResourceResolver.Instance))]);
     }
 
-    public static Fb2Document Open(string path)
+    /// <summary>Opens an FB2 file at <paramref name="path"/> and eagerly paginates it against the
+    /// supplied renderer.</summary>
+    /// <param name="path">Filesystem path to the <c>.fb2</c> file.</param>
+    /// <param name="renderer">The shared HTML renderer used for pagination and page painting.</param>
+    /// <returns>The loaded document.</returns>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is null/blank.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="renderer"/> is null.</exception>
+    /// <exception cref="FileNotFoundException">No file exists at <paramref name="path"/>.</exception>
+    /// <exception cref="InvalidDataException">The file is not valid FB2 / XML.</exception>
+    public static Fb2Document Open(string path, IHtmlRenderer renderer)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(renderer);
         if (!File.Exists(path))
         {
             throw new FileNotFoundException("FB2 file not found.", path);
@@ -55,76 +88,79 @@ internal sealed class Fb2Document : IDocument
             throw new InvalidDataException($"Not a valid FB2 / XML file: {path}", ex);
         }
 
-        var root = xml.Root;
+        XElement? root = xml.Root;
         if (root is null || root.Name != Fb2Ns + "FictionBook")
         {
             throw new InvalidDataException($"Root element is not <FictionBook> in FB2 namespace: {path}");
         }
 
-        var bodies = root.Elements(Fb2Ns + "body").ToList();
-        var pages = new List<string>();
-        foreach (var body in bodies)
+        var chapters = new List<Fb2Chapter>();
+        foreach (XElement body in root.Elements(Fb2Ns + "body"))
         {
-            CollectPagesFromBody(body, pages);
-        }
-        if (pages.Count == 0)
-        {
-            // Документ без body — добавляем одну пустую «страницу», чтобы Pdf-style API
-            // не упал на PageCount == 0.
-            pages.Add(string.Empty);
+            CollectChaptersFromBody(body, chapters);
         }
 
-        var metadata = ExtractMetadata(root);
-        return new Fb2Document(pages, metadata);
+        if (chapters.Count == 0)
+        {
+            // Документ без renderable content — одна пустая «глава», чтобы PageCount был ≥ 1.
+            chapters.Add(new Fb2Chapter(string.Empty, string.Empty));
+        }
+
+        DocumentMetadata metadata = ExtractMetadata(root);
+        return new Fb2Document(chapters, metadata, renderer);
     }
 
-    private static void CollectPagesFromBody(XElement body, List<string> pages)
+    private static void CollectChaptersFromBody(XElement body, List<Fb2Chapter> chapters)
     {
-        // Top-level body: ищем <section> детей. Если нет — body становится одной страницей
-        // со всем своим текстом.
+        // Top-level body: ищем <section> детей. Если нет — body становится одной главой
+        // со всем своим текстом/HTML.
         var sections = body.Elements(Fb2Ns + "section").ToList();
         if (sections.Count == 0)
         {
-            string bodyText = ExtractTextFromElement(body);
+            string bodyText = CollapseWhitespace(ExtractTextFromElement(body));
             if (!string.IsNullOrWhiteSpace(bodyText))
             {
-                pages.Add(CollapseWhitespace(bodyText));
+                chapters.Add(new Fb2Chapter(Fb2HtmlConverter.ConvertSection(body), bodyText));
             }
+
             return;
         }
 
-        foreach (var section in sections)
+        foreach (XElement section in sections)
         {
-            CollectPagesFromSection(section, pages);
+            CollectChaptersFromSection(section, chapters);
         }
     }
 
-    /// <summary>Рекурсивно flatten'ит секцию в плоский список страниц. Прямой текст
-    /// (title/subtitle/p) становится одной страницей; каждая nested-секция — следующая.</summary>
-    private static void CollectPagesFromSection(XElement section, List<string> pages)
+    /// <summary>Рекурсивно flatten'ит секцию в плоский список глав. Прямой контент
+    /// (title/subtitle/p/...) становится одной главой; каждая nested-секция — следующей.</summary>
+    private static void CollectChaptersFromSection(XElement section, List<Fb2Chapter> chapters)
     {
         string directText = ExtractDirectTextFromSection(section);
         if (!string.IsNullOrWhiteSpace(directText))
         {
-            pages.Add(directText);
+            chapters.Add(new Fb2Chapter(Fb2HtmlConverter.ConvertSection(section), directText));
         }
-        foreach (var nested in section.Elements(Fb2Ns + "section"))
+
+        foreach (XElement nested in section.Elements(Fb2Ns + "section"))
         {
-            CollectPagesFromSection(nested, pages);
+            CollectChaptersFromSection(nested, chapters);
         }
     }
 
-    /// <summary>Достаёт текст из <c>&lt;title&gt;</c>, <c>&lt;subtitle&gt;</c>, <c>&lt;p&gt;</c>
-    /// детей данной секции (не рекурсивно — nested sections обрабатываются отдельной итерацией).</summary>
+    /// <summary>Достаёт текст из прямых блок-детей секции (<c>&lt;title&gt;</c>, <c>&lt;subtitle&gt;</c>,
+    /// <c>&lt;p&gt;</c>, <c>&lt;epigraph&gt;</c>, <c>&lt;cite&gt;</c>) — не рекурсивно по секциям; nested
+    /// sections обрабатываются отдельной итерацией.</summary>
     private static string ExtractDirectTextFromSection(XElement section)
     {
-        var sb = new System.Text.StringBuilder();
-        foreach (var child in section.Elements())
+        var sb = new StringBuilder();
+        foreach (XElement child in section.Elements())
         {
             if (child.Name == Fb2Ns + "section")
             {
                 continue; // nested — обрабатывается рекурсивно вызывающим
             }
+
             if (child.Name == Fb2Ns + "title" || child.Name == Fb2Ns + "subtitle" || child.Name == Fb2Ns + "p"
                 || child.Name == Fb2Ns + "epigraph" || child.Name == Fb2Ns + "cite")
             {
@@ -132,9 +168,11 @@ internal sealed class Fb2Document : IDocument
                 {
                     sb.Append(' ');
                 }
+
                 sb.Append(ExtractTextFromElement(child));
             }
         }
+
         return CollapseWhitespace(sb.ToString());
     }
 
@@ -146,7 +184,7 @@ internal sealed class Fb2Document : IDocument
 
     private static string CollapseWhitespace(string text)
     {
-        var sb = new System.Text.StringBuilder(text.Length);
+        var sb = new StringBuilder(text.Length);
         bool prevWs = false;
         foreach (char ch in text)
         {
@@ -164,14 +202,15 @@ internal sealed class Fb2Document : IDocument
                 prevWs = false;
             }
         }
+
         return sb.ToString().Trim();
     }
 
     private static DocumentMetadata ExtractMetadata(XElement root)
     {
-        var titleInfo = root.Element(Fb2Ns + "description")?.Element(Fb2Ns + "title-info");
+        XElement? titleInfo = root.Element(Fb2Ns + "description")?.Element(Fb2Ns + "title-info");
         string? title = titleInfo?.Element(Fb2Ns + "book-title")?.Value?.Trim();
-        var firstAuthor = titleInfo?.Element(Fb2Ns + "author");
+        XElement? firstAuthor = titleInfo?.Element(Fb2Ns + "author");
         string? author = null;
         if (firstAuthor is not null)
         {
@@ -200,15 +239,14 @@ internal sealed class Fb2Document : IDocument
     {
         ArgumentNullException.ThrowIfNull(opts);
         EnsureValidPage(pageIndex);
-
-        int wPx = opts.MaxWidthPx is { } maxW && maxW > 0 ? Math.Min(maxW, DefaultPagePxWidth) : DefaultPagePxWidth;
-        int hPx = (int)(wPx * (double)DefaultPagePxHeight / DefaultPagePxWidth);
-        int stride = wPx * 4;
-        byte[] buffer = new byte[stride * hPx];
-        Array.Fill(buffer, (byte)0xFF); // white BGRA
-
-        IPageRender render = new Fb2PageRender(wPx, hPx, stride, buffer, GetPageSize(pageIndex));
-        return Task.FromResult(render);
+        return Task.Run<IPageRender>(
+            () =>
+            {
+                ct.ThrowIfCancellationRequested();
+                HtmlRenderResult result = _paginator.Render(pageIndex, opts.Theme, opts.MaxWidthPx);
+                return new Fb2PageRender(result.WidthPx, result.HeightPx, result.Stride, result.Bgra32, GetPageSize(pageIndex));
+            },
+            ct);
     }
 
     public Task<TextLayer?> GetTextLayerAsync(int pageIndex, CancellationToken ct)
@@ -216,12 +254,22 @@ internal sealed class Fb2Document : IDocument
         EnsureValidPage(pageIndex);
         ct.ThrowIfCancellationRequested();
 
-        string text = _pageTexts[pageIndex];
+        (int chapter, int localPage) = _paginator.Map(pageIndex);
+
+        // The chapter's text is indexed once, on its first page; later pages of the same chapter
+        // return an empty layer (precise per-page text is a future PR).
+        if (localPage > 0)
+        {
+            return Task.FromResult<TextLayer?>(new TextLayer(pageIndex, []));
+        }
+
+        string text = _chapterTexts[chapter];
         if (string.IsNullOrWhiteSpace(text))
         {
             return Task.FromResult<TextLayer?>(new TextLayer(pageIndex, []));
         }
 
+        // Один большой run на всю «страницу» — bounding box покрывает viewport.
         var run = new TextRun(text, 0, 0, DefaultPagePxWidth, DefaultPagePxHeight);
         return Task.FromResult<TextLayer?>(new TextLayer(pageIndex, [run]));
     }
@@ -238,11 +286,19 @@ internal sealed class Fb2Document : IDocument
     private void EnsureValidPage(int pageIndex)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(pageIndex, _pageTexts.Count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(pageIndex, PageCount);
     }
+
+    /// <summary>One flattened FB2 chapter: its HTML fragment (for the renderer) and its plain text
+    /// (for the text layer / search index).</summary>
+    /// <param name="Html">The chapter's HTML fragment produced by <see cref="Fb2HtmlConverter"/>.</param>
+    /// <param name="Text">The chapter's collapsed plain text.</param>
+    private sealed record Fb2Chapter(string Html, string Text);
 }
 
-internal sealed class Fb2PageRender(int widthPx, int heightPx, int stride, byte[] bgra32, PageSize pageSize) : IPageRender
+/// <summary>Render-обёртка над BGRA32-bitmap'ом из <see cref="IHtmlRenderer"/>. Owner = caller;
+/// Dispose — no-op (no native handle).</summary>
+internal sealed class Fb2PageRender(int widthPx, int heightPx, int stride, ReadOnlyMemory<byte> bgra32, PageSize pageSize) : IPageRender
 {
     public int WidthPx => widthPx;
     public int HeightPx => heightPx;
