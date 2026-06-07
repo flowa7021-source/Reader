@@ -21,6 +21,17 @@
   наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
 
 ### Added
+- **EPUB рендерится визуально** (Вектор 2, PR-2b) — раньше EPUB рисовался белым холстом, теперь
+  `EpubDocument` рендерит реальный контент через `Foliant.Rendering.Html`. **Фиксированная пагинация
+  по вьюпорту:** каждая глава раскладывается на странице-вьюпорте (800×1200, поля, базовый шрифт 18);
+  `PageCount` = сумма страниц-слайсов по главам (вычисляется на `Open` через `IHtmlRenderer.Layout`,
+  scale-invariant — корректен для read-once `PageCount`). Главная область чтения рендерит в reference-
+  масштабе; `MaxWidthPx` (миниатюры) — равномерным scale; **зум-reflow отложен** (зум для EPUB и так был
+  no-op). **Картинки:** новый `EpubResourceResolver` достаёт `<img src>` из `EpubBook.Content.Images`
+  (нормализация пути относительно spine-итема; `FilePath`/`Key`-варианты VersOne). `GetTextLayerAsync`
+  отдаёт текст главы на её первой странице (поиск/FTS), пусто — на остальных. Сбой рендера → blank
+  fallback, не роняет вкладку. **+7 EPUB-тестов** (non-blank/ink, многостраничная пагинация, page0≠page1,
+  картинка, пустая глава). FB2/MOBI — пока белый холст (PR-2c).
 - **HTML→BGRA32 рендер-движок (`Foliant.Rendering.Html`) — фундамент визуального рендера EPUB/FB2/MOBI**
   (Вектор 2, PR-2a, architecture spike). Pure-managed конвейер **AngleSharp (HTML5+CSS parse) →
   вычисление стилей → block+inline layout с greedy word-wrap (`SixLabors.Fonts.TextMeasurer`) →
