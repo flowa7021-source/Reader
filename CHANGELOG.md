@@ -21,6 +21,17 @@
   наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
 
 ### Added
+- **HTML→BGRA32 рендер-движок (`Foliant.Rendering.Html`) — фундамент визуального рендера EPUB/FB2/MOBI**
+  (Вектор 2, PR-2a, architecture spike). Pure-managed конвейер **AngleSharp (HTML5+CSS parse) →
+  вычисление стилей → block+inline layout с greedy word-wrap (`SixLabors.Fonts.TextMeasurer`) →
+  растеризация (`SixLabors.ImageSharp.Drawing`) → `Image<Bgra32>` → `byte[]` BGRA32 →
+  `RenderColorMap.ApplyTheme`**. Без нативных зависимостей → проверяемо на Linux/CI (сознательный выбор
+  SixLabors вместо SkiaSharp). Публичный API `IHtmlRenderer` (`RenderPage`/`Layout`), фиксированная
+  пагинация по вьюпорту, `FontStore` поверх **встроенных шрифтов Liberation** (12 начертаний Serif/Sans/
+  Mono, SIL OFL 1.1 — детерминизм/CI). Это спайк: рендер доказан на синтетических HTML-строках,
+  движки EPUB/FB2/MOBI **пока не подключены** (разводка — PR-2b/2c). Дизайн — в
+  [`docs/HTML_RENDERER.md`](docs/HTML_RENDERER.md). **56 тестов** (грубые пороговые свойства: непусто/
+  пусто, монотонность чернил, перенос строк, пагинация, картинки, инверсия темы, загрузка всех faces).
 - **Rich PDF outline («Содержание») — round-trip + viewer + rich export**. Outline (`/Outlines`)
   получил полный набор «богатых» атрибутов в read и write. **Domain**: `DocumentOutlineEntry`
   расширен опциональными (defaulted) полями — `OutlineDestinationMode` (FitPage/FitWidth/FitHeight/
