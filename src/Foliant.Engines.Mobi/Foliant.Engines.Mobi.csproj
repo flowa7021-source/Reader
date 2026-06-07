@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Foliant.Engines.Mobi</RootNamespace>
-    <Description>MOBI engine. Читает PalmDB-контейнер + PalmDOC-сжатый текст (in-box LZ77 разжиматель, без NuGet-зависимостей). Текстовые записи → HTML strip → pages; text-layer для поиска. Visual render — blank canvas в Phase 1 (см. EPUB/FB2 engines).</Description>
+    <Description>MOBI engine. Читает PalmDB-контейнер + PalmDOC-сжатый текст (in-box LZ77 разжиматель, без NuGet-зависимостей). Текстовые записи склеиваются в один HTML-поток, разбиваются на главы по mbp:pagebreak-маркерам и отрисовываются в реальные BGRA32-страницы через Foliant.Rendering.Html (AngleSharp + SixLabors) с fixed-reference, scale-invariant пагинацией. Text-layer несёт plain-text глав для поиска/FTS.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\Foliant.Rendering.Html\Foliant.Rendering.Html.csproj" />
   </ItemGroup>
 
   <ItemGroup>

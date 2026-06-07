@@ -1,5 +1,6 @@
 using System.Text;
 using Foliant.Domain;
+using Foliant.Rendering.Html;
 using Microsoft.Extensions.Logging;
 
 namespace Foliant.Engines.Mobi;
@@ -7,11 +8,14 @@ namespace Foliant.Engines.Mobi;
 /// <summary>
 /// Распознаёт MOBI по расширению (<c>.mobi</c>, <c>.prc</c>, <c>.azw</c>) либо по PalmDB
 /// type/creator-сигнатуре «BOOKMOBI» в первых 68 байтах (sniff). Загружает через
-/// <see cref="MobiDocument.Open"/>.
+/// <see cref="MobiDocument.Open(string, IHtmlRenderer)"/> — текстовые записи склеиваются,
+/// разбиваются на главы и paginated/painted общим <see cref="IHtmlRenderer"/>.
 ///
 /// Phase 1: только DRM-free PalmDOC-сжатый MOBI. HUFF/CDIC и AZW3 (KF8) — следующий PR.
 /// </summary>
-public sealed class MobiDocumentLoader(ILogger<MobiDocumentLoader> log) : IDocumentLoader
+/// <param name="log">Logger for non-fatal load diagnostics.</param>
+/// <param name="renderer">The shared HTML renderer passed to each opened document.</param>
+public sealed class MobiDocumentLoader(ILogger<MobiDocumentLoader> log, IHtmlRenderer renderer) : IDocumentLoader
 {
     // PalmDB type "BOOK" + creator "MOBI" at file offset 60 (смежно = "BOOKMOBI").
     private static readonly byte[] BookMobiBytes = Encoding.ASCII.GetBytes("BOOKMOBI");
@@ -47,7 +51,7 @@ public sealed class MobiDocumentLoader(ILogger<MobiDocumentLoader> log) : IDocum
 
         return await Task.Run<IDocument>(() =>
         {
-            MobiDocument doc = MobiDocument.Open(path);
+            MobiDocument doc = MobiDocument.Open(path, renderer);
             log.LogDebug("Loaded MOBI '{Path}'", path);
             return doc;
         }, ct).ConfigureAwait(false);
