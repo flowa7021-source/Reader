@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Foliant.Rendering.Html</RootNamespace>
+    <Description>Pure-managed HTML to BGRA32 renderer (architecture spike). AngleSharp parse to hand-rolled computed styles to block+inline layout (greedy word-wrap via SixLabors.Fonts) to paint (SixLabors.ImageSharp.Drawing) to an Image&lt;Bgra32&gt; to byte[] BGRA32, themed via Foliant.Domain RenderColorMap. No native dependencies; cross-platform / CI-verifiable. Not yet wired into any engine.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" />
+    <PackageReference Include="AngleSharp.Css" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" />
+    <!-- Reference ImageSharp directly so the patched 3.1.12 (central) wins over Drawing's
+         transitive (vulnerable) 3.1.6. -->
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foliant.Domain\Foliant.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Foliant.Rendering.Html.Tests" />
+  </ItemGroup>
+
+</Project>
