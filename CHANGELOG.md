@@ -48,6 +48,24 @@
   наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
 
 ### Added
+- **EPUB/HTML linked-CSS — author-каскад** (Вектор 2, PR-2d) — книги, чья типографика жила во внешнем
+  CSS, раньше рендерились только по UA-defaults; теперь общий движок `Foliant.Rendering.Html` применяет
+  **настоящий CSS-каскад**. Собирает author-CSS главы: текст `<style>`-блоков (из распарсенного DOM) +
+  `<link rel="stylesheet">` (резолвится из контейнера через новый `IResourceResolver.TryResolveCss`).
+  Новый `AuthorStylesheet` парсит CSS через **`AngleSharp.Css`** и матчит селекторы движком AngleSharp
+  (`ICssStyleRule.TryMatch` → специфичность `Priority`); `StyleResolver` раскладывает каскад в порядке
+  **UA-defaults < author-normal (по специфичности, затем порядку) < inline-`style` < author-`!important`
+  < inline-`!important`**. Поддержанные свойства: `color`, `font-family`/`font-size`/`font-weight`/
+  `font-style`, `text-align` (были) **+ новые** `display` (`none` — прячет элемент и поддерево;
+  `block`/`inline`/`inline-block` — переключают поток), `margin`/`margin-top`/`margin-bottom`. `CssColors`
+  расширен на функциональные `rgb()`/`rgba()`/`hsl()`/`hsla()` (AngleSharp нормализует даже именованные
+  цвета в `rgba(...)`). Метадата-элементы (`<style>`/`<script>`/`<head>`/`<title>`/`<link>`/`<meta>`…)
+  больше не утекают в body-текст. Битый CSS или неподдержанный селектор — деградирует (skip), не бросает
+  в layout. Граница минимальна: `TryResolveCss` — **default-метод интерфейса** (возвращает `false`), так
+  что FB2/MOBI (на `NullResourceResolver`) и стаб-резолверы не затронуты; реально переопределяет его лишь
+  `EpubResourceResolver` (тянет CSS из `EpubBook.Content.Css` той же candidate-логикой path/Key/filename,
+  что и картинки). **+32 теста** (28 cascade-кейсов через публичный API рендера + 4 EPUB end-to-end через
+  `<link>` + резолвер).
 - **Preflight / структурный валидатор PDF** (Вектор 3, PR-3a) — единая проверка «годен ли PDF к
   печати/архиву/пересылке», **композиция уже существующих инспекторов**. **Domain**:
   `PdfPreflightReport` (pure-data: страницы, версия PDF, шифрование, шрифты/невстроенные, JS/автодействия,

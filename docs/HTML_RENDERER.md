@@ -1,8 +1,9 @@
 # HTML/CSS visual renderer (EPUB · FB2 · MOBI)
 
-> Статус: **Вектор 2, PR-2a (spike)** — этот документ + проект `Foliant.Rendering.Html` с тонким
-> proof-of-concept (рендер HTML-строки в непустой BGRA32-bitmap). Полная разводка по движкам —
-> PR-2b (EPUB) и PR-2c (FB2/MOBI).
+> Статус: **Вектор 2 завершён + доработки.** PR-2a (spike) — проект `Foliant.Rendering.Html`; PR-2b
+> (EPUB), PR-2c (FB2/MOBI) — разводка по движкам через общий `HtmlPaginator`; PR-2d — author-CSS
+> каскад (linked `<link>` + `<style>`, см. §10). Бэклог: зум-reflow, попиксельный текст-слой,
+> картинки FB2/MOBI.
 
 ## 1. Зачем
 
@@ -47,7 +48,7 @@ public interface IHtmlRenderer
 - `HtmlViewport(int ContentWidthPx, int PageHeightPx, HtmlMargins Margins, double BaseFontSizePx, double ScalePx, int PageIndexInChapter)` — фиксированный вьюпорт для пагинации; `ScalePx` = px-на-CSS-px после zoom.
 - `HtmlRenderResult(int WidthPx, int HeightPx, int Stride, byte[] Bgra32, int PageCountInChapter)` — движок оборачивает это в свой `IPageRender` (рендерер **не** зависит от `IPageRender`).
 - `HtmlLayout(IReadOnlyList<DrawCommand> Commands, int TotalContentHeightPx, int PageCount)` — артефакт, из которого считается пагинация (и в будущем — текстовый слой).
-- `IResourceResolver { bool TryResolveImage(string src, out ReadOnlyMemory<byte> bytes); }` — движок реализует поверх своего контейнера (EPUB: `EpubBook.Content.Images`); `NullResourceResolver` — заглушка.
+- `IResourceResolver { bool TryResolveImage(string src, out ReadOnlyMemory<byte> bytes); bool TryResolveCss(string href, out string css); }` — движок реализует поверх своего контейнера (EPUB: `EpubBook.Content.Images` / `Content.Css`); `TryResolveCss` — **default-метод** (по умолчанию `false`), так что только container-backed резолверы (EPUB) его переопределяют; `NullResourceResolver` — заглушка.
 - `FontStore` — загружает встроенные шрифты, `Font Resolve(GenericFontFamily family, bool bold, bool italic, float sizePx)`.
 
 ## 4. Конвейер
@@ -55,7 +56,7 @@ public interface IHtmlRenderer
 | Стадия | MVP | Отложено |
 |---|---|---|
 | **Parse** | AngleSharp `HtmlParser.ParseDocument`, обход DOM | — |
-| **Style** | UA-default таблица по тегам (h1–h6, p, div, blockquote, ul/ol/li, b/strong, i/em, code/pre, br) + inline `style=""` (font-weight/style/size, color, text-align); наследование font/color | linked CSS из EPUB (`AngleSharp.Css`), селекторы класс/id/комбинаторы, `@media`, web-fonts; **никогда:** floats, tables, flex/grid, positioning, JS |
+| **Style** | UA-default таблица по тегам (h1–h6, p, div, blockquote, ul/ol/li, b/strong, i/em, code/pre, br) + **author-CSS каскад** (PR-2d: `<style>`-блоки + `<link>`-таблицы через `AngleSharp.Css`; селекторы тег/класс/id/атрибут/комбинаторы + специфичность + `!important`) + inline `style=""`; свойства: font-weight/style/size/family, color (вкл. `rgb()`/`rgba()`/`hsl()`/`hsla()`), text-align, `display` (none/block/inline), margin/margin-top/bottom; наследование font/color | `@media`, `@font-face`/web-fonts, `text-indent` и прочие box-свойства; **никогда:** floats, tables, flex/grid, positioning, JS |
 | **Layout** | один block formatting context, блоки сверху вниз; inline → line-boxes с greedy word-wrap через `TextMeasurer.MeasureSize`; списки с маркером; `<img>` по ширине контента | вложенные BFC, floats, widow/orphan, «не рвать строку» |
 | **Paint** | `ImageSharp.Drawing` `DrawText`/`DrawImage` на `Image<Bgra32>` → `CopyPixelDataTo` → `ApplyTheme` | — |
 
@@ -155,3 +156,42 @@ Greek — достаточно для EPUB/FB2 на EN/RU; metric-compatible с 
   bump engine-версии; снять disclaimer.
 - **PR-2c:** FB2 (`Fb2ToHtml`) + MOBI (raw HTML) переиспользуют тот же `IHtmlRenderer`; снять
   disclaimer'ы. Картинки FB2/MOBI — отложены.
+
+## 10. Author-CSS каскад (PR-2d)
+
+Книги, чья типографика жила во **внешнем CSS**, до PR-2d рендерились только по UA-defaults. Теперь
+рендерер применяет настоящий (MVP) каскад над тем же небольшим набором свойств.
+
+**Сбор CSS (внутри рендерера, не движка).** `LayoutEngine.Run` после парса DOM собирает источники в
+порядке документа: текст каждого `<style>`-блока + содержимое каждого `<link rel="stylesheet">`,
+резолвится out-of-band через `IResourceResolver.TryResolveCss(href)`. `HtmlChapter`/`HtmlRenderRequest`
+не меняются — движку (EPUB) достаточно реализовать `TryResolveCss`; `<style>` рендерер достаёт из DOM
+сам. Метадата-элементы (`<style>`/`<script>`/`<head>`/`<title>`/`<link>`/`<meta>`/`<base>`/`<noscript>`/
+`<template>`) исключаются из обхода — их содержимое никогда не рисуется как текст.
+
+**Матчинг (`AuthorStylesheet`).** Источники парсятся через `AngleSharp.Css` (`CssParser.ParseStyleSheet`);
+берутся только top-level `ICssStyleRule` (at-rules — `@media`/`@font-face`/`@import`… — игнорируются в
+MVP). Для элемента селекторы матчатся **движком AngleSharp** (`ICssStyleRule.TryMatch(el, null, out
+Priority)`), который заодно даёт специфичность. Поддержан весь грамматический набор селекторов
+AngleSharp (тег/класс/id/атрибут/комбинаторы/псевдоклассы); патологический/неподдержанный селектор —
+skip (не бросает в layout).
+
+**Порядок каскада (`StyleResolver`).** Объявления применяются возрастающе по приоритету (последнее
+побеждает):
+
+1. UA-defaults (таблица по тегам),
+2. author-normal — по специфичности, затем по исходному порядку правила,
+3. inline `style=""` (normal),
+4. author-`!important` — по специфичности/порядку,
+5. inline `style` `!important`.
+
+Свойства маппятся на `ComputedStyle` через общий `ApplyDeclaration` (тот же путь, что у inline):
+`color` (named/hex/`rgb()`/`rgba()`/`hsl()`/`hsla()` — AngleSharp нормализует даже именованные цвета в
+`rgba(...)`, поэтому `CssColors` понимает функциональную нотацию), `font-family`/`font-size`/
+`font-weight`/`font-style`, `text-align`, `display` (`none` → элемент и поддерево не рендерятся;
+`block`/`inline`/`inline-block` → переключение потока), `margin`/`margin-top`/`margin-bottom`.
+
+**Граница.** `TryResolveCss` — default-метод `IResourceResolver` (возвращает `false`), поэтому FB2/MOBI
+(на `NullResourceResolver`) и стаб-резолверы не затронуты; реально переопределяет его только
+`EpubResourceResolver` (CSS из `EpubBook.Content.Css`, candidate-логика path/Key/filename — как у
+картинок). CSS-less глава идёт по fast-path без аллокаций (`AuthorStylesheet.Empty`).

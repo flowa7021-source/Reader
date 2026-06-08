@@ -19,7 +19,20 @@ internal static class EpubTestFactory
     /// <summary>Создаёт EPUB файл с указанными chapter'ами (HTML контент per chapter).
     /// Возвращает путь к новому файлу.</summary>
     public static string Create(string targetDir, string title, string author, params string[] chapterHtmls) =>
-        Create(targetDir, title, author, images: null, chapterHtmls);
+        Create(targetDir, title, author, images: null, css: null, chapterHtmls);
+
+    /// <summary>Создаёт EPUB с одним linked-stylesheet'ом (manifest item <c>text/css</c> + файл
+    /// <c>OEBPS/{cssHref}</c>), на который каждая глава ссылается через <c>&lt;link rel="stylesheet"&gt;</c>
+    /// в <c>&lt;head&gt;</c>. Для проверки author-CSS каскада сквозь EPUB-резолвер.</summary>
+    /// <param name="targetDir">Каталог, в котором создаётся файл.</param>
+    /// <param name="title">Title метаданных.</param>
+    /// <param name="author">Author метаданных.</param>
+    /// <param name="cssHref">Путь CSS-файла относительно <c>OEBPS/</c> (например <c>styles/main.css</c>).</param>
+    /// <param name="cssBody">Содержимое CSS-файла.</param>
+    /// <param name="chapterHtmls">HTML-контент каждого spine-item (тело <c>&lt;body&gt;</c>).</param>
+    /// <returns>Путь к новому <c>.epub</c>.</returns>
+    public static string CreateWithCss(string targetDir, string title, string author, string cssHref, string cssBody, params string[] chapterHtmls) =>
+        Create(targetDir, title, author, images: null, css: new EpubCss(cssHref, cssBody), chapterHtmls);
 
     /// <summary>Создаёт EPUB файл с указанными chapter'ами и (опционально) встроенными raster
     /// image'ами. Каждый image добавляется как <c>OEBPS/{href}</c> с соответствующим manifest-item;
@@ -31,7 +44,10 @@ internal static class EpubTestFactory
     /// либо <see langword="null"/>.</param>
     /// <param name="chapterHtmls">HTML-контент каждого spine-item.</param>
     /// <returns>Путь к новому <c>.epub</c>.</returns>
-    public static string Create(string targetDir, string title, string author, IReadOnlyList<EpubImage>? images, params string[] chapterHtmls)
+    public static string Create(string targetDir, string title, string author, IReadOnlyList<EpubImage>? images, params string[] chapterHtmls) =>
+        Create(targetDir, title, author, images, css: null, chapterHtmls);
+
+    private static string Create(string targetDir, string title, string author, IReadOnlyList<EpubImage>? images, EpubCss? css, params string[] chapterHtmls)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetDir);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
@@ -56,6 +72,10 @@ internal static class EpubTestFactory
             </container>
             """);
 
+        string cssLink = css is null
+            ? string.Empty
+            : $"<link rel=\"stylesheet\" type=\"text/css\" href=\"{css.Href}\"/>";
+
         var manifestItems = new StringBuilder();
         var spineItems = new StringBuilder();
         for (int i = 0; i < chapterHtmls.Length; i++)
@@ -69,10 +89,16 @@ internal static class EpubTestFactory
                 <?xml version="1.0" encoding="utf-8"?>
                 <!DOCTYPE html>
                 <html xmlns="http://www.w3.org/1999/xhtml">
-                  <head><title>Chapter {i + 1}</title></head>
+                  <head><title>Chapter {i + 1}</title>{cssLink}</head>
                   <body>{chapterHtmls[i]}</body>
                 </html>
                 """);
+        }
+
+        if (css is not null)
+        {
+            manifestItems.Append(System.Globalization.CultureInfo.InvariantCulture, $"<item id=\"css1\" href=\"{css.Href}\" media-type=\"text/css\"/>\n");
+            WriteText(zip, $"OEBPS/{css.Href}", css.Body);
         }
 
         if (images is not null)
@@ -139,3 +165,9 @@ internal static class EpubTestFactory
 /// <param name="MediaType">OPF manifest media-type (e.g. <c>image/png</c>).</param>
 /// <param name="Bytes">Encoded image bytes.</param>
 internal sealed record EpubImage(string Href, string MediaType, byte[] Bytes);
+
+/// <summary>A linked stylesheet for <see cref="EpubTestFactory"/>: its <c>href</c> relative to
+/// <c>OEBPS/</c> and its CSS body.</summary>
+/// <param name="Href">Path relative to <c>OEBPS/</c> (e.g. <c>styles/main.css</c>).</param>
+/// <param name="Body">CSS text.</param>
+internal sealed record EpubCss(string Href, string Body);
