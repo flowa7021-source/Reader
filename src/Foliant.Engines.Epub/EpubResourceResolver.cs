@@ -72,6 +72,61 @@ internal sealed class EpubResourceResolver : IResourceResolver
             || TryLookup(bareName, out bytes);
     }
 
+    /// <inheritdoc/>
+    public bool TryResolveCss(string href, out string css)
+    {
+        css = string.Empty;
+        if (string.IsNullOrWhiteSpace(href))
+        {
+            return false;
+        }
+
+        string cleaned = StripFragmentAndQuery(href);
+        if (cleaned.Length == 0 || cleaned.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string decoded = NormalizeSlashes(Uri.UnescapeDataString(cleaned));
+
+        // Same candidate resolution as images: chapter-relative → archive-absolute (FilePath), the
+        // href as-is (Key relative to the OPF root), then the bare filename for flattened manifests.
+        string combined = NormalizePathSegments(Combine(_spineDirectory, decoded));
+        string asIs = NormalizePathSegments(decoded);
+        string bareName = GetFileName(asIs);
+
+        return TryLookupCss(combined, out css)
+            || TryLookupCss(asIs, out css)
+            || TryLookupCss(bareName, out css);
+    }
+
+    /// <summary>Looks a candidate path up against both the FilePath and Key indices of the CSS
+    /// collection, returning the stylesheet text on a hit.</summary>
+    private bool TryLookupCss(string candidate, out string css)
+    {
+        css = string.Empty;
+        if (string.IsNullOrEmpty(candidate))
+        {
+            return false;
+        }
+
+        EpubContentCollection<EpubLocalTextContentFile, EpubRemoteTextContentFile> sheets = _book.Content.Css;
+
+        if (sheets.TryGetLocalFileByFilePath(candidate, out EpubLocalTextContentFile? byFilePath) && byFilePath?.Content is { } a)
+        {
+            css = a;
+            return true;
+        }
+
+        if (sheets.TryGetLocalFileByKey(candidate, out EpubLocalTextContentFile? byKey) && byKey?.Content is { } b)
+        {
+            css = b;
+            return true;
+        }
+
+        return false;
+    }
+
     /// <summary>Looks a candidate path up against both the FilePath and Key indices of the image
     /// collection.</summary>
     private bool TryLookup(string candidate, out ReadOnlyMemory<byte> bytes)

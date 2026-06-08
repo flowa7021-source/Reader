@@ -38,6 +38,10 @@ internal sealed record ComputedStyle
     /// <summary>Box: whether the element starts a new block (vs inline flow).</summary>
     public bool IsBlock { get; init; }
 
+    /// <summary>Box: <c>display:none</c> — the element and its entire subtree are not rendered. Not
+    /// inherited (the subtree is simply never visited, so children never resolve a style).</summary>
+    public bool Hidden { get; init; }
+
     /// <summary>Box: top margin in CSS pixels (unscaled).</summary>
     public double MarginTopPx { get; init; }
 

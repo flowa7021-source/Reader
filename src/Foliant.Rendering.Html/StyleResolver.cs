@@ -4,28 +4,64 @@ using SixLabors.ImageSharp;
 namespace Foliant.Rendering.Html;
 
 /// <summary>
-/// Computes the <see cref="ComputedStyle"/> of an element from its tag's user-agent defaults layered
-/// over the inherited (parent) style, then overlaid with the element's inline <c>style=""</c>
-/// attribute. All sizes are in CSS pixels (unscaled). This is an MVP UA stylesheet, not a CSS engine.
+/// Computes the <see cref="ComputedStyle"/> of an element by running the CSS cascade: the tag's
+/// user-agent defaults (layered over the inherited parent style), then matched author declarations
+/// (from <c>&lt;style&gt;</c>/linked CSS, ordered by specificity then source order), then the
+/// element's inline <c>style=""</c> attribute — with <c>!important</c> author and inline declarations
+/// lifted above all normal ones, in that order. All sizes are in CSS pixels (unscaled). This is an
+/// MVP cascade over a small property set, not a full CSS engine.
 /// </summary>
 internal static class StyleResolver
 {
     /// <summary>
-    /// Resolves a child element's computed style.
+    /// Resolves a child element's computed style through the full cascade (UA defaults + author CSS +
+    /// inline style).
     /// </summary>
     /// <param name="tag">The lower-cased tag name.</param>
+    /// <param name="authorDeclarations">Author declarations matched against this element (any order).
+    /// <b>Mutated</b> (sorted in place); the caller must pass a freshly-collected list it owns.</param>
     /// <param name="inlineStyle">The raw <c>style</c> attribute value (may be <see langword="null"/>).</param>
     /// <param name="inherited">The parent's inheritable style (already produced via <see cref="ComputedStyle.InheritTo"/>).</param>
     /// <param name="basePx">The chapter base font size in CSS pixels (root reference for <c>h*</c> scaling).</param>
-    public static ComputedStyle Resolve(string tag, string? inlineStyle, ComputedStyle inherited, double basePx)
+    public static ComputedStyle Resolve(string tag, List<CssDeclaration> authorDeclarations, string? inlineStyle, ComputedStyle inherited, double basePx)
     {
         ComputedStyle style = ApplyTagDefaults(tag, inherited, basePx);
 
-        if (!string.IsNullOrWhiteSpace(inlineStyle))
+        // Author declarations: ascending cascade order (non-important by specificity/source order,
+        // then all important by specificity/source order). Inline declarations are interleaved at the
+        // normal→important boundary so the precedence is: author-normal < inline-normal <
+        // author-important < inline-important.
+        authorDeclarations.Sort(CssDeclaration.CascadeComparison);
+
+        int i = 0;
+        for (; i < authorDeclarations.Count && !authorDeclarations[i].Important; i++)
         {
-            style = ApplyInlineStyle(style, inlineStyle);
+            style = ApplyDeclaration(style, authorDeclarations[i].Property.ToUpperInvariant(), authorDeclarations[i].Value);
         }
 
+        style = ApplyInlineStyle(style, inlineStyle, important: false);
+
+        for (; i < authorDeclarations.Count; i++)
+        {
+            style = ApplyDeclaration(style, authorDeclarations[i].Property.ToUpperInvariant(), authorDeclarations[i].Value);
+        }
+
+        style = ApplyInlineStyle(style, inlineStyle, important: true);
+
+        return style;
+    }
+
+    /// <summary>Fast path for callers with no author stylesheet: UA defaults + inline only, with no
+    /// per-element list allocation (the common CSS-less chapter).</summary>
+    /// <param name="tag">The lower-cased tag name.</param>
+    /// <param name="inlineStyle">The raw <c>style</c> attribute value (may be <see langword="null"/>).</param>
+    /// <param name="inherited">The parent's inheritable style.</param>
+    /// <param name="basePx">The chapter base font size in CSS pixels.</param>
+    public static ComputedStyle Resolve(string tag, string? inlineStyle, ComputedStyle inherited, double basePx)
+    {
+        ComputedStyle style = ApplyTagDefaults(tag, inherited, basePx);
+        style = ApplyInlineStyle(style, inlineStyle, important: false);
+        style = ApplyInlineStyle(style, inlineStyle, important: true);
         return style;
     }
 
@@ -108,8 +144,16 @@ internal static class StyleResolver
         }
     }
 
-    private static ComputedStyle ApplyInlineStyle(ComputedStyle style, string inlineStyle)
+    /// <summary>Applies the inline <c>style</c> attribute's declarations of one importance tier.
+    /// Called twice per element: once for normal declarations (before author <c>!important</c>) and
+    /// once for <c>!important</c> ones (after), so the cascade order is preserved.</summary>
+    private static ComputedStyle ApplyInlineStyle(ComputedStyle style, string? inlineStyle, bool important)
     {
+        if (string.IsNullOrWhiteSpace(inlineStyle))
+        {
+            return style;
+        }
+
         foreach (string declaration in inlineStyle.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             int colon = declaration.IndexOf(':', StringComparison.Ordinal);
@@ -120,7 +164,8 @@ internal static class StyleResolver
 
             string property = declaration[..colon].Trim().ToUpperInvariant();
             string value = declaration[(colon + 1)..].Trim();
-            if (value.Length == 0)
+            bool valueImportant = StripImportant(ref value);
+            if (value.Length == 0 || valueImportant != important)
             {
                 continue;
             }
@@ -129,6 +174,20 @@ internal static class StyleResolver
         }
 
         return style;
+    }
+
+    /// <summary>Strips a trailing <c>!important</c> (any spacing/case) from a value, reporting whether
+    /// it was present. Also fixes the otherwise-broken parse of <c>color:red !important</c> etc.</summary>
+    private static bool StripImportant(ref string value)
+    {
+        int bang = value.LastIndexOf('!');
+        if (bang >= 0 && value[(bang + 1)..].Trim().Equals("important", StringComparison.OrdinalIgnoreCase))
+        {
+            value = value[..bang].TrimEnd();
+            return true;
+        }
+
+        return false;
     }
 
     private static ComputedStyle ApplyDeclaration(ComputedStyle style, string property, string value)
@@ -164,9 +223,75 @@ internal static class StyleResolver
             case "FONT-FAMILY":
                 return style with { Family = MapFontFamily(value, style.Family) };
 
+            case "DISPLAY":
+                return ApplyDisplay(style, value);
+
+            case "MARGIN-TOP":
+                return CssColors.TryParseLengthPx(value, style.FontSizePx, out double mt)
+                    ? style with { MarginTopPx = Math.Max(0, mt) }
+                    : style;
+
+            case "MARGIN-BOTTOM":
+                return CssColors.TryParseLengthPx(value, style.FontSizePx, out double mb)
+                    ? style with { MarginBottomPx = Math.Max(0, mb) }
+                    : style;
+
+            case "MARGIN":
+                return ApplyMarginShorthand(style, value);
+
             default:
                 return style;
         }
+    }
+
+    private static ComputedStyle ApplyDisplay(ComputedStyle style, string value)
+    {
+        string v = value.Trim();
+        if (v.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
+            return style with { Hidden = true };
+        }
+
+        if (v.Equals("inline", StringComparison.OrdinalIgnoreCase) || v.Equals("inline-block", StringComparison.OrdinalIgnoreCase))
+        {
+            return style with { IsBlock = false };
+        }
+
+        if (v.Equals("block", StringComparison.OrdinalIgnoreCase) || v.Equals("list-item", StringComparison.OrdinalIgnoreCase))
+        {
+            return style with { IsBlock = true };
+        }
+
+        // flex / grid / table / inline-flex / … : unsupported box model — keep the UA-default flow.
+        return style;
+    }
+
+    /// <summary>Applies the <c>margin</c> shorthand, taking only the top/bottom edges the layout models
+    /// (left/right margins are not part of the reflow box). 1 value = all; 2 = vertical/horizontal;
+    /// 3 = top/horizontal/bottom; 4 = top/right/bottom/left. Non-length tokens (e.g. <c>auto</c>) leave
+    /// that edge at its UA default.</summary>
+    private static ComputedStyle ApplyMarginShorthand(ComputedStyle style, string value)
+    {
+        string[] parts = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+        {
+            return style;
+        }
+
+        string topToken = parts[0];
+        string bottomToken = parts.Length >= 3 ? parts[2] : parts[0];
+
+        if (CssColors.TryParseLengthPx(topToken, style.FontSizePx, out double top))
+        {
+            style = style with { MarginTopPx = Math.Max(0, top) };
+        }
+
+        if (CssColors.TryParseLengthPx(bottomToken, style.FontSizePx, out double bottom))
+        {
+            style = style with { MarginBottomPx = Math.Max(0, bottom) };
+        }
+
+        return style;
     }
 
     private static bool IsBoldWeight(string value)

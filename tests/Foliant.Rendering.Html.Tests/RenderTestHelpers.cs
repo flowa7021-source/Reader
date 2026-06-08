@@ -80,6 +80,27 @@ internal static class RenderTestHelpers
         return (b[index], b[index + 1], b[index + 2]);
     }
 
+    /// <summary>True when a resolved colour's red channel clearly dominates green and blue.</summary>
+    public static bool IsRedDominant(Color color)
+    {
+        Rgba32 p = color.ToPixel<Rgba32>();
+        return p.R > p.G + 40 && p.R > p.B + 40;
+    }
+
+    /// <summary>True when a resolved colour's blue channel clearly dominates red and green.</summary>
+    public static bool IsBlueDominant(Color color)
+    {
+        Rgba32 p = color.ToPixel<Rgba32>();
+        return p.B > p.R + 40 && p.B > p.G + 40;
+    }
+
+    /// <summary>True when a resolved colour's green channel clearly dominates red and blue.</summary>
+    public static bool IsGreenDominant(Color color)
+    {
+        Rgba32 p = color.ToPixel<Rgba32>();
+        return p.G > p.R + 40 && p.G > p.B + 40;
+    }
+
     /// <summary>Encodes a solid-colour PNG of the given size — used to drive the image path.</summary>
     public static byte[] SolidPng(int width, int height, Color color)
     {
@@ -91,15 +112,24 @@ internal static class RenderTestHelpers
     }
 }
 
-/// <summary>An in-memory <see cref="IResourceResolver"/> mapping <c>src</c> strings to encoded bytes.</summary>
+/// <summary>An in-memory <see cref="IResourceResolver"/> mapping <c>src</c> strings to encoded image
+/// bytes and <c>href</c> strings to CSS text — for exercising both the image and linked-CSS paths.</summary>
 internal sealed class StubResourceResolver : IResourceResolver
 {
     private readonly Dictionary<string, byte[]> _map = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _css = new(StringComparer.Ordinal);
 
     /// <summary>Registers encoded image bytes under a <c>src</c> key.</summary>
     public StubResourceResolver Add(string src, byte[] bytes)
     {
         _map[src] = bytes;
+        return this;
+    }
+
+    /// <summary>Registers CSS text under a <c>&lt;link href&gt;</c> key.</summary>
+    public StubResourceResolver AddCss(string href, string css)
+    {
+        _css[href] = css;
         return this;
     }
 
@@ -113,6 +143,19 @@ internal sealed class StubResourceResolver : IResourceResolver
         }
 
         bytes = ReadOnlyMemory<byte>.Empty;
+        return false;
+    }
+
+    /// <inheritdoc/>
+    public bool TryResolveCss(string href, out string css)
+    {
+        if (_css.TryGetValue(href, out string? value))
+        {
+            css = value;
+            return true;
+        }
+
+        css = string.Empty;
         return false;
     }
 }
