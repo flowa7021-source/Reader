@@ -8,6 +8,16 @@
 ## [Unreleased]
 
 ### Security
+- **Malformed/hostile-PDF fuzz-корпус через все read-сервисы** (Вектор 3, PR-3b). Новый общий корпус
+  из **15 вредоносных/битых PDF-фикстур** (пустой, мусор, только заголовок, обрезка в разных местах,
+  отсутствующий trailer, битые xref-офсеты, висячие indirect-ссылки, catalog без `/Pages`, врущая
+  `/Length` потока, циклические page/name-деревья, глубина ~200 уровней сверх `MaxTreeDepth=64`, чужой
+  magic, ноль страниц) прогоняется через **все 12 best-effort read/inspect-сервисов** (fonts, links,
+  output-intents, sanitization, named-dests, outline, page-labels, attachments, viewer-prefs,
+  custom-props, XMP + композитный preflight) — **матрица 195 кейсов**. Каждый кейс доказывает контракт:
+  недоверенный PDF → пустой/частичный результат **быстро, без throw'а и без зависания** (защита от
+  DoS/краша на вредоносном файле). Движковых правок не потребовалось — depth-guard (`PdfCosLimits`) +
+  best-effort try/catch вокруг `PdfDocument.Open` уже покрывают все случаи; корпус это фиксирует.
 - **Depth-guard cos-tree walkers против malformed/циклических `/Kids`**. Все рекурсивные обходчики
   cos-деревьев движка (page-tree `/Pages/Kids`, name-trees `/Names → /EmbeddedFiles|/JavaScript|/Dests`,
   number-tree `/PageLabels`, outline-узлы, `/Annots` page-leaves) получили предел глубины рекурсии —
