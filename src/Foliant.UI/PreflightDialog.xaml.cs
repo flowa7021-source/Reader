@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Globalization;
 using System.Windows;
 using Foliant.Domain;
 using Foliant.UI.Localization;
@@ -49,13 +48,11 @@ public partial class PreflightDialog : Window
 
     private static IEnumerable<string> BuildFindings(PdfPreflightReport r, LocalizationManager loc)
     {
-        CultureInfo c = CultureInfo.CurrentCulture;
-
-        yield return Info + string.Format(c, loc["PreflightPages"], r.PageCount);
+        yield return Info + loc.Format("PreflightPages", r.PageCount);
 
         yield return Info + (string.IsNullOrEmpty(r.PdfVersion)
             ? loc["PreflightVersionUnknown"]
-            : string.Format(c, loc["PreflightVersion"], r.PdfVersion));
+            : loc.Format("PreflightVersion", r.PdfVersion));
 
         yield return r.IsEncrypted
             ? Warn + loc["PreflightEncrypted"]
@@ -68,11 +65,11 @@ public partial class PreflightDialog : Window
         }
         else if (r.NonEmbeddedFontCount > 0)
         {
-            yield return Warn + string.Format(c, loc["PreflightFontsNotEmbedded"], r.NonEmbeddedFontCount, r.FontCount);
+            yield return Warn + loc.Format("PreflightFontsNotEmbedded", r.NonEmbeddedFontCount, r.FontCount);
         }
         else
         {
-            yield return Ok + string.Format(c, loc["PreflightFontsAllEmbedded"], r.FontCount);
+            yield return Ok + loc.Format("PreflightFontsAllEmbedded", r.FontCount);
         }
 
         yield return r.HasJavaScriptOrActions
@@ -86,14 +83,14 @@ public partial class PreflightDialog : Window
         }
         else if (r.OutputIntentCount > 0)
         {
-            yield return Info + string.Format(c, loc["PreflightOutputIntentNoIcc"], r.OutputIntentCount);
+            yield return Info + loc.Format("PreflightOutputIntentNoIcc", r.OutputIntentCount);
         }
         else
         {
             yield return Info + loc["PreflightNoOutputIntent"];
         }
 
-        yield return Info + string.Format(c, loc["PreflightLinks"], r.LinkCount);
+        yield return Info + loc.Format("PreflightLinks", r.LinkCount);
 
         yield return r.HasExtractableText
             ? Ok + loc["PreflightHasText"]

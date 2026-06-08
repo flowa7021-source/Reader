@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.Windows;
 using Foliant.UI.Localization;
 using Foliant.ViewModels;
@@ -117,7 +116,7 @@ public partial class LayersDialog : Window
         }
 
         var loc = LocalizationManager.Instance;
-        string message = string.Format(CultureInfo.CurrentCulture, loc["LayersDeleteConfirmMessage"], layer.LayerName);
+        string message = loc.Format("LayersDeleteConfirmMessage", layer.LayerName);
         if (MessageBox.Show(this, message, loc["LayersDeleteConfirmTitle"], MessageBoxButton.YesNo, MessageBoxImage.Warning)
             != MessageBoxResult.Yes)
         {

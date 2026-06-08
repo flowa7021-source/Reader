@@ -43,6 +43,21 @@ public sealed class LocalizationManager : ILocalizationService
         }
     }
 
+    /// <summary>Resolves <paramref name="key"/> and formats the resulting template with
+    /// <paramref name="args"/> in the current culture. Centralising
+    /// <see cref="string.Format(IFormatProvider, string, object?[])"/> here — where the format string
+    /// is the <em>resolved resource</em> (an opaque value), not a string-literal resource key —
+    /// keeps localized formatting in one place and avoids the literal-key-as-format-string pattern at
+    /// call sites.</summary>
+    /// <param name="key">Resource key whose value is a composite format string (e.g. <c>"Pages: {0}"</c>).</param>
+    /// <param name="args">Format arguments.</param>
+    /// <returns>The formatted, localized string.</returns>
+    public string Format(string key, params object[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        return string.Format(_currentCulture, this[key], args);
+    }
+
     public void SetCulture(string culture)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(culture);
