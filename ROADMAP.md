@@ -12,15 +12,15 @@
 
 ---
 
-## Статус-снимок (после #141 на main, 2026-06-07)
+## Статус-снимок (после #142 на main, 2026-06-07)
 
 - **Phase 1 (Alpha):** 12/13 спринтов ✅, 1/13 🟡 (S8 OCR golden-corpus — Windows-gated).
-- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122/#124)**, **/Outlines writer + export (#123/#125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles (#131)**, **insert pages from another PDF (#131)**, **XMP metadata /Metadata (#132)**, **JavaScript & actions sanitization (#132)**, **named destinations /Names/Dests (#133)**, **fonts listing (#133)**, **link annotations listing (#134)**, **custom /Info properties (#136)**, **OCG layer rename + delete (#136)**, **rich outline round-trip + viewer + rich export (#137)**, **output intents listing (#137)**. **+ Вектор 2 ЗАВЕРШЁН (визуальный рендер EPUB/FB2/MOBI):** фундамент `Foliant.Rendering.Html` (#138) → EPUB (#139) → FB2 + MOBI (#140) — все три рендерятся через общий `HtmlPaginator`. **+ Вектор 3 (quality):** preflight/структурный валидатор PDF (#141, композиция инспекторов) + malformed/hostile-PDF fuzz-корпус по всем read-сервисам (#142, 195 кейсов). **+ hardening:** cycle-guard depth-limit на всех cos-обходчиках (`PdfCosLimits`, #134). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
+- **Q-F фичи:** 24 ✅ (Phase 1) **+ Phase-2 merged**: Q-F26 PAdES-B (#103), Q-F32 redaction (#102/#110), Q-F8 OCG layers (#119/#120), Q-F17 11/11 native annots (#111), **/Info metadata editing (#122/#124)**, **/Outlines writer + export (#123/#125)**, **open password-protected PDF (#126)**, **Print Ctrl+P (#128)**, **page labels /PageLabels (#129/#130)**, **Initial View /ViewerPreferences (#130)**, **embedded file attachments /EmbeddedFiles (#131)**, **insert pages from another PDF (#131)**, **XMP metadata /Metadata (#132)**, **JavaScript & actions sanitization (#132)**, **named destinations /Names/Dests (#133)**, **fonts listing (#133)**, **link annotations listing (#134)**, **custom /Info properties (#136)**, **OCG layer rename + delete (#136)**, **rich outline round-trip + viewer + rich export (#137)**, **output intents listing (#137)**. **+ Вектор 2 ЗАВЕРШЁН (визуальный рендер EPUB/FB2/MOBI):** фундамент `Foliant.Rendering.Html` (#138) → EPUB (#139) → FB2 + MOBI (#140) — все три рендерятся через общий `HtmlPaginator`. **+ Вектор 3 (quality):** preflight/структурный валидатор PDF (#141), malformed/hostile-PDF fuzz-корпус по всем read-сервисам (#142, 195 кейсов), fuzz-корпус EPUB/FB2/MOBI/Image + **фикс deep-DOM StackOverflow DoS** в `LayoutEngine` (#143). **+ hardening:** cycle-guard depth-limit на всех cos-обходчиках (`PdfCosLimits`, #134) + HTML-layout depth-guard (`LayoutEngine.MaxNestingDepth`, #143). **+ port+stub** (честный долг): Q-F-PdfA (#117), Q-F30/F31 write-side encryption (#118).
 - **Тесты cross-platform layer** (CI-фильтр `Category!=Slow&!Integration&!E2E`, executed cases, реальный прогон `Foliant.CrossPlatform.slnf`):
   - Domain 285 / Application 407 / ViewModels 802 (target gates D90/A80/I70/V60 держатся).
-  - Engines.Pdf 643 / Infrastructure 242 / Engines.Epub 35 / Fb2 45 / Mobi 22 / Image 14 / Ocr 25 / Rendering.Html 56.
+  - Engines.Pdf 643 / Infrastructure 242 / Engines.Epub 47 / Fb2 55 / Mobi 32 / Image 23 / Ocr 25 / Rendering.Html 61.
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 2615 executed, 0 failed (на main после #141 + PR-3b; full Slow/Integration набор — ещё больше).**
+  - **Итого: 2661 executed, 0 failed (на main после #142 + PR-3c; full Slow/Integration набор — ещё больше).**
 - **LOC:** ~38 000 в src/, 15 тестовых проектов.
 - **Скрытых заглушек нет** — F-PdfA/F30 (write-side) stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
@@ -238,7 +238,18 @@ Phase-2 фичи (параллельно, изолированы):
 - **Link annotations listing** (#134) — read-only список ссылок (страница → URI/страница) + `LinksDialog`
   + меню **File → Links…**.
 
-### Волна 18 — 🚀 in-flight: malformed/hostile-PDF fuzz-корпус (PR-3b, #142)
+### Волна 19 — 🚀 in-flight: e-book/image fuzz-корпус + deep-DOM SOE-фикс (PR-3c, #143)
+
+Расширяет robustness-корпус на EPUB/FB2/MOBI/Image и **чинит реальный DoS**. Solo-агент построил
+hostile-input-фикстуры × открыватели (41 тест) — все открыватели уже деградируют «ручными»
+исключениями. **Но агент нашёл (и по правилу «STOP на архитектурном» не трогал) реальный
+StackOverflow:** взаимно-рекурсивный DOM-обход общего `LayoutEngine` падал на патологически глубоком HTML
+(достижимо через `EpubDocument.Open` → eager-пагинация) — неперехватываемый SOE, краш процесса. Я
+(владелец общего рендера) добавил `LayoutEngine.MaxNestingDepth = 256` (аналог `PdfCosLimits`) + 5
+regression-тестов (8 000-глубина block/inline → без краша). Реальный прогон 2615→2661 (+46: +41 корпус,
++5 deep-nesting). Crash-reporter opt-in toggle оказался уже полностью реализован — не трогал.
+
+### Волна 18 — ✅ merged: malformed/hostile-PDF fuzz-корпус (PR-3b, #142)
 
 Robustness/security: общий корпус из 15 вредоносных/битых PDF-фикстур (пустой/мусор/обрезки/нет
 trailer/битые xref/висячие refs/врущая `/Length`/циклы/глубина 200/чужой magic/ноль страниц) ×
@@ -349,7 +360,7 @@ DI/меню/L10n/тесты) пред-собрана против контрак
 
 - **Вектор 1 — PDF parity breadth** — ✅ **ЗАВЕРШЁН** (#136 + #137): PR-1a custom `/Info`-props + OCG rename/delete (#136); PR-1b/1c rich outline round-trip + viewer + rich export **и** `/OutputIntents` listing (#137). Page-geometry оказался уже закрыт ранее (crop/rotate). Следующий — Вектор 2.
 - **Вектор 2 — EPUB/FB2/MOBI визуальный рендер** — ✅ **ЗАВЕРШЁН** (#138–#140): pure-managed AngleSharp→layout→**SixLabors.ImageSharp.Drawing**→BGRA32 (Linux-verifiable; SkiaSharp отвергнут из-за нативки). PR-2a (#138) фундамент `Foliant.Rendering.Html`; PR-2b (#139) EPUB; PR-2c (#140) FB2 + MOBI — все три через общий `HtmlPaginator`, «белый холст» снят со всех форматов. Закрывает Trek-2 решение #3 (= GO). **Доработки HTML-рендера** (бэклог, не блокеры): зум-reflow (refresh `PageCount`), попиксельный текст-слой (точная подсветка поиска), картинки FB2/MOBI, EPUB linked-CSS. Следующий — Вектор 3.
-- **Вектор 3 — quality & release-prep** (в работе): ✅ **PR-3a (#141)** preflight/структурный валидатор (`IPdfPreflightService` композирует fonts/sanitization/output-intents/links + PdfPig-структуру → `PdfPreflightReport` + диалог); ✅ **PR-3b (#142)** malformed/hostile-PDF fuzz-корпус (195 кейсов, best-effort-деградация доказана, движок не правился). Дальше: SettingsMigrator v-next, crash-reporter opt-in UI, perf-инструменты. Surface'ить Windows-gated релиз-блокеры (D1 OCR golden scans, E1 Windows smoke + ISCC, EV-сертификат) — истинный gate `v0.1.0`.
+- **Вектор 3 — quality & release-prep** (в работе): ✅ **PR-3a (#141)** preflight/структурный валидатор; ✅ **PR-3b (#142)** malformed/hostile-PDF fuzz-корпус (195 кейсов); ✅ **PR-3c (#143)** fuzz-корпус EPUB/FB2/MOBI/Image (41) + фикс deep-DOM SOE в `LayoutEngine`. Robustness всех читателей/открывателей доказана; crash-reporter opt-in toggle уже был реализован; SettingsMigrator V1→V2 + unknown→defaults уже есть. Осталось: perf-инструменты (опц.) и **surface'ить истинный gate `v0.1.0`** — Windows-gated блокеры (D1 OCR golden scans, E1 Windows smoke + ISCC-инсталлятор, EV-сертификат), не закрываемые из Linux-песочницы. Затем — Вектор 4 (Phase-3 движки).
 - **Вектор 4 — Phase-3 движки**: реальная PDF/A-валидация (`plugins/Foliant.Plugin.VeraPdf`, veraPDF CLI) и AES-256 write-side (QPDF / raw cos + BouncyCastle).
 
 > **Реальный gate `v0.1.0`** остаётся вне песочницы: D1 (бинарные OCR-сканы) + E1 (Windows smoke + ISCC) + EV-сертификат. Pure-managed поток наращивает ценность, но сам тег не разблокирует.
@@ -406,3 +417,4 @@ DI/меню/L10n/тесты) пред-собрана против контрак
 | 2026-06-07 (#139 merged) | PR-2c (#140) «FB2 + MOBI рендерятся» — **Вектор 2 завершён**. Сначала выделил общий `HtmlPaginator` (+ `HtmlChapter`) в `Foliant.Rendering.Html` и перевёл на него EPUB (35/35 без регресса) — устранил триплицирование. Затем два параллельных engine-агента: FB2 (`Fb2HtmlConverter` XML→HTML) и MOBI (склейка записей + split по `<mbp:pagebreak>`). Инфра-нюанс: worktree-базы агентов отставали от непушнутого `b956c08` — MOBI-агент сам fast-forward'нулся на пагинатор, FB2-агент собрал на inline-копии, я вручную перевёл FB2 на `HtmlPaginator` после retrieval (урок: пушить shared-коммит до диспатча). Реальный прогон 2370→2394 (+24, 0 failed: +21 FB2, +3 MOBI). Все форматы рендерятся; disclaimer снят. |
 | 2026-06-07 (#140 merged) | Старт Вектора 3. PR-3a (#141) «preflight/структурный валидатор» — композиция уже построенных инспекторов (fonts/sanitization/output-intents/links) + PdfPig-структура → `PdfPreflightReport` + `PreflightDialog` (находки с severity). Урок прошлой волны применён: render-NIT'ы (#140 не попали в merge) + shared-работа запушены ДО диспатча. Engine-агент (20 тестов) в worktree, retrieved по SHA; интеграция (VM/диалог/DI/меню/L10n/6 тестов) пред-собрана, совпала с API без правок. Реальный прогон 2394→2420 (+26, 0 failed: +20 engine, +6 VM). |
 | 2026-06-07 (#141 merged) | Перед стартом PR-3b устранён CodeQL-фейл из CI #141 (format-string false-positive: индексер `?? key` → литерал-ключ как format string; добавлен `LocalizationManager.Format(key, args)`, оба диалога переведены). PR-3b (#142) «malformed-PDF fuzz-корпус» — test-only robustness: 15 hostile-фикстур × 12 read-сервисов = 195 кейсов, доказана best-effort-деградация (нет throw/hang/краша). Движок не правился (depth-guard + try/catch уже покрывают). Полностью делегирован solo-агенту. Реальный прогон 2420→2615 (+195, 0 failed). |
+| 2026-06-07 (#142 merged) | PR-3c (#143) «e-book/image fuzz-корпус + deep-DOM SOE-фикс». Solo-агент построил 41 hostile-input-тест для EPUB/FB2/MOBI/Image (все открыватели деградируют ручными исключениями) и — по правилу «STOP на архитектурном» — нашёл, но не трогал реальный StackOverflow в общем `LayoutEngine` (рекурсивный DOM-обход без предела, краш на глубоком HTML через `EpubDocument.Open`). Я добавил `LayoutEngine.MaxNestingDepth=256` + 5 regression-тестов. Проверил: crash-reporter opt-in toggle уже полностью реализован (не дублировал). Реальный прогон 2615→2661 (+46, 0 failed). |
