@@ -77,7 +77,7 @@ internal static class MalformedEpubCorpus
 
     private static byte[] EmptyZip() => BuildZip(_ => { });
 
-    // mimetype + chapters present, but no META-INF/container.xml.
+    // META-INF/container.xml + chapters present, but no `mimetype` entry.
     private static byte[] NoMimetype() => BuildZip(z =>
     {
         AddContainer(z);

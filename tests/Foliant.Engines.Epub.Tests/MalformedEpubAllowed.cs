@@ -1,4 +1,3 @@
-using Foliant.Domain;
 using VersOne.Epub;
 using Xunit.Sdk;
 
