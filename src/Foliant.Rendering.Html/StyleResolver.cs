@@ -13,18 +13,13 @@ namespace Foliant.Rendering.Html;
 /// </summary>
 internal static class StyleResolver
 {
-    /// <summary>A shared empty declaration set for the common CSS-less element (avoids allocating a
-    /// list per element when there is no author stylesheet). Never mutated: an empty list's
-    /// <see cref="List{T}.Sort(Comparison{T})"/> is a no-op.</summary>
-    private static readonly List<CssDeclaration> NoAuthorDeclarations = [];
-
     /// <summary>
-    /// Resolves a child element's computed style through the cascade.
+    /// Resolves a child element's computed style through the full cascade (UA defaults + author CSS +
+    /// inline style).
     /// </summary>
     /// <param name="tag">The lower-cased tag name.</param>
-    /// <param name="authorDeclarations">Author declarations matched against this element (any order;
-    /// sorted here). Pass an empty list when there is no author stylesheet. <b>Mutated</b> (sorted
-    /// in place); the caller must pass a list it owns.</param>
+    /// <param name="authorDeclarations">Author declarations matched against this element (any order).
+    /// <b>Mutated</b> (sorted in place); the caller must pass a freshly-collected list it owns.</param>
     /// <param name="inlineStyle">The raw <c>style</c> attribute value (may be <see langword="null"/>).</param>
     /// <param name="inherited">The parent's inheritable style (already produced via <see cref="ComputedStyle.InheritTo"/>).</param>
     /// <param name="basePx">The chapter base font size in CSS pixels (root reference for <c>h*</c> scaling).</param>
@@ -56,13 +51,19 @@ internal static class StyleResolver
         return style;
     }
 
-    /// <summary>Convenience overload for callers with no author stylesheet (UA defaults + inline only).</summary>
+    /// <summary>Fast path for callers with no author stylesheet: UA defaults + inline only, with no
+    /// per-element list allocation (the common CSS-less chapter).</summary>
     /// <param name="tag">The lower-cased tag name.</param>
     /// <param name="inlineStyle">The raw <c>style</c> attribute value (may be <see langword="null"/>).</param>
     /// <param name="inherited">The parent's inheritable style.</param>
     /// <param name="basePx">The chapter base font size in CSS pixels.</param>
     public static ComputedStyle Resolve(string tag, string? inlineStyle, ComputedStyle inherited, double basePx)
-        => Resolve(tag, NoAuthorDeclarations, inlineStyle, inherited, basePx);
+    {
+        ComputedStyle style = ApplyTagDefaults(tag, inherited, basePx);
+        style = ApplyInlineStyle(style, inlineStyle, important: false);
+        style = ApplyInlineStyle(style, inlineStyle, important: true);
+        return style;
+    }
 
     private static ComputedStyle ApplyTagDefaults(string tag, ComputedStyle inherited, double basePx)
     {

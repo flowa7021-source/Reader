@@ -301,4 +301,63 @@ public sealed class HtmlCssTests
 
         RenderTestHelpers.CountRedDominant(result).Should().BeGreaterThan(0);
     }
+
+    // ───── extra cascade / value coverage (pins behavior verified by review) ─────
+
+    [Fact]
+    public void Important_TieBrokenBySpecificity_AmongTwoImportantRules()
+    {
+        using HtmlLayout layout = LayoutOf(
+            "<style>p{color:blue !important} #i{color:red !important}</style><p id=\"i\">two important rules</p>");
+
+        // Both are !important, so specificity decides: id (1,0,0) beats tag (0,0,1).
+        RenderTestHelpers.IsRedDominant(FirstText(layout).Color).Should().BeTrue();
+    }
+
+    [Fact]
+    public void MarginShorthand_Inline_TwoValue_SetsTopAndBottom()
+    {
+        using HtmlLayout tight = LayoutOf("<div style=\"margin:0\">a</div><div style=\"margin:0\">b</div>");
+        using HtmlLayout spaced = LayoutOf("<div style=\"margin:60px 0\">a</div><div style=\"margin:60px 0\">b</div>");
+
+        spaced.TotalContentHeightPx.Should().BeGreaterThan(tight.TotalContentHeightPx);
+    }
+
+    [Fact]
+    public void MarginShorthand_Inline_FourValue_AppliesFirstValueAsTop()
+    {
+        using HtmlLayout noTop = LayoutOf("<div style=\"margin:0 0 0 0\">first</div>");
+        using HtmlLayout bigTop = LayoutOf("<div style=\"margin:90px 0 0 0\">first</div>");
+
+        // The 4-value shorthand's first token is the top margin → pushes the first line down.
+        FirstText(bigTop).Y.Should().BeGreaterThan(FirstText(noTop).Y + 50);
+    }
+
+    [Fact]
+    public void RgbaColor_WithAlpha_FromAuthorCss_AppliesRed()
+    {
+        using HtmlLayout layout = LayoutOf("<style>p{color:rgba(220, 0, 0, 0.6)}</style><p>rgba alpha words</p>");
+
+        RenderTestHelpers.IsRedDominant(FirstText(layout).Color).Should().BeTrue();
+    }
+
+    [Fact]
+    public void HslaColor_WithAlpha_FromAuthorCss_AppliesRed()
+    {
+        using HtmlLayout layout = LayoutOf("<style>p{color:hsla(0, 100%, 45%, 0.8)}</style><p>hsla alpha words</p>");
+
+        RenderTestHelpers.IsRedDominant(FirstText(layout).Color).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("200%")]
+    [InlineData("3rem")]
+    [InlineData("2em")]
+    public void FontSize_RelativeUnits_FromAuthorCss_EnlargeFont(string size)
+    {
+        using HtmlLayout baseline = LayoutOf("<p>relative units</p>");
+        using HtmlLayout scaled = LayoutOf($"<style>p{{font-size:{size}}}</style><p>relative units</p>");
+
+        FirstText(scaled).Font.Size.Should().BeGreaterThan(FirstText(baseline).Font.Size);
+    }
 }
