@@ -20,6 +20,16 @@ internal sealed class LayoutEngine
     private const float LineHeightFactor = 1.3f;
     private const float MeasureDpi = 72f; // Font size is in px; 72 DPI keeps px == px.
 
+    /// <summary>Maximum DOM nesting depth the layout walk descends. Mirrors the PDF engine's
+    /// <c>PdfCosLimits.MaxTreeDepth</c>: a hostile/pathological document with thousands of nested
+    /// elements would otherwise overflow the stack through the mutually-recursive
+    /// <see cref="LayoutChildren"/> / <see cref="LayoutBlock"/> / <see cref="GatherInline"/> walk — an
+    /// <b>uncatchable</b> <see cref="StackOverflowException"/> that crashes the process (DoS via a
+    /// malicious EPUB/FB2/MOBI, reachable through eager pagination at document open). Content nested
+    /// beyond this cap is dropped; 256 is far past any legitimate document yet well below the overflow
+    /// threshold.</summary>
+    private const int MaxNestingDepth = 256;
+
     private readonly FontStore _fonts;
     private readonly ILogger _log;
 
@@ -63,7 +73,7 @@ internal sealed class LayoutEngine
 
         if (body is not null)
         {
-            LayoutChildren(body, root, contentLeft, vp.BaseFontSizePx <= 0 ? 16.0 : vp.BaseFontSizePx, ctx);
+            LayoutChildren(body, root, contentLeft, vp.BaseFontSizePx <= 0 ? 16.0 : vp.BaseFontSizePx, ctx, depth: 0);
         }
 
         int totalHeight = (int)Math.Ceiling(ctx.CursorY) + bottomMargin;
@@ -97,8 +107,14 @@ internal sealed class LayoutEngine
     /// Lays out the children of <paramref name="parent"/>. Consecutive inline children accumulate into
     /// an inline run that is wrapped when the next block child (or the end) is reached.
     /// </summary>
-    private void LayoutChildren(IElement parent, ComputedStyle parentStyle, float inset, double basePx, BlockContext ctx)
+    private void LayoutChildren(IElement parent, ComputedStyle parentStyle, float inset, double basePx, BlockContext ctx, int depth)
     {
+        // Depth-guard against pathologically deep DOM (uncatchable StackOverflowException); see MaxNestingDepth.
+        if (depth > MaxNestingDepth)
+        {
+            return;
+        }
+
         var inline = new List<InlineItem>();
 
         foreach (INode child in parent.ChildNodes)
@@ -124,12 +140,12 @@ internal sealed class LayoutEngine
                     else if (style.IsBlock)
                     {
                         FlushInline(inline, parentStyle, inset, ctx);
-                        LayoutBlock(element, style, inset, basePx, ctx);
+                        LayoutBlock(element, style, inset, basePx, ctx, depth + 1);
                     }
                     else
                     {
                         // Inline element: descend, accumulating into the same inline run.
-                        GatherInline(element, style, basePx, inline, ctx, inset);
+                        GatherInline(element, style, basePx, inline, ctx, inset, depth + 1);
                     }
 
                     break;
@@ -144,8 +160,14 @@ internal sealed class LayoutEngine
     }
 
     /// <summary>Recursively gathers an inline subtree into the current inline run.</summary>
-    private void GatherInline(IElement element, ComputedStyle style, double basePx, List<InlineItem> inline, BlockContext ctx, float inset)
+    private void GatherInline(IElement element, ComputedStyle style, double basePx, List<InlineItem> inline, BlockContext ctx, float inset, int depth)
     {
+        // Depth-guard against pathologically deep inline nesting (uncatchable StackOverflowException).
+        if (depth > MaxNestingDepth)
+        {
+            return;
+        }
+
         foreach (INode child in element.ChildNodes)
         {
             switch (child)
@@ -171,11 +193,11 @@ internal sealed class LayoutEngine
                     {
                         // Block inside inline (unusual): flush and lay out as a block.
                         FlushInline(inline, style, inset, ctx);
-                        LayoutBlock(el, childStyle, inset, basePx, ctx);
+                        LayoutBlock(el, childStyle, inset, basePx, ctx, depth + 1);
                     }
                     else
                     {
-                        GatherInline(el, childStyle, basePx, inline, ctx, inset);
+                        GatherInline(el, childStyle, basePx, inline, ctx, inset, depth + 1);
                     }
 
                     break;
@@ -201,8 +223,14 @@ internal sealed class LayoutEngine
     }
 
     /// <summary>Lays out one block element: top-margin collapse, marker, indent, children, bottom margin.</summary>
-    private void LayoutBlock(IElement element, ComputedStyle style, float parentInset, double basePx, BlockContext ctx)
+    private void LayoutBlock(IElement element, ComputedStyle style, float parentInset, double basePx, BlockContext ctx, int depth)
     {
+        // Depth-guard against pathologically deep block nesting (uncatchable StackOverflowException).
+        if (depth > MaxNestingDepth)
+        {
+            return;
+        }
+
         double scaledTop = style.MarginTopPx * ctx.Scale;
         // Adjacent-margin collapse: the gap is max(prevBottom, thisTop), not the sum.
         ctx.CursorY += Math.Max(0, Math.Max(scaledTop, ctx.PrevMarginBottom) - ctx.PrevMarginBottom);
@@ -216,7 +244,7 @@ internal sealed class LayoutEngine
             EmitListMarker(element, style, inset, basePx, ctx);
         }
 
-        LayoutChildren(element, style, inset, basePx, ctx);
+        LayoutChildren(element, style, inset, basePx, ctx, depth + 1);
 
         double scaledBottom = style.MarginBottomPx * ctx.Scale;
         ctx.CursorY += scaledBottom;
