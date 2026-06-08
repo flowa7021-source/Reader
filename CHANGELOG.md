@@ -21,6 +21,15 @@
   наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
 
 ### Added
+- **Preflight / структурный валидатор PDF** (Вектор 3, PR-3a) — единая проверка «годен ли PDF к
+  печати/архиву/пересылке», **композиция уже существующих инспекторов**. **Domain**:
+  `PdfPreflightReport` (pure-data: страницы, версия PDF, шифрование, шрифты/невстроенные, JS/автодействия,
+  output intents/ICC, ссылки, извлекаемость текста). **Application**: порт `IPdfPreflightService.PreflightAsync`
+  (best-effort). **Engine**: `PdfPigPreflightService` композирует `IPdfFontService` (невстроенные шрифты),
+  `IPdfSanitizationService` (JS/действия), `IPdfOutputIntentService` (PDF/X-готовность), `IPdfLinkService`
+  (ссылки) + структурный проход PdfPig (`NumberOfPages`/`Version`/`IsEncrypted`/извлекаемый текст). **UI**:
+  `PreflightDialog` (находки с severity ✓/⚠/•: невстроенные шрифты, JS, image-only→OCR, шифрование и т. д.)
+  + меню **File → Preflight…**. L10n EN/RU. **20 engine + 6 VM-тестов.**
 - **FB2 и MOBI рендерятся визуально** (Вектор 2, PR-2c) — раньше рисовались белым холстом, теперь через
   общий `Foliant.Rendering.Html`. Выделен переиспользуемый **`HtmlPaginator`** (фиксированный
   reference-вьюпорт, scale-invariant eager-пагинация, `Map`/`Render`) — EPUB/FB2/MOBI теперь делят одну

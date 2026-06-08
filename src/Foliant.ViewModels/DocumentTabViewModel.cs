@@ -52,6 +52,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
     private readonly IPdfOcgEditService? _ocgEditService;
     private readonly IPdfOutlineInspector? _outlineInspector;
     private readonly IPdfOutputIntentService? _outputIntentService;
+    private readonly IPdfPreflightService? _preflightService;
     private readonly ILogger<DocumentTabViewModel> _logger;
 
     [ObservableProperty]
@@ -159,7 +160,8 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         IPdfCustomPropertiesService? customPropertiesService = null,
         IPdfOcgEditService? ocgEditService = null,
         IPdfOutlineInspector? outlineInspector = null,
-        IPdfOutputIntentService? outputIntentService = null)
+        IPdfOutputIntentService? outputIntentService = null,
+        IPdfPreflightService? preflightService = null)
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(filePath);
@@ -212,6 +214,7 @@ public sealed partial class DocumentTabViewModel : ObservableObject, IAsyncDispo
         _ocgEditService = ocgEditService;
         _outlineInspector = outlineInspector;
         _outputIntentService = outputIntentService;
+        _preflightService = preflightService;
         _logger = logger;
         // Снимок настройки RTL (Q-F3): runtime-смена через Settings dialog требует пере-открытия
         // документа. Hot-switch — через ToggleRightToLeftCommand из View меню.

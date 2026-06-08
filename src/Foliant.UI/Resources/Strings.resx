@@ -1300,4 +1300,64 @@
   <data name="OutputIntentsIccMissing" xml:space="preserve">
     <value>no ICC profile</value>
   </data>
+  <data name="MenuFilePreflight" xml:space="preserve">
+    <value>Pre_flight…</value>
+  </data>
+  <data name="PreflightDialogTitle" xml:space="preserve">
+    <value>Preflight</value>
+  </data>
+  <data name="PreflightCloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="PreflightUnavailable" xml:space="preserve">
+    <value>Could not analyse this document.</value>
+  </data>
+  <data name="PreflightPages" xml:space="preserve">
+    <value>Pages: {0}</value>
+  </data>
+  <data name="PreflightVersion" xml:space="preserve">
+    <value>PDF version: {0}</value>
+  </data>
+  <data name="PreflightVersionUnknown" xml:space="preserve">
+    <value>PDF version: unknown</value>
+  </data>
+  <data name="PreflightEncrypted" xml:space="preserve">
+    <value>Document is encrypted</value>
+  </data>
+  <data name="PreflightNotEncrypted" xml:space="preserve">
+    <value>Not encrypted</value>
+  </data>
+  <data name="PreflightFontsNone" xml:space="preserve">
+    <value>No fonts</value>
+  </data>
+  <data name="PreflightFontsNotEmbedded" xml:space="preserve">
+    <value>{0} of {1} fonts not embedded — may not display or print consistently</value>
+  </data>
+  <data name="PreflightFontsAllEmbedded" xml:space="preserve">
+    <value>All {0} fonts embedded</value>
+  </data>
+  <data name="PreflightHasJs" xml:space="preserve">
+    <value>Contains JavaScript or automatic actions</value>
+  </data>
+  <data name="PreflightNoJs" xml:space="preserve">
+    <value>No JavaScript or automatic actions</value>
+  </data>
+  <data name="PreflightOutputIntentIcc" xml:space="preserve">
+    <value>ICC output intent present (PDF/X-ready)</value>
+  </data>
+  <data name="PreflightOutputIntentNoIcc" xml:space="preserve">
+    <value>{0} output intent(s), no embedded ICC profile</value>
+  </data>
+  <data name="PreflightNoOutputIntent" xml:space="preserve">
+    <value>No output intent</value>
+  </data>
+  <data name="PreflightLinks" xml:space="preserve">
+    <value>Links: {0}</value>
+  </data>
+  <data name="PreflightHasText" xml:space="preserve">
+    <value>Text is extractable</value>
+  </data>
+  <data name="PreflightNoText" xml:space="preserve">
+    <value>No extractable text — image-only (consider OCR)</value>
+  </data>
 </root>
