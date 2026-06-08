@@ -54,15 +54,17 @@ internal sealed class LayoutEngine
         float contentLeft = leftMargin;
         float contentRight = Math.Max(contentLeft + 1, contentWidth - rightMargin);
 
+        IDocument document = ParseSafely(html);
+        IElement? body = document.Body;
+
+        AuthorStylesheet css = CollectStylesheet(document, request.Resources);
+
         var commands = new List<DrawCommand>();
-        var ctx = new BlockContext(commands, request.Resources, scale, contentRight)
+        var ctx = new BlockContext(commands, request.Resources, css, scale, contentRight)
         {
             CursorY = topMargin,
             PrevMarginBottom = 0,
         };
-
-        IDocument document = ParseSafely(html);
-        IElement? body = document.Body;
 
         ComputedStyle root = new()
         {
@@ -103,6 +105,77 @@ internal sealed class LayoutEngine
         }
     }
 
+    /// <summary>Gathers the chapter's author CSS in document order: each <c>&lt;style&gt;</c> block's
+    /// text plus each <c>&lt;link rel="stylesheet"&gt;</c> resolved through the resource resolver, then
+    /// parses them into an <see cref="AuthorStylesheet"/>. Returns <see cref="AuthorStylesheet.Empty"/>
+    /// when the chapter carries no usable CSS (the common case, so the layout walk stays allocation-free).</summary>
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Robustness contract: collecting/resolving author CSS must never throw into layout; a failure simply yields no stylesheet for the chapter.")]
+    private AuthorStylesheet CollectStylesheet(IDocument document, IResourceResolver resources)
+    {
+        try
+        {
+            var sources = new List<string>();
+            foreach (IElement element in document.QuerySelectorAll("style, link"))
+            {
+                if (element.LocalName == "style")
+                {
+                    string text = element.TextContent;
+                    if (!string.IsNullOrWhiteSpace(text))
+                    {
+                        sources.Add(text);
+                    }
+                }
+                else
+                {
+                    // <link>: only stylesheet relations, resolved out-of-band via the resolver.
+                    string? rel = element.GetAttribute("rel");
+                    string? href = element.GetAttribute("href");
+                    if (rel is null || href is null || !rel.Contains("stylesheet", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    if (resources.TryResolveCss(href, out string cssText) && !string.IsNullOrWhiteSpace(cssText))
+                    {
+                        sources.Add(cssText);
+                    }
+                }
+            }
+
+            return AuthorStylesheet.Parse(sources, _log);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed to collect author CSS; rendering with user-agent defaults only.");
+            return AuthorStylesheet.Empty;
+        }
+    }
+
+    /// <summary>Resolves an element's computed style through the cascade, collecting any matching author
+    /// declarations first. The common CSS-less chapter takes a fast path with no per-element allocation.</summary>
+    private static ComputedStyle ResolveStyle(IElement element, ComputedStyle inherited, double basePx, BlockContext ctx)
+    {
+        if (ctx.Css.IsEmpty)
+        {
+            return StyleResolver.Resolve(element.LocalName, element.GetAttribute("style"), inherited, basePx);
+        }
+
+        var declarations = new List<CssDeclaration>();
+        ctx.Css.CollectMatching(element, declarations);
+        return StyleResolver.Resolve(element.LocalName, declarations, element.GetAttribute("style"), inherited, basePx);
+    }
+
+    /// <summary>Elements that carry metadata/scripting rather than rendered content — their subtree is
+    /// skipped entirely (notably <c>&lt;style&gt;</c>, whose CSS text must never paint as body text).</summary>
+    private static bool IsNonRendered(string localName) => localName switch
+    {
+        "style" or "script" or "link" or "meta" or "head" or "title" or "base" or "noscript" or "template" => true,
+        _ => false,
+    };
+
     /// <summary>
     /// Lays out the children of <paramref name="parent"/>. Consecutive inline children accumulate into
     /// an inline run that is wrapped when the next block child (or the end) is reached.
@@ -126,7 +199,17 @@ internal sealed class LayoutEngine
                     break;
 
                 case IElement element:
-                    ComputedStyle style = StyleResolver.Resolve(element.LocalName, element.GetAttribute("style"), parentStyle.InheritTo(), basePx);
+                    if (IsNonRendered(element.LocalName))
+                    {
+                        break;
+                    }
+
+                    ComputedStyle style = ResolveStyle(element, parentStyle.InheritTo(), basePx, ctx);
+
+                    if (style.Hidden)
+                    {
+                        break; // display:none — element and subtree are not rendered.
+                    }
 
                     if (element.LocalName == "br")
                     {
@@ -177,7 +260,17 @@ internal sealed class LayoutEngine
                     break;
 
                 case IElement el:
-                    ComputedStyle childStyle = StyleResolver.Resolve(el.LocalName, el.GetAttribute("style"), style.InheritTo(), basePx);
+                    if (IsNonRendered(el.LocalName))
+                    {
+                        break;
+                    }
+
+                    ComputedStyle childStyle = ResolveStyle(el, style.InheritTo(), basePx, ctx);
+
+                    if (childStyle.Hidden)
+                    {
+                        break; // display:none — element and subtree are not rendered.
+                    }
 
                     if (el.LocalName == "br")
                     {
@@ -459,10 +552,11 @@ internal sealed class LayoutEngine
     /// <summary>Mutable per-run block-formatting state passed by reference through the walk.</summary>
     private sealed class BlockContext
     {
-        public BlockContext(List<DrawCommand> commands, IResourceResolver resources, double scale, float contentRight)
+        public BlockContext(List<DrawCommand> commands, IResourceResolver resources, AuthorStylesheet css, double scale, float contentRight)
         {
             Commands = commands;
             Resources = resources;
+            Css = css;
             Scale = scale;
             ContentRight = contentRight;
         }
@@ -470,6 +564,8 @@ internal sealed class LayoutEngine
         public List<DrawCommand> Commands { get; }
 
         public IResourceResolver Resources { get; }
+
+        public AuthorStylesheet Css { get; }
 
         public double Scale { get; }
 
