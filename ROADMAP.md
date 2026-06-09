@@ -20,8 +20,9 @@
   - Domain 285 / Application 407 / ViewModels 802 (target gates D90/A80/I70/V60 держатся).
   - Engines.Pdf 643 / Infrastructure 242 / Engines.Epub 51 / Fb2 55 / Mobi 32 / Image 23 / Ocr 25 / Rendering.Html 97.
   - Plugin.DjVu 23 / Tools.PerfCompare 6 / Tools.CheckCoverage 10.
-  - **Итого: 2701 executed, 0 failed (на main после #143 + linked-CSS PR; full Slow/Integration набор — ещё больше).**
-- **LOC:** ~38 000 в src/, 15 тестовых проектов.
+  - **Итого (unit-фильтр): 2701 executed, 0 failed.**
+- **Полный прогон вне unit-фильтра** (реально прогнан на Linux, не только в Windows-CI): Slow PDFium (Engines.Pdf 643→745, рендер/мутации через нативный `libpdfium.so` из nuget) + Slow DjVu (реальный DjVuLibre) + Integration (реальный SQLite FTS + disk-cache) + **новый E2E-набор `Foliant.E2E.Tests` (22, `Category=E2E`)** = **2850 executed, 0 failed, 1 skipped** (OCR golden — нужны модели). **E2E гоняет целые пайплайны через реальную композицию** (движки + use-cases + инфраструктура, без WPF): open→render→text-layer→index/search→edit(cos-roundtrip)→export(txt/docx)→annotate→reopen для PDF/EPUB/FB2/MOBI/Image/DjVu.
+- **LOC:** ~38 000 в src/, 16 тестовых проектов.
 - **Скрытых заглушек нет** — F-PdfA/F30 (write-side) stubs бросают `NotSupportedException` с явным маркером + документированным Phase 3 trajectory.
 
 > **⚠️ Дрейф документов — рецидивирующий паттерн.** Планы систематически отстают
@@ -238,6 +239,26 @@ Phase-2 фичи (параллельно, изолированы):
 - **Link annotations listing** (#134) — read-only список ссылок (страница → URI/страница) + `LinksDialog`
   + меню **File → Links…**.
 
+### Волна 21 — 🚀 in-flight: headless E2E-набор + полный прогон Slow/Integration на Linux
+
+По запросу владельца — «прогнать максимум тестов, особенно E2E, + предварительная сборка; чинить
+найденное комплексно». **Прогон:** полная сборка `Foliant.sln` (вкл. `net10.0-windows` App/UI через
+`EnableWindowsTargeting`) — **0/0**; весь набор **вне** unit-фильтра, реально на Linux: Slow PDFium
+(нативный `libpdfium.so` из nuget — 102 теста, ранее не гонялись здесь), Slow DjVu (поставил
+`djvulibre-bin`), Integration (реальный SQLite), publish App под win-x64 — **всё зелёное** (2841 на тот
+момент, 1 skip = OCR-модели). **Багов в исполняемой поверхности не найдено** (дисциплина per-PR-гейтов
+держит дерево чистым); единственная находка — `IDocument.GetTextLayerAsync` для изображений возвращает
+`null` (легитимно по контракту `Task<TextLayer?>`; проверено — все 6 потребителей null-безопасны).
+
+**Главный пробел — E2E-тестов не было вовсе** (`Category=E2E` фигурировал только в CI-фильтрах). Закрыт:
+новый проект **`Foliant.E2E.Tests`** с `FoliantPipelineHost` (реальная DI-композиция пайплайна без WPF,
+temp-dir) + `E2EFixtures` (PDF-ассет; EPUB/FB2/MOBI/PNG строятся инлайн) — **22 теста**, гоняющие целые
+пайплайны через настоящие движки: cross-format open→render→text-layer; in-document search + FTS5
+index/remove; PDF metadata cos-edit→reopen (round-trip через PDFium); annotations add/list/remove +
+annotated-PDF export→reopen; export txt/docx; disk-cache put/get/evict/invalidate (реальный SQLite);
+DjVu через plugin-loader. Добавлен шаг E2E в `verify.yml` (Linux job, после установки DjVuLibre).
+Полный прогон **2850 executed, 0 failed, 1 skipped**.
+
 ### Волна 20 — 🚀 in-flight: EPUB/HTML linked-CSS author-каскад (PR-2d, #144)
 
 Закрывает крупнейший пункт бэклога HTML-рендера (Вектор 2): книги, чья типографика жила во **внешнем
@@ -446,3 +467,4 @@ DI/меню/L10n/тесты) пред-собрана против контрак
 | 2026-06-07 (#141 merged) | Перед стартом PR-3b устранён CodeQL-фейл из CI #141 (format-string false-positive: индексер `?? key` → литерал-ключ как format string; добавлен `LocalizationManager.Format(key, args)`, оба диалога переведены). PR-3b (#142) «malformed-PDF fuzz-корпус» — test-only robustness: 15 hostile-фикстур × 12 read-сервисов = 195 кейсов, доказана best-effort-деградация (нет throw/hang/краша). Движок не правился (depth-guard + try/catch уже покрывают). Полностью делегирован solo-агенту. Реальный прогон 2420→2615 (+195, 0 failed). |
 | 2026-06-07 (#142 merged) | PR-3c (#143) «e-book/image fuzz-корпус + deep-DOM SOE-фикс». Solo-агент построил 41 hostile-input-тест для EPUB/FB2/MOBI/Image (все открыватели деградируют ручными исключениями) и — по правилу «STOP на архитектурном» — нашёл, но не трогал реальный StackOverflow в общем `LayoutEngine` (рекурсивный DOM-обход без предела, краш на глубоком HTML через `EpubDocument.Open`). Я добавил `LayoutEngine.MaxNestingDepth=256` + 5 regression-тестов. Проверил: crash-reporter opt-in toggle уже полностью реализован (не дублировал). Реальный прогон 2615→2661 (+46, 0 failed). |
 | 2026-06-08 (#143 merged) | Возврат к Вектору 2 (выбор владельца «вариант 2 потом 4»). PR-2d (#144) «EPUB/HTML linked-CSS author-каскад» — крупнейший пункт бэклога HTML-рендера. Общий рендер теперь собирает author-CSS главы (`<style>` из DOM + `<link>` через новый `IResourceResolver.TryResolveCss`) и применяет настоящий каскад: `AuthorStylesheet` (`AngleSharp.Css` parse + `ICssStyleRule.TryMatch`/специфичность) → `StyleResolver` (UA < author-normal < inline < author-`!important` < inline-`!important`); +свойства `display`/`margin`, +функциональные `rgb()`/`hsl()` в `CssColors`. Граница минимальна: default-метод интерфейса (FB2/MOBI/стабы не тронуты), переопределяет только `EpubResourceResolver` (CSS из `EpubBook.Content.Css`). Сделано напрямую (single-assembly cascade-ядро на beta-API — инкрементальная компиляция надёжнее агентного сплита). Auto-review-агент: корректность каскада/цвета/margin подтверждена эмпирически (декомпиляция `Priority` + reflection), багов нет; свёрнуты NIT (убран shared-mutable static + 8 тестов на verified-by-hand поведение). Реальный прогон 2661→2701 (+40, 0 failed: +36 cascade, +4 EPUB e2e). |
+| 2026-06-08 (та же сессия) | Запрос: «прогнать максимум тестов, особенно E2E, + предварительная сборка; чинить найденное комплексно». Прогнал ВСЁ исполнимое на Linux: full `Foliant.sln` build (вкл. Windows-TFM через `EnableWindowsTargeting`) 0/0; Slow PDFium (нативка из nuget) + Slow DjVu (поставил `djvulibre-bin`) + Integration (реальный SQLite) + publish win-x64 — всё зелёное (2841, 1 skip = OCR-модели). **Багов в исполнимой поверхности нет.** Главный пробел — E2E-тестов не существовало → построил `Foliant.E2E.Tests` (host реальной DI-композиции пайплайна без WPF + 22 теста: open→render→text→search/index→edit-roundtrip→export→annotate→reopen + disk-cache + DjVu-plugin); добавил E2E-шаг в `verify.yml`. Находка: image text-layer == null (легитимно, все потребители null-safe). Полный прогон 2850, 0 failed, 1 skip. |

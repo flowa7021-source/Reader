@@ -48,6 +48,18 @@
   наши обходчики; проверено «саботажем» (снятие предела → StackOverflow в прогоне).
 
 ### Added
+- **Headless end-to-end тест-набор `Foliant.E2E.Tests`** — раньше E2E-тестов не существовало вовсе
+  (`Category=E2E` фигурировал только в CI-фильтрах). Новый проект собирает **реальную композицию
+  документного пайплайна** (`FoliantPipelineHost`: движки + application use-cases + инфраструктура —
+  те же регистрации, что в `AppHostBuilder`, но без WPF) и гоняет целые сценарии через настоящие
+  движки (PDFium/PdfPig, AngleSharp+SixLabors, ImageSharp, реальный SQLite FTS + disk-cache, DjVu-плагин):
+  cross-format **open→render→text-layer** (PDF/EPUB/FB2/MOBI/Image), **in-document search + FTS5**
+  index/remove, **PDF metadata cos-edit → reopen** (round-trip через PDFium), **annotations**
+  add/list/remove + **annotated-PDF export → reopen**, **export** txt/docx, **disk-cache**
+  put/get/evict/invalidate. **22 теста** (`Category=E2E`), запускаются на Linux-CI отдельным шагом
+  (после установки DjVuLibre). Фикстуры EPUB/FB2/MOBI/PNG строятся инлайн; PDF/DjVu — из коммиченных
+  ассетов. Сопутствующая проверка: полный прогон Slow (PDFium/DjVu) + Integration (SQLite) на Linux —
+  всё зелёное; багов в исполнимой поверхности не выявлено.
 - **EPUB/HTML linked-CSS — author-каскад** (Вектор 2, PR-2d) — книги, чья типографика жила во внешнем
   CSS, раньше рендерились только по UA-defaults; теперь общий движок `Foliant.Rendering.Html` применяет
   **настоящий CSS-каскад**. Собирает author-CSS главы: текст `<style>`-блоков (из распарсенного DOM) +

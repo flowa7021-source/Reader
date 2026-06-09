@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Foliant.E2E.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <!-- The whole cross-platform document pipeline: engines + application use-cases + infrastructure
+       + the shared HTML renderer + the DjVu plugin. These are exactly the layers the production
+       composition (Foliant.App/AppHostBuilder) wires for document handling, minus WPF. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Foliant.Domain\Foliant.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Application\Foliant.Application.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Infrastructure\Foliant.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Pdf\Foliant.Engines.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Epub\Foliant.Engines.Epub.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Fb2\Foliant.Engines.Fb2.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Mobi\Foliant.Engines.Mobi.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Engines.Image\Foliant.Engines.Image.csproj" />
+    <ProjectReference Include="..\..\src\Foliant.Rendering.Html\Foliant.Rendering.Html.csproj" />
+    <ProjectReference Include="..\..\plugins\Foliant.Plugin.DjVu\Foliant.Plugin.DjVu.csproj" />
+  </ItemGroup>
+
+</Project>

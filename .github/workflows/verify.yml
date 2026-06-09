@@ -95,6 +95,19 @@ jobs:
           --no-build
           --filter "Category=Slow"
 
+      # End-to-end pipeline tests (Category=E2E): drive whole document pipelines through the REAL
+      # engines + application use-cases + infrastructure (PDFium/PdfPig render+edit, AngleSharp+SixLabors
+      # for EPUB/FB2/MOBI, ImageSharp, real SQLite FTS + disk cache, the DjVu plugin) — open → render →
+      # text-layer → index/search → edit → export → annotate → reopen. Excluded from the unit filter to
+      # keep the fast loop fast; run here after DjVuLibre is installed so the DjVu pipeline test executes.
+      - name: E2E pipeline tests
+        run: >-
+          dotnet test tests/Foliant.E2E.Tests/Foliant.E2E.Tests.csproj
+          -c Release
+          -f net10.0
+          --no-build
+          --filter "Category=E2E"
+
   verify:
     name: Build & test (Windows)
     runs-on: windows-latest
