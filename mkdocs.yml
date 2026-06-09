@@ -30,8 +30,10 @@ nav:
   - Разработчику:
       - Архитектура: ARCHITECTURE.md
       - Сборка: BUILD.md
+      - Релиз: RELEASE.md
       - Кэш: CACHE.md
       - Плагины: PLUGINS.md
+      - HTML-рендерер: HTML_RENDERER.md
       - Ретроспектива: DEV_RETROSPECTIVE.md
 
 markdown_extensions:

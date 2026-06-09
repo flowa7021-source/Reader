@@ -32,7 +32,7 @@ dotnet test   Foliant.sln -c Release --filter "Category!=Slow&Category!=E2E"
 + `dotnet husky install`) через MSBuild-таргет в `Directory.Build.targets`. После этого
 `git push` запускает hook `.husky/pre-push` (формат + build -warnaserror + быстрые тесты на
 `Foliant.CrossPlatform.slnf`). Чтобы отключить авто-установку (например, в CI): `HUSKY=0
-dotnet build …`. Подробнее — [CONTRIBUTING.md → «Установка pre-push hook»](../CONTRIBUTING.md#установка-pre-push-hook-huskynet).
+dotnet build …`. Подробнее — [CONTRIBUTING.md → «Установка pre-push hook»](https://github.com/flowa7021-source/Reader/blob/main/CONTRIBUTING.md#установка-pre-push-hook-huskynet).
 
 ## Тиры OCR-моделей
 
