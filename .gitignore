@@ -43,6 +43,7 @@ publish/
 *.azurePubxml
 dist/         # вход prepare-assets (prepare-*.ps1 пишут .tar для хостинга)
 tools-bin/    # временная сборка инструментов в CI (release-notes-from-changelog)
+site/         # сгенерированный MkDocs сайт (docs.yml собирает его в CI)
 
 ## NuGet
 *.nupkg
