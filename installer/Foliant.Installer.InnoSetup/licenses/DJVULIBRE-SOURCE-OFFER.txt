@@ -1,0 +1,48 @@
+DjVuLibre — Written Offer for Source Code (GNU GPL v2, Section 3(b))
+===================================================================
+
+The "Foliant DjVu Support" installer redistributes, in binary (object/executable)
+form, components of DjVuLibre — the "ddjvu" and "djvused" command-line tools and the
+DLLs they require. DjVuLibre is licensed under the GNU General Public License,
+version 2; the full license text is installed alongside this file as
+"LICENSE-DjVuLibre.txt" (it is DjVuLibre's own COPYING file for the exact version
+shipped).
+
+How the corresponding source code is provided
+---------------------------------------------
+In accordance with Section 3 of the GPL v2, the complete corresponding source code
+for the DjVuLibre version distributed by this installer is made available in BOTH of
+the following ways:
+
+  1. Online, at no charge — from the upstream project:
+        https://djvu.sourceforge.net/
+        https://sourceforge.net/projects/djvu/files/
+     and mirrored, together with the build recipe used to produce these binaries, in
+     the Foliant repository at the matching release tag:
+        https://github.com/flowa7021-source/Reader
+
+  2. Written offer (GPL v2 Section 3(b)), valid for at least three (3) years from the
+     date you received these binaries: upon request the Foliant maintainers will send
+     you a complete machine-readable copy of the corresponding source code, on a
+     medium customarily used for software interchange, for a charge no greater than
+     the cost of physically performing the source distribution. Send requests to:
+
+        Foliant contributors
+        https://github.com/flowa7021-source/Reader/issues
+        (open an issue titled "DjVuLibre source request")
+
+Identifying the exact version
+-----------------------------
+The precise upstream version packaged in this release is recorded in the release
+notes for the corresponding tag and in "tools/third-party/checksums.json" (the
+"djvulibre" entry, including the SHA-256 of the bundle) of the Foliant repository.
+Please quote that version when making a source request.
+
+Scope of this offer
+--------------------
+DjVuLibre is Copyright (C) its respective authors and contributors (including
+Leon Bottou, Yann Le Cun, AT&T, and LizardTech/Caminova). Foliant invokes these
+tools out-of-process (as separate programs) and does not statically or dynamically
+link against them. This written offer pertains solely to the redistributed DjVuLibre
+binaries. Foliant itself is independent work licensed under the MIT License; the GPL
+does not extend to Foliant by virtue of this optional, separately installed add-on.

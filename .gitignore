@@ -41,6 +41,8 @@ ARM64/
 publish/
 *.publishsettings
 *.azurePubxml
+dist/         # вход prepare-assets (prepare-*.ps1 пишут .tar для хостинга)
+tools-bin/    # временная сборка инструментов в CI (release-notes-from-changelog)
 
 ## NuGet
 *.nupkg

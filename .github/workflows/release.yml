@@ -35,17 +35,36 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Fetch native dependencies (all OCR tier'ы)
+      # Единый источник версии для всего пайплайна: при push тега берём github.ref_name,
+      # при workflow_dispatch — inputs.tag (если задан). VERSION = tag без ведущего 'v' —
+      # им штампуем сборку (-p:Version), Inno AppVersion и имена инсталляторов; TAG (с 'v')
+      # используем для имени релиза и файла release-notes.
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          $tag = '${{ inputs.tag }}'
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = '${{ github.ref_name }}' }
+          $version = $tag -replace '^v', ''
+          "TAG=$tag"         | Out-File -FilePath $env:GITHUB_ENV -Append
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "TAG=$tag  VERSION=$version"
+
+      # OCR-модели PaddleOCR (Apache-2.0 — едут в основной инсталлятор) + DjVuLibre CLI (GPL-2.0 — едет
+      # в ОТДЕЛЬНЫЙ DjVu-инсталлятор). No-op, пока tools/third-party/checksums.json не заполнен (ассеты
+      # публикует workflow prepare-assets.yml). Инсталляторы собираются и без них (skipifsourcedoesntexist
+      # в .iss; DjVu-инсталлятор — только при наличии бинарей), а installer smoke проверяет адаптивно.
+      - name: Fetch native dependencies (OCR models + DjVuLibre)
         shell: pwsh
         run: ./tools/fetch-natives.ps1 -Tier Full
 
       - name: Restore & build
         run: |
           dotnet restore Foliant.sln
-          dotnet build Foliant.sln -c Release --no-restore -warnaserror
+          dotnet build Foliant.sln -c Release --no-restore -warnaserror -p:Version=${{ env.VERSION }}
 
-      # Не подписываем непротестированный билд: гоняем unit+integration (без Slow/E2E —
-      # нативные движки/модели и WinAppDriver на релиз-раннере недоступны), как в verify.yml.
+      # Не подписываем непротестированный билд: гоняем unit+integration. Slow/E2E здесь не запускаем:
+      # часть Slow OCR-тестов зависит от моделей (доставляются только после prepare-assets.yml), а E2E
+      # требует WinAppDriver, которого нет на релиз-раннере. Готовый артефакт проверяет installer smoke.
       - name: Test (unit + integration)
         run: >-
           dotnet test Foliant.sln
@@ -60,6 +79,7 @@ jobs:
           -r win-x64
           --self-contained true
           -p:PublishSingleFile=false
+          -p:Version=${{ env.VERSION }}
           -o publish/
 
       - name: Sign primary binaries
@@ -70,6 +90,26 @@ jobs:
         shell: pwsh
         run: ./tools/sign-binaries.ps1 -Path publish/ -Patterns "Foliant.exe","Foliant.*.dll"
 
+      # Release notes: если .github/release-notes/<TAG>.md уже есть — используем его; иначе нарезаем
+      # секцию из CHANGELOG.md инструментом release-notes-from-changelog (build → exec dll, чтобы в
+      # stdout не попали build-логи). Если секции нет — fallback на TEMPLATE.md, чтобы релиз не падал.
+      - name: Prepare release notes
+        shell: pwsh
+        run: |
+          $notes = ".github/release-notes/$env:TAG.md"
+          if (Test-Path $notes) { Write-Host "Using existing $notes"; exit 0 }
+          New-Item -ItemType Directory -Force -Path (Split-Path $notes) | Out-Null
+          dotnet build tools/release-notes-from-changelog -c Release -o tools-bin/relnotes --nologo -v quiet
+          $dll = 'tools-bin/relnotes/Foliant.Tools.ReleaseNotesFromChangelog.dll'
+          $out = & dotnet $dll $env:VERSION CHANGELOG.md
+          if ($LASTEXITCODE -eq 0 -and $out) {
+            $out | Set-Content -Path $notes -Encoding utf8
+            Write-Host "Generated $notes from CHANGELOG.md"
+          } else {
+            Write-Warning "Changelog slice failed (exit $LASTEXITCODE) — falling back to TEMPLATE.md"
+            Copy-Item .github/release-notes/TEMPLATE.md $notes
+          }
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -79,7 +119,7 @@ jobs:
         shell: pwsh
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-            /DAppVersion=${{ github.ref_name }} `
+            /DAppVersion=${{ env.VERSION }} `
             /DTier=Basic `
             installer/Foliant.Installer.InnoSetup/Foliant.iss
 
@@ -87,7 +127,7 @@ jobs:
         shell: pwsh
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-            /DAppVersion=${{ github.ref_name }} `
+            /DAppVersion=${{ env.VERSION }} `
             /DTier=Standard `
             installer/Foliant.Installer.InnoSetup/Foliant.iss
 
@@ -95,9 +135,23 @@ jobs:
         shell: pwsh
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-            /DAppVersion=${{ github.ref_name }} `
+            /DAppVersion=${{ env.VERSION }} `
             /DTier=Full `
             installer/Foliant.Installer.InnoSetup/Foliant.iss
+
+      # Отдельный инсталлятор поддержки DjVu (GPL-2.0 DjVuLibre). Собираем ТОЛЬКО если бинари реально
+      # доставлены (native/djvulibre/ddjvu.exe есть) — иначе ассет бессмысленный. Основной инсталлятор
+      # остаётся MIT-чистым; GPL-поставка (бинари + COPYING + source-offer) едет исключительно здесь.
+      - name: Build installer (DjVu Support, optional)
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'native/djvulibre/ddjvu.exe')) {
+            Write-Host 'native/djvulibre/ddjvu.exe отсутствует — пропускаю сборку DjVu-инсталлятора.'
+            exit 0
+          }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DAppVersion=${{ env.VERSION }} `
+            installer/Foliant.Installer.InnoSetup/FoliantDjVu.iss
 
       - name: Sign installers
         if: env.SIGNING_CERT_BASE64 != ''
@@ -116,11 +170,72 @@ jobs:
               "$h  $($_.Name)"
             } | Set-Content installer/Foliant.Installer.InnoSetup/Output/SHA256SUMS
 
+      # Гейт на готовом артефакте. Основной инсталлятор (MIT) ставим тихо и проверяем его манифест
+      # (app + наш плагин + MIT/OFL-лицензии + pdfium; модели — адаптивно, Apache-2.0) и что GPL-текста
+      # в нём НЕТ. Затем, если собран отдельный DjVu-инсталлятор (GPL), ставим его поверх и проверяем
+      # GPL-поставку. В конце тихо удаляем оба. Падение здесь блокирует релиз.
+      - name: Smoke-test installers (silent install / verify / uninstall)
+        shell: pwsh
+        run: |
+          $exe = "installer/Foliant.Installer.InnoSetup/Output/Foliant-Setup-$env:VERSION-Full.exe"
+          if (-not (Test-Path $exe)) { throw "Installer not found: $exe" }
+          Write-Host "Installing $exe ..."
+          $p = Start-Process -FilePath $exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installer exited with code $($p.ExitCode)" }
+
+          $app = Join-Path ${env:ProgramFiles} 'Foliant'
+          # MIT-манифест основного инсталлятора. DjVuLibre здесь НЕ ждём — он едет отдельным инсталлятором.
+          # Модели (Apache-2.0) — адаптивно, только если их ассеты доставлены fetch-natives.
+          $must = @(
+            (Join-Path $app 'Foliant.exe'),
+            (Join-Path $app 'plugins/Foliant.Plugin.DjVu.dll'),
+            (Join-Path $app 'Licenses/LICENSE.txt'),
+            (Join-Path $app 'Licenses/NOTICE.md'),
+            (Join-Path $app 'Licenses/LICENSE-Liberation.txt'),
+            (Join-Path $app 'runtimes/win-x64/native/pdfium.dll')
+          )
+          if (Test-Path 'native/paddleocr/det') { $must += (Join-Path $app 'native/paddleocr/det') }
+          $missing = $must | Where-Object { -not (Test-Path $_) }
+          if ($missing) { throw "Main install missing expected files:`n$($missing -join "`n")" }
+          # Изоляция лицензии: GPL-текста DjVuLibre в основной (MIT) поставке быть не должно.
+          $leak = Join-Path $app 'Licenses/LICENSE-DjVuLibre.txt'
+          if (Test-Path $leak) { throw "GPL license leaked into the MIT installer: $leak" }
+          Write-Host "Main (MIT) manifest OK ($($must.Count) checks)."
+
+          # Отдельный DjVu-инсталлятор (если собран): ставим поверх, проверяем GPL-поставку, удаляем.
+          $djvu = "installer/Foliant.Installer.InnoSetup/Output/Foliant-DjVu-Support-$env:VERSION.exe"
+          if (Test-Path $djvu) {
+            Write-Host "Installing DjVu support $djvu ..."
+            $d = Start-Process -FilePath $djvu -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+            if ($d.ExitCode -ne 0) { throw "DjVu installer exited with code $($d.ExitCode)" }
+            $djvuMust = @(
+              (Join-Path $app 'native/djvulibre/ddjvu.exe'),
+              (Join-Path $app 'Licenses/LICENSE-DjVuLibre.txt'),
+              (Join-Path $app 'Licenses/DJVULIBRE-SOURCE-OFFER.txt')
+            )
+            $djvuMissing = $djvuMust | Where-Object { -not (Test-Path $_) }
+            if ($djvuMissing) { throw "DjVu support install missing:`n$($djvuMissing -join "`n")" }
+            Write-Host "DjVu support (GPL) manifest OK."
+            $djvuUnins = Join-Path $app 'unins001.exe'  # отдельный AppId → свой деинсталлятор
+            if (Test-Path $djvuUnins) {
+              $du = Start-Process -FilePath $djvuUnins -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+              if ($du.ExitCode -ne 0) { Write-Warning "DjVu uninstaller exited with code $($du.ExitCode)" }
+            }
+          } else {
+            Write-Host "DjVu installer not built (no native/djvulibre) — skipping DjVu smoke."
+          }
+
+          $unins = Join-Path $app 'unins000.exe'
+          if (Test-Path $unins) {
+            $u = Start-Process -FilePath $unins -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+            if ($u.ExitCode -ne 0) { Write-Warning "Uninstaller exited with code $($u.ExitCode)" }
+          }
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Foliant ${{ github.ref_name }}
-          body_path: .github/release-notes/${{ github.ref_name }}.md
+          name: Foliant ${{ env.TAG }}
+          body_path: .github/release-notes/${{ env.TAG }}.md
           fail_on_unmatched_files: true
           files: |
             installer/Foliant.Installer.InnoSetup/Output/*.exe
