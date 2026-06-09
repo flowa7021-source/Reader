@@ -1,0 +1,132 @@
+name: Prepare release assets (host models + DjVuLibre, pin checksums)
+
+# Однократная (и при обновлении версий) подготовка ассетов, которые нельзя/нежелательно тащить
+# через NuGet: оффлайн-модели PaddleOCR (Apache-2.0) и Windows-бинари DjVuLibre (GPL-2.0).
+# Что делает:
+#   1) собирает .tar моделей (и, опционально, DjVuLibre) prepare-*.ps1;
+#   2) публикует их как ассеты в ПОСТОЯННЫЙ релиз models-v1 (стабильные URL);
+#   3) генерирует tools/third-party/checksums.json (URL + SHA256) и коммитит его в текущую ветку.
+# После одного успешного прогона каждый тег v*.*.* будет бандлить модели (и DjVu-инсталлятор —
+# если DjVuLibre тоже опубликован). Запускать на той ветке, которую потом тегируете.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: 'Набор rec-моделей: Full (все скрипты) или Basic (latin+cyrillic)'
+        type: choice
+        options: [Full, Basic]
+        default: Full
+      djvulibre_source_url:
+        description: 'URL архива Windows-бинарей DjVuLibre (.zip/.tar/.7z). Пусто — DjVu не хостить.'
+        required: false
+        default: ''
+      model_spec_path:
+        description: 'Необязательный путь к своему JSON-набору моделей (-ModelSpec). Пусто — дефолты.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Готовим .tar моделей. pwsh и tar на ubuntu-раннерах есть из коробки.
+      - name: Build OCR model bundles
+        shell: pwsh
+        run: |
+          $spec = '${{ inputs.model_spec_path }}'
+          $argList = @('-OutDir', 'dist/models', '-Tier', '${{ inputs.tier }}')
+          if ($spec) { $argList += @('-ModelSpec', $spec) }
+          ./tools/prepare-ocr-models.ps1 @argList
+
+      # DjVuLibre — только если задан источник бинарей (GPL, отдельный инсталлятор).
+      - name: Build DjVuLibre bundle (optional)
+        if: ${{ inputs.djvulibre_source_url != '' }}
+        shell: pwsh
+        run: |
+          ./tools/prepare-djvulibre.ps1 -OutDir dist/models -SourceUrl '${{ inputs.djvulibre_source_url }}'
+
+      - name: List built assets
+        shell: pwsh
+        run: Get-ChildItem dist/models -File | Format-Table Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
+
+      # Публикуем в постоянный релиз models-v1 (prerelease, чтобы не считался «latest»).
+      # Ассеты с тем же именем перезаписываются — повторный прогон обновляет версии чисто.
+      - name: Publish assets to models-v1 release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: models-v1
+          name: Foliant bundled assets (models-v1)
+          body: |
+            Hosted native assets pinned by tools/third-party/checksums.json:
+            PaddleOCR inference models (Apache-2.0) and, optionally, DjVuLibre Windows
+            binaries (GPL-2.0, shipped only via the separate DjVu Support installer).
+            Managed by .github/workflows/prepare-assets.yml — do not edit assets by hand.
+          prerelease: true
+          make_latest: false
+          files: dist/models/*.tar
+
+      # Пишем checksums.json (URL ассета models-v1 + локально посчитанный SHA256) и lock-манифест.
+      - name: Generate checksums.json
+        shell: pwsh
+        run: |
+          $repo = $env:GITHUB_REPOSITORY
+          $base = "https://github.com/$repo/releases/download/models-v1"
+          $paddle = [ordered]@{}
+          $djvu = $null
+          $lock = New-Object System.Collections.Generic.List[string]
+          $lock.Add('# Hosted assets lock (managed by prepare-assets.yml)')
+          $lock.Add('')
+          $lock.Add("Updated: $(Get-Date -Format 'yyyy-MM-dd HH:mm') UTC · release: models-v1")
+          $lock.Add('')
+          $lock.Add('| key | file | sha256 |')
+          $lock.Add('|-----|------|--------|')
+          Get-ChildItem dist/models/*.tar | Sort-Object Name | ForEach-Object {
+            $name = $_.BaseName
+            $sha  = (Get-FileHash $_ -Algorithm SHA256).Hash.ToLower()
+            $url  = "$base/$($_.Name)"
+            if ($name -eq 'djvulibre') {
+              $script:djvu = [ordered]@{ url = $url; sha256 = $sha }
+            } else {
+              $paddle[$name] = [ordered]@{ url = $url; sha256 = $sha }
+            }
+            $lock.Add("| $name | $($_.Name) | $sha |")
+          }
+          $obj = [ordered]@{}
+          if ($paddle.Count -gt 0) { $obj['paddleocr'] = $paddle }
+          if ($djvu) { $obj['djvulibre'] = $djvu }
+          New-Item -ItemType Directory -Force -Path tools/third-party | Out-Null
+          ($obj | ConvertTo-Json -Depth 6) | Set-Content tools/third-party/checksums.json -Encoding utf8
+          ($lock -join "`n") | Set-Content tools/third-party/ASSETS.lock.md -Encoding utf8
+          Write-Host "checksums.json:"; Get-Content tools/third-party/checksums.json
+
+      - name: Commit checksums.json
+        shell: pwsh
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add tools/third-party/checksums.json tools/third-party/ASSETS.lock.md
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host 'checksums.json без изменений — коммит не нужен.'
+          } else {
+            git commit -m 'chore(assets): pin hosted OCR models + DjVuLibre (models-v1)'
+            git push origin HEAD:${{ github.ref_name }}
+          }
+
+      - name: Summary
+        shell: pwsh
+        run: |
+          "## Assets prepared" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          "Published to release **models-v1**; pinned in ``tools/third-party/checksums.json``." | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          if ('${{ inputs.djvulibre_source_url }}' -eq '') {
+            "> DjVuLibre **not** hosted (no source URL) — DjVu Support installer will be skipped at release time." | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          }
+          "If model versions changed, update the matching rows in **NOTICE.md** (see tools/third-party/README.md)." | Out-File $env:GITHUB_STEP_SUMMARY -Append

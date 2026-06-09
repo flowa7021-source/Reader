@@ -68,21 +68,29 @@ Source: "..\..\LICENSE";   DestDir: "{app}\Licenses"; DestName: "LICENSE.txt"; F
 Source: "..\..\EULA.md";    DestDir: "{app}\Licenses"; Flags: ignoreversion
 Source: "..\..\PRIVACY.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion
 Source: "..\..\NOTICE.md";  DestDir: "{app}\Licenses"; Flags: ignoreversion
+; Встроенные шрифты Liberation (OFL 1.1). DjVuLibre (GPL-2.0) намеренно НЕ здесь — он едет
+; отдельным инсталлятором (FoliantDjVu.iss), чтобы основная поставка оставалась MIT-чистой.
+Source: "..\..\src\Foliant.Rendering.Html\Fonts\LICENSE-Liberation.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion
 
 ; 3) Оффлайн-модели PaddleOCR. Движок ищет их в {app}\native\paddleocr\{det,cls,rec\<script>}
 ;    (см. PaddleOcrEngine: AppContext.BaseDirectory\native\paddleocr). Общие det+cls и
 ;    латиница+кириллица — во всех tier'ах; CJK/арабский — только Full.
 ;    skipifsourcedoesntexist: позволяет собрать инсталлятор, пока модели ещё не доставлены.
-Source: "..\..\native\paddleocr\det\*";          DestDir: "{app}\native\paddleocr\det";          Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "..\..\native\paddleocr\cls\*";          DestDir: "{app}\native\paddleocr\cls";          Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "..\..\native\paddleocr\rec\latin\*";    DestDir: "{app}\native\paddleocr\rec\latin";    Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "..\..\native\paddleocr\rec\cyrillic\*"; DestDir: "{app}\native\paddleocr\rec\cyrillic"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+;    Excludes *.tar: fetch-natives кэширует исходный архив рядом с распакованным — в инсталлятор он не нужен.
+Source: "..\..\native\paddleocr\det\*";          DestDir: "{app}\native\paddleocr\det";          Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\native\paddleocr\cls\*";          DestDir: "{app}\native\paddleocr\cls";          Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\native\paddleocr\rec\latin\*";    DestDir: "{app}\native\paddleocr\rec\latin";    Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\native\paddleocr\rec\cyrillic\*"; DestDir: "{app}\native\paddleocr\rec\cyrillic"; Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 #if Tier == "Full"
-Source: "..\..\native\paddleocr\rec\chinese\*";  DestDir: "{app}\native\paddleocr\rec\chinese";  Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "..\..\native\paddleocr\rec\japan\*";    DestDir: "{app}\native\paddleocr\rec\japan";    Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "..\..\native\paddleocr\rec\korean\*";   DestDir: "{app}\native\paddleocr\rec\korean";   Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "..\..\native\paddleocr\rec\arabic\*";   DestDir: "{app}\native\paddleocr\rec\arabic";   Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\native\paddleocr\rec\chinese\*";  DestDir: "{app}\native\paddleocr\rec\chinese";  Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\native\paddleocr\rec\japan\*";    DestDir: "{app}\native\paddleocr\rec\japan";    Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\native\paddleocr\rec\korean\*";   DestDir: "{app}\native\paddleocr\rec\korean";   Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\native\paddleocr\rec\arabic\*";   DestDir: "{app}\native\paddleocr\rec\arabic";   Excludes: "*.tar"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 #endif
+
+; ВНИМАНИЕ: GPL-2.0 бинари DjVuLibre сюда НЕ кладём. Только наш MIT-плагин Foliant.Plugin.DjVu.dll
+; (он приезжает в {app}\plugins через publish/*). Сами ddjvu/djvused ставит отдельный инсталлятор
+; FoliantDjVu.iss в {app}\native\djvulibre — так основная поставка остаётся MIT-чистой.
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"

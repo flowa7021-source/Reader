@@ -111,6 +111,40 @@ function Get-PaddleModel($name, $targetDir) {
     }
     # Архив обязан распаковываться ПЛОСКО (infer-файлы + label.txt для rec прямо в $targetDir),
     # без вложенного *_infer/. Контракт с движком — tools/third-party/README.md.
+    # model.tar НЕ удаляем: его наличие+SHA даёт идемпотентность (повторный прогон не качает заново).
+    # В инсталлятор он не попадает — .iss исключает *.tar (Excludes).
+    tar -xf $target -C $targetDir
+}
+
+# DjVuLibre CLI (ddjvu/djvused + нужные DLL + COPYING). GPL-2.0 — поэтому в ОСНОВНОЙ (MIT) инсталлятор
+# НЕ попадают: их пакует ОТДЕЛЬНЫЙ инсталлятор FoliantDjVu.iss в {app}\native\djvulibre, где DjvuToolset
+# ищет их в первую очередь. Здесь лишь готовим native/djvulibre/ как вход для той сборки. Запись —
+# top-level ключ djvulibre в checksums.json.
+function Get-DjVuLibre($targetDir) {
+    $entry = $checksums.djvulibre
+    if (-not $entry -or -not $entry.url) {
+        Write-Warning "Нет записи djvulibre в checksums.json — пропускаю (DjVu заработает только после доставки бинарей)."
+        return
+    }
+    New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+    $target = Join-Path $targetDir 'djvulibre.tar'
+    if (Test-Path $target) {
+        $actual = (Get-FileHash $target -Algorithm SHA256).Hash.ToLower()
+        if ($actual -eq $entry.sha256) {
+            Write-Host "[ok]   djvulibre"
+            return
+        }
+        Write-Host "[stale] djvulibre — переcкачиваю"
+    }
+    Write-Host "[fetch] djvulibre"
+    Invoke-DownloadWithRetry $entry.url $target
+    $actual = (Get-FileHash $target -Algorithm SHA256).Hash.ToLower()
+    if ($actual -ne $entry.sha256) {
+        Remove-Item $target -Force
+        throw "SHA256 mismatch для djvulibre: ожидал $($entry.sha256), получил $actual"
+    }
+    # Плоская раскладка: ddjvu(.exe)/djvused(.exe) + DLL + COPYING (GPL-2.0) прямо в $targetDir.
+    # COPYING затем едет в отдельный DjVu-инсталлятор как Licenses\LICENSE-DjVuLibre.txt.
     tar -xf $target -C $targetDir
 }
 
@@ -122,5 +156,8 @@ Get-PaddleModel 'cls' (Join-Path $paddleRoot 'cls')
 foreach ($script in $scriptsByTier[$Tier]) {
     Get-PaddleModel "rec_$script" (Join-Path $paddleRoot "rec/$script")
 }
+
+# DjVuLibre — общий для всех tier'ов (плагин один).
+Get-DjVuLibre (Join-Path $NativeRoot 'djvulibre')
 
 Write-Host "Native fetch завершён. Tier=$Tier"

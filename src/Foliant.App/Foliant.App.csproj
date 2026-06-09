@@ -11,6 +11,12 @@
     <Description>Composition root: DI, Serilog, MainWindow.</Description>
   </PropertyGroup>
 
+  <!-- Брендинг: иконка приложения и инсталлятора (один источник — installer/installer-assets).
+       Подключаем только если файл присутствует, чтобы отсутствие ассета не ломало сборку. -->
+  <PropertyGroup Condition="Exists('..\..\installer\installer-assets\foliant.ico')">
+    <ApplicationIcon>..\..\installer\installer-assets\foliant.ico</ApplicationIcon>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
@@ -53,6 +59,27 @@
           DestinationFolder="$(OutDir)plugins"
           SkipUnchangedFiles="true"
           Condition="Exists('@(_DjvuPluginDll)')" />
+  </Target>
+
+  <!-- То же для `dotnet publish`: плагин обязан попасть в publish/plugins/, иначе инсталлятор
+       уедет без DjVu. На publish с -r <rid> вывод плагина лежит в bin/<cfg>/net10.0-windows/<rid>/,
+       на обычной сборке — в bin/<cfg>/net10.0-windows/. Берём RID-вариант, иначе не-RID; если нет
+       ни одного — намеренно валим publish (тихо shipнуть без плагина нельзя). -->
+  <Target Name="CopyEnginePluginsOnPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <_DjvuPluginBin>..\..\plugins\Foliant.Plugin.DjVu\bin\$(Configuration)\net10.0-windows</_DjvuPluginBin>
+    </PropertyGroup>
+    <ItemGroup>
+      <_DjvuPublishDll Include="$(_DjvuPluginBin)\$(RuntimeIdentifier)\Foliant.Plugin.DjVu.dll"
+                       Condition="'$(RuntimeIdentifier)' != '' and Exists('$(_DjvuPluginBin)\$(RuntimeIdentifier)\Foliant.Plugin.DjVu.dll')" />
+      <_DjvuPublishDll Include="$(_DjvuPluginBin)\Foliant.Plugin.DjVu.dll"
+                       Condition="'@(_DjvuPublishDll)' == '' and Exists('$(_DjvuPluginBin)\Foliant.Plugin.DjVu.dll')" />
+    </ItemGroup>
+    <Error Condition="'@(_DjvuPublishDll)' == ''"
+           Text="DjVu plugin DLL not found under $(_DjvuPluginBin) (rid='$(RuntimeIdentifier)') — refusing to publish an installer without the DjVu plugin." />
+    <Copy SourceFiles="@(_DjvuPublishDll)"
+          DestinationFolder="$(PublishDir)plugins"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- Pro-проекты подключаются опционально, если присутствует submodule pro/ -->

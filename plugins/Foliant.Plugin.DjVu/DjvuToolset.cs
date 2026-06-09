@@ -16,10 +16,15 @@ public sealed record DjvuToolset(string DdjvuPath, string DjvusedPath)
     private static string DdjvuExe => OperatingSystem.IsWindows() ? "ddjvu.exe" : "ddjvu";
     private static string DjvusedExe => OperatingSystem.IsWindows() ? "djvused.exe" : "djvused";
 
+    /// <summary>The DjVuLibre CLI bundled with the app: <c>{BaseDirectory}/native/djvulibre</c>.</summary>
+    private static string BundledDir => Path.Combine(AppContext.BaseDirectory, "native", "djvulibre");
+
     /// <summary>
-    /// Resolves <c>ddjvu</c>/<c>djvused</c> from <c>HKCU\Software\Foliant\Plugins\DjVu</c>
-    /// (value = install directory), falling back to <c>PATH</c>. Returns <see langword="false"/>
-    /// when neither executable can be located.
+    /// Resolves <c>ddjvu</c>/<c>djvused</c>, in priority order: the app-bundled
+    /// <c>native/djvulibre/</c> directory (shipped by the installer — works out of the box), then
+    /// <c>HKCU\Software\Foliant\Plugins\DjVu</c> (value = install directory of a standalone
+    /// DjVuLibre), then <c>PATH</c>. Returns <see langword="false"/> when neither executable can be
+    /// located.
     /// </summary>
     public static bool TryResolve([NotNullWhen(true)] out DjvuToolset? toolset)
     {
@@ -51,6 +56,15 @@ public sealed record DjvuToolset(string DdjvuPath, string DjvusedPath)
 
     private static string? ResolveExe(string exeName, string? installDir)
     {
+        // 1) Bundled with the app (the installer ships native/djvulibre/). Authoritative: avoids the
+        //    per-machine-installer-writing-HKCU hive mismatch and makes DjVu work out of the box.
+        string bundled = Path.Combine(BundledDir, exeName);
+        if (File.Exists(bundled))
+        {
+            return bundled;
+        }
+
+        // 2) Explicit install directory from the registry (a standalone DjVuLibre installation).
         if (!string.IsNullOrWhiteSpace(installDir))
         {
             string candidate = Path.Combine(installDir, exeName);
@@ -60,6 +74,7 @@ public sealed record DjvuToolset(string DdjvuPath, string DjvusedPath)
             }
         }
 
+        // 3) PATH.
         return FindOnPath(exeName);
     }
 
