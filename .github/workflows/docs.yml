@@ -41,6 +41,10 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Включаем Pages из самого workflow (есть pages: write), иначе первый прогон падает с
+          # "Get Pages site failed", пока Pages не включён в Settings вручную.
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
